@@ -1,0 +1,25 @@
+{
+  "name": "Kumbú — Marketplace Angola",
+  "short_name": "Kumbú",
+  "description": "Compre e venda com confiança no marketplace C2C de Angola.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F5F5",
+  "theme_color": "#D62828",
+  "orientation": "portrait-primary",
+  "lang": "pt",
+  "icons": [
+    {
+      "src": "/logo_kumbu.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo_kumbu.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

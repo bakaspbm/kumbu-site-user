@@ -1,0 +1,318 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens — tema Kumbú */
+@theme {
+  --color-kumbu-primary: #d62828;
+  --color-kumbu-primary-dark: #b81f1f;
+  --color-kumbu-primary-soft: #fef2f2;
+  --color-kumbu-accent: #f4a261;
+  --color-kumbu-accent-soft: #fff7ed;
+  --color-kumbu-secondary: #f4f5f7;
+  --color-kumbu-muted: #64748b;
+  --color-kumbu-foreground: #0f172a;
+  --color-kumbu-verified: #10b981;
+  --color-kumbu-surface: #ffffff;
+  --color-kumbu-surface-muted: #eef1f5;
+  --color-kumbu-border: #e2e8f0;
+  --radius-kumbu: 0.75rem;
+  --radius-kumbu-lg: 1rem;
+  --radius-kumbu-xl: 1.25rem;
+  --shadow-kumbu-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-kumbu-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-kumbu-md: 0 4px 16px rgba(15, 23, 42, 0.07);
+  --shadow-kumbu-lg: 0 12px 32px rgba(15, 23, 42, 0.09);
+  --shadow-kumbu-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-kumbu-float: 0 8px 24px rgba(214, 40, 40, 0.22);
+  --font-sans: var(--font-plus-jakarta), "Segoe UI", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  html.dark {
+    --color-kumbu-secondary: #0c0c0e;
+    --color-kumbu-muted: #94a3b8;
+    --color-kumbu-foreground: #f1f5f9;
+    --color-kumbu-surface: #18181b;
+    --color-kumbu-surface-muted: #27272a;
+    --color-kumbu-border: rgba(255, 255, 255, 0.08);
+    --shadow-kumbu-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-kumbu-md: 0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  body {
+    @apply text-kumbu-foreground antialiased;
+    font-family: var(--font-sans);
+    letter-spacing: -0.012em;
+    background-color: var(--color-kumbu-secondary);
+    background-image:
+      radial-gradient(ellipse 100% 70% at 50% -20%, rgba(214, 40, 40, 0.04), transparent 50%),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(244, 162, 97, 0.03), transparent 40%);
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-kumbu-primary;
+  }
+}
+
+@layer utilities {
+  .kumbu-page-bg {
+    @apply min-h-screen;
+    background-color: var(--color-kumbu-secondary);
+    background-image:
+      radial-gradient(ellipse 100% 70% at 50% -20%, rgba(214, 40, 40, 0.04), transparent 50%),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(244, 162, 97, 0.03), transparent 40%);
+  }
+
+  .kumbu-gradient-hero {
+    background: linear-gradient(
+      145deg,
+      var(--hero-from, #d62828) 0%,
+      color-mix(in srgb, var(--hero-from, #d62828) 72%, #1a1a2e) 100%
+    );
+  }
+
+  .kumbu-gradient-brand {
+    background: linear-gradient(135deg, #d62828 0%, #de3535 50%, #c42a2a 100%);
+  }
+
+  .kumbu-card {
+    @apply rounded-[var(--radius-kumbu-lg)] border bg-kumbu-surface;
+    border-color: var(--color-kumbu-border);
+    box-shadow: var(--shadow-kumbu-card);
+  }
+
+  .kumbu-card-elevated {
+    @apply rounded-[var(--radius-kumbu-lg)] border bg-kumbu-surface;
+    border-color: var(--color-kumbu-border);
+    box-shadow: var(--shadow-kumbu-md);
+  }
+
+  .kumbu-card-interactive {
+    @apply rounded-[var(--radius-kumbu-lg)] border bg-kumbu-surface transition-all duration-200 ease-out;
+    border-color: var(--color-kumbu-border);
+    box-shadow: var(--shadow-kumbu-card);
+  }
+
+  .kumbu-card-interactive:hover {
+    box-shadow: var(--shadow-kumbu-sm);
+    border-color: color-mix(in srgb, var(--color-kumbu-primary) 18%, var(--color-kumbu-border));
+    transform: translateY(-1px);
+  }
+
+  .kumbu-section-title {
+    @apply text-lg font-bold tracking-tight text-kumbu-foreground md:text-xl;
+  }
+
+  .kumbu-section-subtitle {
+    @apply mt-0.5 text-[13px] leading-relaxed text-kumbu-muted;
+  }
+
+  .kumbu-container {
+    @apply mx-auto w-full max-w-6xl px-4 md:px-6 lg:px-8;
+  }
+
+  .kumbu-input {
+    @apply h-10 w-full rounded-[var(--radius-kumbu)] border-0 bg-kumbu-surface px-3.5 text-sm text-kumbu-foreground transition-shadow;
+    box-shadow: inset 0 0 0 1px var(--color-kumbu-border);
+  }
+
+  .kumbu-input:focus {
+    @apply outline-none ring-2 ring-kumbu-primary/12;
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-kumbu-primary) 35%, var(--color-kumbu-border)),
+      0 0 0 3px color-mix(in srgb, var(--color-kumbu-primary) 6%, transparent);
+  }
+
+  .kumbu-search-field {
+    @apply flex h-10 w-full items-center gap-2 rounded-[var(--radius-kumbu-lg)] bg-kumbu-surface px-3 text-sm;
+    box-shadow:
+      var(--shadow-kumbu-xs),
+      inset 0 0 0 1px var(--color-kumbu-border);
+  }
+
+  .kumbu-search-bar {
+    @apply flex h-10 w-full items-center gap-2.5 rounded-[var(--radius-kumbu-lg)] border border-kumbu-border bg-kumbu-surface px-2.5 transition-all hover:border-kumbu-primary/15 hover:shadow-[var(--shadow-kumbu-xs)];
+  }
+
+  .kumbu-icon-btn {
+    @apply relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-kumbu-border bg-kumbu-surface text-kumbu-foreground transition-colors hover:border-kumbu-primary/20 hover:bg-kumbu-primary-soft hover:text-kumbu-primary;
+    box-shadow: var(--shadow-kumbu-xs);
+  }
+
+  .kumbu-pill {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide;
+  }
+
+  .kumbu-glass {
+    @apply border-b border-kumbu-border/70 bg-kumbu-surface/92 backdrop-blur-md;
+  }
+
+  .kumbu-sticky-summary {
+    @apply fixed bottom-[4.25rem] left-0 right-0 z-30 border-t bg-kumbu-surface/95 p-4 backdrop-blur-lg md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none;
+    border-color: var(--color-kumbu-border);
+  }
+
+  .kumbu-category-tile {
+    @apply flex min-w-[5rem] flex-col items-center justify-center gap-2 rounded-[var(--radius-kumbu-lg)] border border-kumbu-border bg-kumbu-surface px-2.5 py-3.5 transition-all duration-200;
+    box-shadow: var(--shadow-kumbu-xs);
+  }
+
+  .kumbu-category-tile:hover {
+    @apply border-kumbu-primary/20;
+    box-shadow: var(--shadow-kumbu-sm);
+    transform: translateY(-1px);
+  }
+
+  .kumbu-category-tile-icon {
+    @apply flex size-10 items-center justify-center rounded-xl bg-kumbu-primary-soft text-kumbu-primary transition-colors;
+  }
+
+  .kumbu-category-tile:hover .kumbu-category-tile-icon {
+    @apply bg-kumbu-primary text-white;
+    box-shadow: var(--shadow-kumbu-float);
+  }
+
+  .kumbu-category-tile-label {
+    @apply max-w-[4.25rem] truncate text-center text-[10px] font-semibold leading-tight text-kumbu-foreground;
+  }
+
+  .kumbu-nav-floating {
+    @apply border border-kumbu-border/80 bg-kumbu-surface/95 shadow-[var(--shadow-kumbu-md)] backdrop-blur-xl;
+  }
+
+  .kumbu-step-dot {
+    @apply h-1 flex-1 rounded-full transition-all duration-500;
+  }
+
+  .kumbu-trust-pill {
+    @apply flex items-center gap-2 rounded-full border border-kumbu-border/80 bg-kumbu-surface px-3 py-1.5;
+    box-shadow: var(--shadow-kumbu-xs);
+  }
+
+  .kumbu-link-pill {
+    @apply inline-flex items-center gap-0.5 rounded-full bg-kumbu-primary-soft px-3 py-1.5 text-xs font-semibold text-kumbu-primary transition-colors hover:bg-kumbu-primary hover:text-white;
+  }
+
+  .kumbu-fade-in {
+    animation: kumbu-fade-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .kumbu-onboarding-enter {
+    animation: kumbu-onboarding-slide 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .kumbu-onboarding-enter-back {
+    animation: kumbu-onboarding-slide-back 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .kumbu-page-enter {
+    animation: kumbu-page-enter 0.15s ease-out both;
+  }
+
+  .kumbu-stagger > * {
+    animation: kumbu-fade-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .kumbu-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .kumbu-stagger > *:nth-child(2) { animation-delay: 30ms; }
+  .kumbu-stagger > *:nth-child(3) { animation-delay: 60ms; }
+  .kumbu-stagger > *:nth-child(4) { animation-delay: 90ms; }
+  .kumbu-stagger > *:nth-child(5) { animation-delay: 120ms; }
+
+  .kumbu-listing-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: 640px) {
+    .kumbu-listing-grid {
+      gap: 1rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 768px) {
+    .kumbu-listing-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .kumbu-listing-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /** Grelha para cartões mais largos (CVs, candidaturas, reservas). */
+  .kumbu-card-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 640px) {
+    .kumbu-card-grid {
+      gap: 1rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .kumbu-card-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @keyframes kumbu-page-enter {
+    from { opacity: 0.85; }
+    to { opacity: 1; }
+  }
+
+  @keyframes kumbu-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes kumbu-onboarding-slide {
+    from {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes kumbu-onboarding-slide-back {
+    from {
+      opacity: 0;
+      transform: translateX(-12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}

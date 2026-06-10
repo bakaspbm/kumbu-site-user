@@ -1,0 +1,200 @@
+{
+  "lastUpdated": "21 mai 2026",
+  "terms": [
+    {
+      "title": "1. Qui sommes-nous",
+      "paragraphs": [
+        "Kumbú est une place de marché numérique qui met en relation acheteurs, vendeurs et candidats à l'emploi en Angola. Le service est fourni via le site web et l'application mobile associée.",
+        "En créant un compte ou en utilisant le service, vous acceptez ces Conditions d'utilisation. Si vous n'êtes pas d'accord, n'utilisez pas la plateforme."
+      ]
+    },
+    {
+      "title": "2. Rôle de Kumbú",
+      "paragraphs": [
+        "Kumbú met à disposition un espace pour publier des annonces, envoyer des messages et gérer les candidatures. Sauf indication expresse contraire, Kumbú n'est pas partie aux transactions entre utilisateurs et ne traite pas les paiements entre particuliers.",
+        "Les accords sur le prix, la livraison et le paiement (y compris virement bancaire, Multicaixa ou espèces) sont conclus directement entre les parties, hors de la responsabilité de Kumbú lorsque le paiement n'est pas traité par la plateforme."
+      ]
+    },
+    {
+      "title": "3. Compte et éligibilité",
+      "paragraphs": [
+        "Vous devez avoir au moins 18 ans et fournir des informations exactes. Vous êtes responsable de la confidentialité de vos identifiants et de toute activité sur votre compte.",
+        "Nous pouvons suspendre ou fermer les comptes qui violent ces conditions, les Règles de publication ou la loi applicable."
+      ]
+    },
+    {
+      "title": "4. Annonces et contenus",
+      "paragraphs": [
+        "Vous êtes responsable des textes, images et prix que vous publiez. Vous garantissez avoir le droit d'utiliser le contenu et que l'annonce est licite en Angola.",
+        "Nous nous réservons le droit de supprimer des annonces, masquer des profils ou transmettre les signalements aux autorités compétentes."
+      ]
+    },
+    {
+      "title": "5. Emploi et CV",
+      "paragraphs": [
+        "Les données de CV et les candidatures sont destinées exclusivement aux processus de recrutement initiés par le candidat. Les employeurs ne peuvent pas réutiliser ces données à d'autres fins sans base légale.",
+        "Les offres d'emploi avec un langage discriminatoire ou illégal peuvent être supprimées."
+      ]
+    },
+    {
+      "title": "6. Limitation de responsabilité",
+      "paragraphs": [
+        "Le service est fourni « en l'état ». Nous ne garantissons pas une disponibilité ininterrompue ni l'exactitude de toutes les annonces publiées par des tiers.",
+        "Dans la mesure permise par la loi, Kumbú n'est pas responsable des pertes indirectes résultant de transactions entre utilisateurs, sauf si la loi l'impose."
+      ]
+    },
+    {
+      "title": "7. Modifications et loi applicable",
+      "paragraphs": [
+        "Nous pouvons mettre à jour ces conditions ; la date de la dernière version figure en haut de la page. L'utilisation continue après modification vaut acceptation.",
+        "La loi de la République d'Angola s'applique. Les litiges seront résolus devant les tribunaux compétents en Angola, sauf disposition légale impérative contraire."
+      ]
+    }
+  ],
+  "privacy": [
+    {
+      "title": "1. Responsable du traitement",
+      "paragraphs": [
+        "Kumbú traite les données personnelles pour exploiter la place de marché, les messages, les candidatures et le compte utilisateur, conformément à la législation angolaise sur la protection des données personnelles."
+      ]
+    },
+    {
+      "title": "2. Données que nous collectons",
+      "paragraphs": [
+        "Identification et contact : nom, e-mail, téléphone, adresse, photo de profil.",
+        "Activité sur la plateforme : annonces, messages, favoris, commandes, candidatures, consultations de CV par les employeurs (avec notification au candidat).",
+        "Données techniques : type d'appareil, session, journaux de sécurité et cookies essentiels (voir Politique de cookies)."
+      ]
+    },
+    {
+      "title": "3. Finalités et bases légales",
+      "paragraphs": [
+        "Exécution du contrat d'utilisation du service (compte, publication, messages).",
+        "Intérêt légitime : sécurité, prévention de la fraude, statistiques agrégées de consultations.",
+        "Consentement : marketing optionnel et cookies non essentiels, lorsqu'ils sont activés.",
+        "Obligation légale : réponse aux autorités et conservation des preuves de signalement."
+      ]
+    },
+    {
+      "title": "4. Partage des données",
+      "paragraphs": [
+        "Données visibles par les autres utilisateurs : profil public, annonces, messages dans la conversation concernée.",
+        "Prestataires : hébergement et infrastructure (serveur backend Spring Boot, base de données PostgreSQL), envoi d'e-mails/SMS selon la configuration.",
+        "Nous ne vendons pas de listes de contacts à des tiers à des fins marketing."
+      ]
+    },
+    {
+      "title": "5. Conservation et droits",
+      "paragraphs": [
+        "Nous conservons les données tant que le compte est actif et le temps nécessaire aux obligations légales ou à la défense de réclamations.",
+        "Vous pouvez demander l'accès, la rectification ou la suppression via les paramètres du compte (exporter en JSON ou supprimer le compte). La suppression marque deleted_at, révoque les sessions et enregistre l'événement pour audit.",
+        "Vous pouvez déposer une plainte auprès de l'autorité de protection des données compétente en Angola."
+      ]
+    },
+    {
+      "title": "6. Sécurité",
+      "paragraphs": [
+        "Nous appliquons l'authentification JWT, le contrôle d'accès par utilisateur, HTTPS et des politiques d'accès minimal. Aucun système n'est sécurisé à 100 % — signalez les incidents au support."
+      ]
+    }
+  ],
+  "cookies": [
+    {
+      "title": "1. Que sont les cookies",
+      "paragraphs": [
+        "Les cookies et le stockage local permettent de maintenir la session connectée, les préférences (ex. : thème) et, avec votre consentement, de mesurer l'utilisation du site."
+      ]
+    },
+    {
+      "title": "2. Cookies essentiels",
+      "paragraphs": [
+        "Nécessaires au fonctionnement : session authentifiée (jetons JWT), panier, préférences enregistrées. Ils ne nécessitent pas de consentement séparé."
+      ]
+    },
+    {
+      "title": "3. Cookies optionnels",
+      "paragraphs": [
+        "L'analyse ou le marketing de tiers ne seront activés que si nous intégrons ces outils et obtenons votre consentement dans la bannière du site."
+      ]
+    },
+    {
+      "title": "4. Comment gérer",
+      "paragraphs": [
+        "Vous pouvez effacer les cookies dans votre navigateur ou refuser les optionnels dans la bannière. Le refus des cookies essentiels empêche l'utilisation du compte."
+      ]
+    }
+  ],
+  "howItWorks": [
+    {
+      "title": "Acheter ou louer",
+      "paragraphs": [
+        "Recherchez des annonces, ouvrez le détail et contactez le vendeur par message. Le paiement et la livraison sont convenus entre les parties, sauf futurs moyens intégrés clairement indiqués."
+      ]
+    },
+    {
+      "title": "Vendre ou publier",
+      "paragraphs": [
+        "Complétez votre profil, choisissez une catégorie, ajoutez des photos et publiez. Respectez les Règles de publication. Vous pouvez gérer vos annonces dans « Mes annonces »."
+      ]
+    },
+    {
+      "title": "Emploi",
+      "paragraphs": [
+        "Les candidats créent un CV et postulent aux offres. Les employeurs consultent les candidatures dans l'espace employeur ; la première consultation du CV peut notifier le candidat."
+      ]
+    },
+    {
+      "title": "Sécurité",
+      "paragraphs": [
+        "Rencontrez-vous dans un lieu public, vérifiez le produit avant de payer et utilisez la fonction « Signaler » sur les annonces ou profils suspects. Vous pouvez bloquer des utilisateurs pour ne plus recevoir de contacts."
+      ]
+    }
+  ],
+  "publishingRules": [
+    {
+      "title": "Publication interdite",
+      "paragraphs": [
+        "Produits ou services illégaux, armes, drogues, contenu pour adultes sans restrictions légales, systèmes pyramidaux, contrefaçons ou annonces trompeuses.",
+        "Discrimination dans les offres d'emploi (âge, sexe, ethnie, religion, handicap, etc.) ou exigences non justifiées par la fonction.",
+        "Données de tiers sans autorisation (téléphones, documents, photos d'autrui)."
+      ]
+    },
+    {
+      "title": "Immobilier et emploi",
+      "paragraphs": [
+        "Indiquez clairement la localisation et le prix/salaire. Immobilier : vérifiez les licences et la documentation sur place. Emploi : description honnête des fonctions et du type de contrat."
+      ]
+    },
+    {
+      "title": "Photos et prix",
+      "paragraphs": [
+        "Utilisez des images réelles de l'article. Prix en Kwanzas (AOA) sauf indication contraire explicite. Ne publiez pas la même annonce en double pour du spam."
+      ]
+    },
+    {
+      "title": "Conséquences",
+      "paragraphs": [
+        "Les violations peuvent entraîner la suppression de l'annonce, la suspension du compte ou un signalement aux autorités. Les utilisateurs peuvent signaler tout contenu."
+      ]
+    }
+  ],
+  "reportDialog": {
+    "label": "Signaler",
+    "title": "Signaler un contenu",
+    "description": "Les signalements sont examinés par notre équipe. De fausses informations peuvent entraîner la suspension du compte.",
+    "reasonLabel": "Motif",
+    "detailsLabel": "Détails (optionnel)",
+    "detailsPlaceholder": "Décrivez le problème…",
+    "submit": "Envoyer le signalement",
+    "reportSent": "Signalement envoyé. Notre équipe va l'examiner."
+  },
+  "reportReasons": [
+    { "id": "spam", "label": "Spam ou annonce en double" },
+    { "id": "fraud", "label": "Fraude ou arnaque" },
+    { "id": "illegal", "label": "Contenu illégal" },
+    { "id": "harassment", "label": "Harcèlement ou menaces" },
+    { "id": "misleading", "label": "Information trompeuse" },
+    { "id": "ip", "label": "Droits d'auteur / marque" },
+    { "id": "other", "label": "Autre" }
+  ]
+}

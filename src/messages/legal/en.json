@@ -1,0 +1,200 @@
+{
+  "lastUpdated": "May 21, 2026",
+  "terms": [
+    {
+      "title": "1. Who we are",
+      "paragraphs": [
+        "Kumbú is a digital marketplace connecting buyers, sellers, and job seekers in Angola. The service is provided through the website and associated mobile application.",
+        "By creating an account or using the service, you accept these Terms of Use. If you do not agree, do not use the platform."
+      ]
+    },
+    {
+      "title": "2. Role of Kumbú",
+      "paragraphs": [
+        "Kumbú provides space to publish listings, send messages, and manage applications. Unless expressly stated otherwise, Kumbú is not a party to transactions between users and does not process payments between individuals.",
+        "Agreements on price, delivery, and payment (including bank transfer, Multicaixa, or cash) are made directly between the parties, outside Kumbú's responsibility when payment is not processed by the platform."
+      ]
+    },
+    {
+      "title": "3. Account and eligibility",
+      "paragraphs": [
+        "You must be at least 18 years old and provide truthful information. You are responsible for keeping your credentials confidential and for all activity on your account.",
+        "We may suspend or close accounts that violate these terms, the Publishing Rules, or applicable law."
+      ]
+    },
+    {
+      "title": "4. Listings and content",
+      "paragraphs": [
+        "You are responsible for the text, images, and prices you publish. You guarantee that you have the right to use the content and that the listing is lawful in Angola.",
+        "We reserve the right to remove listings, hide profiles, or forward reports to the competent authorities."
+      ]
+    },
+    {
+      "title": "5. Employment and CV",
+      "paragraphs": [
+        "CV data and applications are intended exclusively for recruitment processes initiated by the candidate. Employers may not reuse this data for other purposes without a legal basis.",
+        "Job postings with discriminatory or illegal language may be removed."
+      ]
+    },
+    {
+      "title": "6. Limitation of liability",
+      "paragraphs": [
+        "The service is provided \"as is\". We do not guarantee uninterrupted availability or the accuracy of all listings published by third parties.",
+        "To the extent permitted by law, Kumbú is not liable for indirect losses resulting from dealings between users, except where the law requires otherwise."
+      ]
+    },
+    {
+      "title": "7. Changes and applicable law",
+      "paragraphs": [
+        "We may update these terms; the date of the latest version appears at the top of the page. Continued use after changes constitutes acceptance.",
+        "The law of the Republic of Angola applies. Disputes will be resolved in the competent courts in Angola, unless mandatory legal provisions state otherwise."
+      ]
+    }
+  ],
+  "privacy": [
+    {
+      "title": "1. Data controller",
+      "paragraphs": [
+        "Kumbú processes personal data to operate the marketplace, messages, applications, and user accounts, in compliance with Angolan personal data protection legislation."
+      ]
+    },
+    {
+      "title": "2. Data we collect",
+      "paragraphs": [
+        "Identification and contact: name, email, phone, address, profile photo.",
+        "Platform activity: listings, messages, favorites, orders, applications, CV views by employers (with notification to the candidate).",
+        "Technical data: device type, session, security logs, and essential cookies (see Cookie Policy)."
+      ]
+    },
+    {
+      "title": "3. Purposes and legal bases",
+      "paragraphs": [
+        "Performance of the service use contract (account, publishing, messages).",
+        "Legitimate interest: security, fraud prevention, aggregated view statistics.",
+        "Consent: optional marketing and non-essential cookies, when enabled.",
+        "Legal obligation: response to authorities and retention of report evidence."
+      ]
+    },
+    {
+      "title": "4. Data sharing",
+      "paragraphs": [
+        "Data visible to other users: public profile, listings, messages in the respective conversation.",
+        "Providers: hosting and infrastructure (Spring Boot backend server, PostgreSQL database), email/SMS delivery as configured.",
+        "We do not sell contact lists to third parties for marketing."
+      ]
+    },
+    {
+      "title": "5. Retention and rights",
+      "paragraphs": [
+        "We retain data while the account is active and for as long as necessary for legal obligations or defense of claims.",
+        "You may request access, rectification, or deletion through account settings (export JSON or delete account). Deletion marks deleted_at, revokes sessions, and records the event for audit.",
+        "You may file a complaint with the competent data protection authority in Angola."
+      ]
+    },
+    {
+      "title": "6. Security",
+      "paragraphs": [
+        "We apply JWT authentication, per-user access control, HTTPS, and minimum access policies. No system is 100% secure — report incidents to support."
+      ]
+    }
+  ],
+  "cookies": [
+    {
+      "title": "1. What are cookies",
+      "paragraphs": [
+        "Cookies and local storage allow you to stay logged in, save preferences (e.g. theme), and, with your consent, measure site usage."
+      ]
+    },
+    {
+      "title": "2. Essential cookies",
+      "paragraphs": [
+        "Required for operation: authenticated session (JWT tokens), cart, saved preferences. They do not require separate consent."
+      ]
+    },
+    {
+      "title": "3. Optional cookies",
+      "paragraphs": [
+        "Third-party analytics or marketing will only be enabled if we integrate those tools and obtain your consent in the site banner."
+      ]
+    },
+    {
+      "title": "4. How to manage",
+      "paragraphs": [
+        "You can clear cookies in your browser or refuse optional ones in the banner. Refusing essential cookies prevents account use."
+      ]
+    }
+  ],
+  "howItWorks": [
+    {
+      "title": "Buy or rent",
+      "paragraphs": [
+        "Search listings, open the detail page, and contact the seller by message. Payment and delivery are agreed between the parties, unless future integrated methods are clearly indicated."
+      ]
+    },
+    {
+      "title": "Sell or publish",
+      "paragraphs": [
+        "Complete your profile, choose a category, add photos, and publish. Follow the Publishing Rules. You can manage listings in \"My listings\"."
+      ]
+    },
+    {
+      "title": "Employment",
+      "paragraphs": [
+        "Candidates create a CV and apply to job openings. Employers view applications in the employer area; the first CV view may notify the candidate."
+      ]
+    },
+    {
+      "title": "Safety",
+      "paragraphs": [
+        "Meet in a public place, verify the product before paying, and use the \"Report\" feature on suspicious listings or profiles. You can block users to stop receiving contact."
+      ]
+    }
+  ],
+  "publishingRules": [
+    {
+      "title": "Prohibited content",
+      "paragraphs": [
+        "Illegal products or services, weapons, drugs, adult content without legal restrictions, pyramid schemes, counterfeits, or misleading listings.",
+        "Discrimination in job postings (age, gender, ethnicity, religion, disability, etc.) or requirements not justified by the role.",
+        "Third-party data without authorization (phone numbers, documents, others' photos)."
+      ]
+    },
+    {
+      "title": "Real estate and employment",
+      "paragraphs": [
+        "State location and price/salary clearly. Real estate: verify licenses and documentation on site. Jobs: honest description of duties and contract type."
+      ]
+    },
+    {
+      "title": "Photos and prices",
+      "paragraphs": [
+        "Use real images of the item. Prices in Kwanzas (AOA) unless explicitly stated otherwise. Do not publish duplicate listings for spam."
+      ]
+    },
+    {
+      "title": "Consequences",
+      "paragraphs": [
+        "Violations may lead to listing removal, account suspension, or notification to authorities. Users can report any content."
+      ]
+    }
+  ],
+  "reportDialog": {
+    "label": "Report",
+    "title": "Report content",
+    "description": "Reports are reviewed by our team. False information may lead to account suspension.",
+    "reasonLabel": "Reason",
+    "detailsLabel": "Details (optional)",
+    "detailsPlaceholder": "Describe the issue…",
+    "submit": "Submit report",
+    "reportSent": "Report submitted. Our team will review it."
+  },
+  "reportReasons": [
+    { "id": "spam", "label": "Spam or duplicate listing" },
+    { "id": "fraud", "label": "Fraud or scam" },
+    { "id": "illegal", "label": "Illegal content" },
+    { "id": "harassment", "label": "Harassment or threats" },
+    { "id": "misleading", "label": "Misleading information" },
+    { "id": "ip", "label": "Copyright / trademark" },
+    { "id": "other", "label": "Other" }
+  ]
+}

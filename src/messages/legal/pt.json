@@ -1,0 +1,200 @@
+{
+  "lastUpdated": "21 de maio de 2026",
+  "terms": [
+    {
+      "title": "1. Quem somos",
+      "paragraphs": [
+        "O Kumbú é um marketplace digital que liga compradores, vendedores e candidatos a emprego em Angola. O serviço é prestado através do site e da aplicação móvel associada.",
+        "Ao criar conta ou utilizar o serviço, aceita estes Termos de Utilização. Se não concordar, não utilize a plataforma."
+      ]
+    },
+    {
+      "title": "2. Papel do Kumbú",
+      "paragraphs": [
+        "O Kumbú disponibiliza espaço para publicar anúncios, enviar mensagens e gerir candidaturas. Salvo indicação expressa em contrário, o Kumbú não é parte das transacções entre utilizadores e não processa pagamentos entre particulares.",
+        "Combinações de preço, entrega e pagamento (incluindo transferência bancária, Multicaixa ou numerário) são acordadas directamente entre as partes, fora da responsabilidade do Kumbú quando o pagamento não é processado pela plataforma."
+      ]
+    },
+    {
+      "title": "3. Conta e elegibilidade",
+      "paragraphs": [
+        "Deve ter idade mínima de 18 anos e fornecer dados verdadeiros. É responsável pela confidencialidade das credenciais e por toda a actividade na sua conta.",
+        "Podemos suspender ou encerrar contas que violem estes termos, as Regras de Publicação ou a lei aplicável."
+      ]
+    },
+    {
+      "title": "4. Anúncios e conteúdos",
+      "paragraphs": [
+        "É responsável pelos textos, imagens e preços que publica. Garante que tem direito de usar o conteúdo e que o anúncio é lícito em Angola.",
+        "Reservamo-nos o direito de remover anúncios, ocultar perfis ou encaminhar denúncias às autoridades competentes."
+      ]
+    },
+    {
+      "title": "5. Emprego e CV",
+      "paragraphs": [
+        "Os dados de CV e candidaturas destinam-se exclusivamente a processos de recrutamento iniciados pelo candidato. Empregadores não podem reutilizar esses dados para outros fins sem base legal.",
+        "Vagas com linguagem discriminatória ou ilegal podem ser removidas."
+      ]
+    },
+    {
+      "title": "6. Limitação de responsabilidade",
+      "paragraphs": [
+        "O serviço é fornecido «tal como está». Não garantimos disponibilidade ininterrupta nem a veracidade de todos os anúncios publicados por terceiros.",
+        "Na medida permitida pela lei, o Kumbú não responde por perdas indirectas resultantes de negócios entre utilizadores, excepto quando a lei imponha o contrário."
+      ]
+    },
+    {
+      "title": "7. Alterações e lei aplicável",
+      "paragraphs": [
+        "Podemos actualizar estes termos; a data da última versão aparece no topo da página. O uso continuado após alterações constitui aceitação.",
+        "Aplica-se a lei da República de Angola. Litígios serão resolvidos nos tribunais competentes em Angola, salvo disposição legal imperativa em contrário."
+      ]
+    }
+  ],
+  "privacy": [
+    {
+      "title": "1. Responsável pelo tratamento",
+      "paragraphs": [
+        "O Kumbú trata dados pessoais para operar o marketplace, mensagens, candidaturas e conta de utilizador, em conformidade com a legislação angolana de protecção de dados pessoais."
+      ]
+    },
+    {
+      "title": "2. Dados que recolhemos",
+      "paragraphs": [
+        "Identificação e contacto: nome, email, telefone, morada, foto de perfil.",
+        "Actividade na plataforma: anúncios, mensagens, favoritos, encomendas, candidaturas, visualizações de CV por empregadores (com notificação ao candidato).",
+        "Dados técnicos: tipo de dispositivo, sessão, logs de segurança e cookies essenciais (ver Política de Cookies)."
+      ]
+    },
+    {
+      "title": "3. Finalidades e bases legais",
+      "paragraphs": [
+        "Execução do contrato de utilização do serviço (conta, publicação, mensagens).",
+        "Interesse legítimo: segurança, prevenção de fraude, estatísticas agregadas de visualizações.",
+        "Consentimento: marketing opcional e cookies não essenciais, quando activados.",
+        "Obrigação legal: resposta a autoridades e conservação de evidências de denúncias."
+      ]
+    },
+    {
+      "title": "4. Partilha de dados",
+      "paragraphs": [
+        "Dados visíveis a outros utilizadores: perfil público, anúncios, mensagens na conversa respectiva.",
+        "Prestadores: alojamento e infraestrutura (servidor backend Spring Boot, base de dados PostgreSQL), envio de email/SMS conforme configurado.",
+        "Não vendemos listas de contactos a terceiros para marketing."
+      ]
+    },
+    {
+      "title": "5. Conservação e direitos",
+      "paragraphs": [
+        "Conservamos os dados enquanto a conta estiver activa e pelo tempo necessário para obrigações legais ou defesa de reclamações.",
+        "Pode solicitar acesso, rectificação ou apagamento através das definições da conta (exportar JSON ou apagar conta). O apagamento marca deleted_at, revoga sessões e regista o evento para auditoria.",
+        "Pode apresentar reclamação à autoridade de protecção de dados competente em Angola."
+      ]
+    },
+    {
+      "title": "6. Segurança",
+      "paragraphs": [
+        "Aplicamos autenticação JWT, controlo de acesso por utilizador, HTTPS e políticas de acesso mínimo. Nenhum sistema é 100% seguro — reporte incidentes ao suporte."
+      ]
+    }
+  ],
+  "cookies": [
+    {
+      "title": "1. O que são cookies",
+      "paragraphs": [
+        "Cookies e armazenamento local permitem manter a sessão iniciada, preferências (ex.: tema) e, com o seu consentimento, medir utilização do site."
+      ]
+    },
+    {
+      "title": "2. Cookies essenciais",
+      "paragraphs": [
+        "Necessários ao funcionamento: sessão autenticada (tokens JWT), carrinho, preferências guardadas. Não requerem consentimento separado."
+      ]
+    },
+    {
+      "title": "3. Cookies opcionais",
+      "paragraphs": [
+        "Análise ou marketing de terceiros só serão activados se integrarmos essas ferramentas e obtivermos o seu consentimento no banner do site."
+      ]
+    },
+    {
+      "title": "4. Como gerir",
+      "paragraphs": [
+        "Pode limpar cookies no browser ou recusar opcionais no banner. A recusa de cookies essenciais impede o uso da conta."
+      ]
+    }
+  ],
+  "howItWorks": [
+    {
+      "title": "Comprar ou alugar",
+      "paragraphs": [
+        "Pesquise anúncios, abra o detalhe e contacte o vendedor por mensagem. O pagamento e a entrega são acordados entre as partes, salvo futuros métodos integrados claramente indicados."
+      ]
+    },
+    {
+      "title": "Vender ou publicar",
+      "paragraphs": [
+        "Complete o perfil, escolha categoria, adicione fotos e publique. Respeite as Regras de Publicação. Pode gerir anúncios em «Os meus anúncios»."
+      ]
+    },
+    {
+      "title": "Emprego",
+      "paragraphs": [
+        "Candidatos criam CV e candidatam-se às vagas. Empregadores veem candidaturas na área de empregador; a primeira visualização do CV pode notificar o candidato."
+      ]
+    },
+    {
+      "title": "Segurança",
+      "paragraphs": [
+        "Encontre em local público, verifique o produto antes de pagar e use a função «Denunciar» em anúncios ou perfis suspeitos. Pode bloquear utilizadores para deixar de receber contactos."
+      ]
+    }
+  ],
+  "publishingRules": [
+    {
+      "title": "Proibido publicar",
+      "paragraphs": [
+        "Produtos ou serviços ilegais, armas, drogas, conteúdo para adultos sem restrições legais, esquemas de pirâmide, falsificações ou anúncios enganosos.",
+        "Discriminação em vagas (idade, sexo, etnia, religião, deficiência, etc.) ou exigências não justificadas pela função.",
+        "Dados de terceiros sem autorização (telefones, documentos, fotos alheias)."
+      ]
+    },
+    {
+      "title": "Imóveis e emprego",
+      "paragraphs": [
+        "Indique localização e preço/salário de forma clara. Imóveis: verifique licenças e documentação no local. Vagas: descrição honesta das funções e tipo de contrato."
+      ]
+    },
+    {
+      "title": "Fotos e preços",
+      "paragraphs": [
+        "Use imagens reais do item. Preços em Kwanzas (AOA) salvo indicação contrária explícita. Não publique o mesmo anúncio em duplicado para spam."
+      ]
+    },
+    {
+      "title": "Consequências",
+      "paragraphs": [
+        "Violações podem levar a remoção do anúncio, suspensão da conta ou comunicação às autoridades. Utilizadores podem denunciar qualquer conteúdo."
+      ]
+    }
+  ],
+  "reportDialog": {
+    "label": "Denunciar",
+    "title": "Denunciar conteúdo",
+    "description": "As denúncias são analisadas pela equipa. Informações falsas podem levar à suspensão da conta.",
+    "reasonLabel": "Motivo",
+    "detailsLabel": "Detalhes (opcional)",
+    "detailsPlaceholder": "Descreva o problema…",
+    "submit": "Enviar denúncia",
+    "reportSent": "Denúncia enviada. A nossa equipa irá analisar."
+  },
+  "reportReasons": [
+    { "id": "spam", "label": "Spam ou anúncio repetido" },
+    { "id": "fraud", "label": "Fraude ou burla" },
+    { "id": "illegal", "label": "Conteúdo ilegal" },
+    { "id": "harassment", "label": "Assédio ou ameaças" },
+    { "id": "misleading", "label": "Informação enganosa" },
+    { "id": "ip", "label": "Direitos de autor / marca" },
+    { "id": "other", "label": "Outro" }
+  ]
+}
