@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { CartLineItem } from "@/components/cart/cart-line-item";
 import { CartSummary } from "@/components/cart/cart-summary";
 import { EmptyState } from "@/components/ui/empty-state";
+import { UserFacingErrorAlert } from "@/components/ui/user-facing-error-alert";
 import { useCart } from "@/contexts/cart-context";
 import { groupCartBySeller } from "@/lib/cart-utils";
 import { parsePriceLabel } from "@/lib/utils";
@@ -17,7 +18,7 @@ function formatTotal(total: number) {
 
 export default function CarrinhoPage() {
   const t = useTranslations("cart");
-  const { items, setQuantity, removeProduct, clear, count } = useCart();
+  const { items, setQuantity, removeProduct, clear, count, syncError } = useCart();
   const sellerGroups = groupCartBySeller(items);
 
   const subtotal = items.reduce(
@@ -40,6 +41,12 @@ export default function CarrinhoPage() {
           />
         ) : (
           <div className="mt-4 md:grid md:grid-cols-[1fr_320px] md:items-start md:gap-8">
+            {syncError ? (
+              <UserFacingErrorAlert
+                error={syncError}
+                className="md:col-span-2"
+              />
+            ) : null}
             <div className="space-y-4">
               {sellerGroups.size > 1 && (
                 <p className="rounded-xl bg-kumbu-secondary px-4 py-3 text-sm text-kumbu-muted">

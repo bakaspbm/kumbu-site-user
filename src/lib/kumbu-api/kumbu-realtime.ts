@@ -84,16 +84,38 @@ function mapChatMessage(raw: unknown): ConversationMessage | null {
   if (!raw || typeof raw !== "object") return null;
   const row = raw as Record<string, unknown>;
   const id = row.id != null ? String(row.id) : "";
-  const conversationId = row.conversationId != null ? String(row.conversationId) : "";
-  const senderId = row.senderId != null ? String(row.senderId) : "";
+  const conversationId =
+    row.conversationId != null
+      ? String(row.conversationId)
+      : row.conversation_id != null
+        ? String(row.conversation_id)
+        : "";
+  const senderId =
+    row.senderId != null
+      ? String(row.senderId)
+      : row.sender_id != null
+        ? String(row.sender_id)
+        : "";
   if (!id || !conversationId || !senderId) return null;
+
+  const kindRaw = row.messageKind ?? row.message_kind;
+  let messageKind: ConversationMessage["messageKind"] = "text";
+  if (kindRaw === "system") messageKind = "system";
+  else if (kindRaw === "attachment") messageKind = "attachment";
+  else if (kindRaw === "support") messageKind = "support";
+
   return {
     id,
     conversationId,
     senderId,
     body: String(row.body ?? ""),
-    createdAt: String(row.createdAt ?? new Date().toISOString()),
-    messageKind: row.messageKind === "system" ? "system" : "text",
+    createdAt: String(row.createdAt ?? row.created_at ?? new Date().toISOString()),
+    messageKind,
+    attachmentUrl:
+      (row.attachmentUrl as string | null | undefined) ??
+      (row.attachment_url as string | null | undefined) ??
+      null,
+    fromSupport: Boolean(row.fromSupport ?? row.from_support),
   };
 }
 

@@ -298,12 +298,12 @@ export async function sendConversationMessage(
   conversationIdOrBody: string,
   maybeBody?: string,
   _userId?: string,
-  _options?: { skipRecipientNotification?: boolean },
+  _options?: { skipRecipientNotification?: boolean; attachmentUrl?: string | null },
 ): Promise<ConversationMessage> {
   const conversationId =
     maybeBody != null ? String(conversationIdOrBody) : String(clientOrConversationId);
   const body = maybeBody != null ? String(maybeBody) : String(conversationIdOrBody);
-  return chatApi.sendConversationMessageBackend(conversationId, body);
+  return chatApi.sendConversationMessageBackend(conversationId, body, _options?.attachmentUrl);
 }
 
 export async function markConversationRead(clientOrConversationId: unknown, maybeConversationId?: string, _userId?: string): Promise<void> {

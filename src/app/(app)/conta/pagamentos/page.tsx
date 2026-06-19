@@ -1,37 +1,27 @@
-"use client";
-
-import dynamic from "next/dynamic";
-import { useTranslations } from "next-intl";
+import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Sparkles } from "lucide-react";
 import { ContaPageHeader } from "@/components/account/conta-page-header";
 import { ContaPanel } from "@/components/account/conta-section";
+import { MyMonetizationPaymentsPanel } from "@/components/monetization/my-payments-panel";
+import { getMonetizationCatalogBackend } from "@/lib/kumbu-api/monetization";
+import { isUserMonetizationVisible } from "@/lib/monetization/user-facing";
 
-const MyMonetizationPaymentsPanel = dynamic(
-  () =>
-    import("@/components/monetization/my-payments-panel").then((m) => ({
-      default: m.MyMonetizationPaymentsPanel,
-    })),
-  {
-    ssr: false,
-    loading: () => <PaymentsLoading />,
-  },
-);
+export default async function ContaPagamentosPage() {
+  const t = await getTranslations("accountPages.payments");
 
-function PaymentsLoading() {
-  const t = useTranslations("accountPages.payments");
-  return <p className="py-8 text-center text-sm text-kumbu-muted">{t("loading")}</p>;
-}
-
-export default function ContaPagamentosPage() {
-  const t = useTranslations("accountPages.payments");
+  try {
+    const catalog = await getMonetizationCatalogBackend();
+    if (!isUserMonetizationVisible(catalog.chargingEnabled)) {
+      redirect("/conta/perfil");
+    }
+  } catch {
+    redirect("/conta/perfil");
+  }
 
   return (
     <ContaPanel>
-      <ContaPageHeader
-        icon={Sparkles}
-        title={t("title")}
-        description={t("description")}
-      />
+      <ContaPageHeader icon={Sparkles} title={t("title")} description={t("description")} />
       <MyMonetizationPaymentsPanel />
     </ContaPanel>
   );

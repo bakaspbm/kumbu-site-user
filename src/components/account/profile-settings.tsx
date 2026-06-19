@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogIn, MapPin, Trash2, User } from "lucide-react";
+import { LogIn, MapPin, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ContaSection } from "@/components/account/conta-section";
 import { AccountQuickLinks } from "@/components/account/account-quick-links";
@@ -17,8 +17,6 @@ import {
   updateProfileAction,
   updateProfilePhotoAction,
 } from "@/app/actions/profile";
-import { deleteAccountAction } from "@/app/actions/compliance";
-import { logoutBackend } from "@/lib/kumbu-api/auth";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { updateStoreUser } from "@/lib/site-data";
 import { uploadAvatarFile } from "@/lib/site-data";
@@ -76,7 +74,6 @@ export function ProfileSettings() {
     country: "Angola",
   });
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -292,31 +289,6 @@ export function ProfileSettings() {
     }
   }
 
-  async function handleDeleteAccount() {
-    if (!window.confirm(t("deleteConfirm"))) {
-      return;
-    }
-    setDeleting(true);
-    setError(null);
-    try {
-      const result = await deleteAccountAction();
-      if (!result.ok) {
-        setError(result.error);
-        if (result.needsLogin) {
-          router.push("/login?next=/conta/perfil");
-        }
-        return;
-      }
-      logoutBackend();
-      router.push("/?account_deleted=1");
-      router.refresh();
-    } catch (err) {
-      setError(formatErrorMessage(err));
-    } finally {
-      setDeleting(false);
-    }
-  }
-
   if (isLoading) {
     return <p className="mt-8 text-center text-sm text-kumbu-muted">{t("profileLoading")}</p>;
   }
@@ -376,6 +348,7 @@ export function ProfileSettings() {
           completionPct={completionPct}
           profileComplete={profileComplete}
           signupDevEmailLink={signupDevEmailLink}
+          sellerVerified={storeUser?.sellerVerified === true}
           onAvatarChange={(file) => void handleAvatarChange(file)}
         />
 
@@ -501,22 +474,17 @@ export function ProfileSettings() {
             <div className="hidden lg:block">
               <AccountQuickLinks variant="sidebar" />
             </div>
-            <div className="kumbu-card border-red-200/70 bg-red-50/20 p-5">
-              <h3 className="text-sm font-bold text-red-800">{t("dangerZoneTitle")}</h3>
+            <div className="kumbu-card border-kumbu-border/80 p-5">
+              <h3 className="text-sm font-bold text-kumbu-foreground">{t("accountHelpTitle")}</h3>
               <p className="mt-2 text-sm leading-relaxed text-kumbu-muted">
-                {t("dangerZoneDescription")}
+                {t("accountHelpDescription")}
               </p>
-              <Button
-                type="button"
-                variant="outline"
-                fullWidth
-                className="mt-4 h-11 border-red-300/80 bg-kumbu-surface text-red-700 hover:bg-red-50"
-                disabled={deleting}
-                onClick={() => void handleDeleteAccount()}
+              <Link
+                href="/support"
+                className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl border border-kumbu-border bg-kumbu-surface text-sm font-semibold text-kumbu-primary hover:bg-kumbu-primary-soft/40"
               >
-                <Trash2 className="size-4" />
-                {deleting ? t("deleting") : t("deleteAccount")}
-              </Button>
+                {t("contactSupport")}
+              </Link>
             </div>
           </aside>
         </div>

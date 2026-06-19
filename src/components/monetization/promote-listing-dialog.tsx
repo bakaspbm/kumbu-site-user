@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { isKumbuApiEnabled } from "@/lib/kumbu-api/client";
 import {
@@ -136,7 +137,12 @@ export function PromoteListingDialog({ listingId, categoryId, open, onClose }: P
         </div>
 
         {loading && !payment ? (
-          <p className="text-sm text-kumbu-muted">{t("loadingOptions")}</p>
+          <LoadingIndicator
+            active={loading}
+            label={t("loadingOptions")}
+            slowHint={tCommon("loadingSlowHint")}
+            compact
+          />
         ) : null}
 
         {error ? (

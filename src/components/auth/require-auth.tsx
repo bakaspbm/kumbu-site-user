@@ -6,9 +6,11 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/auth-context";
 import { getBackendSession } from "@/lib/kumbu-api/auth";
 import { hasBrowserSession } from "@/lib/auth/complete-auth";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const t = useTranslations("auth");
+  const tCommon = useTranslations("common");
   const { isLoggedIn, isLoading, refresh } = useAuth();
   const router = useRouter();
   const recheckStartedRef = useRef(false);
@@ -30,22 +32,23 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     router.replace(`/login?next=${encodeURIComponent(window.location.pathname)}`);
   }, [isLoading, isLoggedIn, router, refresh]);
 
-  if (isLoading) {
+  const restoring = !isLoading && !isLoggedIn && (hasBrowserSession() || Boolean(getBackendSession()?.accessToken));
+
+  if (isLoading || restoring) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <p className="text-sm text-kumbu-muted">{t("loading")}</p>
+      <div className="flex min-h-[40vh] items-center justify-center px-4">
+        <LoadingIndicator
+          active
+          label={restoring ? t("restoringSession") : t("loading")}
+          slowHint={tCommon("loadingSlowHint")}
+          className="max-w-sm"
+          compact
+        />
       </div>
     );
   }
 
   if (!isLoggedIn) {
-    if (hasBrowserSession() || getBackendSession()?.accessToken) {
-      return (
-        <div className="flex min-h-[40vh] items-center justify-center">
-          <p className="text-sm text-kumbu-muted">{t("restoringSession")}</p>
-        </div>
-      );
-    }
     return null;
   }
 

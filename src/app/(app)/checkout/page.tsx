@@ -8,24 +8,37 @@ import { CreditCard, MapPin, ShoppingBag, User } from "lucide-react";
 import { BackHeader } from "@/components/layout/back-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { UserFacingErrorAlert } from "@/components/ui/user-facing-error-alert";
+import { ActionSuccessNotice } from "@/components/ui/action-success-notice";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
 import { listPaymentMethods } from "@/lib/site-data";
 import type { AppPaymentMethod } from "@/types/store";
 import { groupCartBySeller } from "@/lib/cart-utils";
 import { cn, parsePriceLabel } from "@/lib/utils";
+import { useResolveUserFacingError } from "@/lib/i18n/use-format-error";
+import type { UserFacingError } from "@/lib/user-facing-error";
+import { errorMessagesFromTranslations } from "@/lib/i18n/error-messages";
 
 export default function CheckoutPage() {
   const t = useTranslations("checkout");
   const tCart = useTranslations("cart");
   const tLegal = useTranslations("legal");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
+  const resolveError = useResolveUserFacingError();
   const router = useRouter();
   const { isLoggedIn, storeUser, isLoading: authLoading } = useAuth();
   const { items, count, checkout, totalLabel } = useCart();
   const [paymentMethods, setPaymentMethods] = useState<AppPaymentMethod[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [orderSuccess, setOrderSuccess] = useState<{ href: string; actionLabel: string } | null>(
+    null,
+  );
+  const [submitError, setSubmitError] = useState<UserFacingError | null>(null);
+  const [paymentLoadError, setPaymentLoadError] = useState<UserFacingError | null>(null);
 
   const hasAddress = Boolean(
     storeUser?.deliveryAddress?.line1 && storeUser?.deliveryAddress?.city,
@@ -36,13 +49,29 @@ export default function CheckoutPage() {
       try {
         const methods = await listPaymentMethods();
         setPaymentMethods(methods);
+        setPaymentLoadError(null);
         const def = methods.find((m) => m.isDefault) ?? methods[0];
         if (def) setSelectedPayment(def.id);
-      } catch {
+      } catch (err) {
         setPaymentMethods([]);
+        const m = errorMessagesFromTranslations(tErrors);
+        setPaymentLoadError({
+          title: m.paymentMethodsFailed,
+          message: m.paymentMethodsFailed,
+          action: m.paymentMethodsFailedAction,
+        });
       }
     })();
-  }, []);
+  }, [tErrors]);
+
+  useEffect(() => {
+    if (!orderSuccess) return;
+    const id = window.setTimeout(() => {
+      router.push(orderSuccess.href);
+      router.refresh();
+    }, 1800);
+    return () => window.clearTimeout(id);
+  }, [orderSuccess, router]);
 
   const subtotal = items.reduce(
     (sum, i) => sum + parsePriceLabel(i.priceLabel) * i.quantity,
@@ -50,7 +79,7 @@ export default function CheckoutPage() {
   );
 
   async function handlePlaceOrder() {
-    setError(null);
+    setSubmitError(null);
     if (!isLoggedIn) {
       router.push(`/login?next=/checkout`);
       return;
@@ -62,23 +91,29 @@ export default function CheckoutPage() {
     setSubmitting(true);
     try {
       const { conversationIds, orderIds } = await checkout();
+      let href = "/conta/compras";
+      let actionLabel = t("successActionOrders");
       if (conversationIds.length >= 1) {
         const chat = conversationIds[0];
-        if (orderIds.length > 1 || conversationIds.length > 1) {
-          router.push(
-            `/mensagens/${chat}?pedidos=${orderIds.length}`,
-          );
-        } else {
-          router.push(`/mensagens/${chat}`);
-        }
+        href =
+          orderIds.length > 1 || conversationIds.length > 1
+            ? `/mensagens/${chat}?pedidos=${orderIds.length}`
+            : `/mensagens/${chat}`;
+        actionLabel = t("successActionChat");
       } else if (orderIds.length === 1) {
-        router.push(`/conta/compras/${orderIds[0]}`);
-      } else {
-        router.push("/conta/compras");
+        href = `/conta/compras/${orderIds[0]}`;
+        actionLabel = t("successActionOrder");
       }
-      router.refresh();
+      setOrderSuccess({ href, actionLabel });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("orderFailed"));
+      const resolved = resolveError(err);
+      const m = errorMessagesFromTranslations(tErrors);
+      setSubmitError({
+        title: m.orderNotCreated,
+        message: resolved.message,
+        action: m.orderNotCreatedAction,
+        fields: resolved.fields,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -108,6 +143,27 @@ export default function CheckoutPage() {
   ] as const;
 
   const sellerCount = groupCartBySeller(items).size;
+
+  if (orderSuccess) {
+    return (
+      <>
+        <BackHeader title={t("title")} href="/carrinho" />
+        <main className="kumbu-container py-10">
+          <ActionSuccessNotice
+            title={t("successTitle")}
+            message={t("success")}
+            actionLabel={orderSuccess.actionLabel}
+            actionHref={orderSuccess.href}
+            dismissLabel={tCommon("continue")}
+            onDismiss={() => {
+              router.push(orderSuccess.href);
+              router.refresh();
+            }}
+          />
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
@@ -139,6 +195,10 @@ export default function CheckoutPage() {
 
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           <section className="space-y-4">
+            {paymentLoadError ? (
+              <UserFacingErrorAlert error={paymentLoadError} />
+            ) : null}
+
             <div className="kumbu-card p-5">
               <h2 className="font-bold text-kumbu-foreground">{t("itemsSummary")}</h2>
               <ul className="mt-4 divide-y divide-kumbu-border">
@@ -220,11 +280,24 @@ export default function CheckoutPage() {
               </Link>
             </p>
 
-            {error && (
-              <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
-                {error}
-              </p>
-            )}
+            {submitError ? (
+              <UserFacingErrorAlert
+                error={submitError}
+                className="mt-4"
+                onRetry={() => void handlePlaceOrder()}
+                retryLabel={t("confirm")}
+              />
+            ) : null}
+
+            {submitting ? (
+              <LoadingIndicator
+                active={submitting}
+                label={t("placing")}
+                slowHint={tCommon("loadingSlowHint")}
+                className="mt-4"
+                compact
+              />
+            ) : null}
 
             <div className="mt-6 flex flex-col gap-2">
               {!isLoggedIn && !authLoading ? (

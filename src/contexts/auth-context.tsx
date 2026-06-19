@@ -31,6 +31,7 @@ import {
   saveSessionUserSnapshot,
 } from "@/lib/kumbu-api/session-tokens";
 import { getStoreUser, countUnreadMessagesForUser } from "@/lib/site-data";
+import { playMessageNotificationSound } from "@/lib/chat/notification-sound";
 import { promiseWithTimeoutFallback } from "@/lib/promise-timeout";
 import {
   getOfflineStoreUser,
@@ -121,6 +122,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUnreadNotifications(Math.max(0, Number(event.unreadCount)));
       } else {
         setUnreadNotifications((prev) => prev + 1);
+      }
+
+      const actionUrl = event.notification?.actionUrl ?? "";
+      if (actionUrl.includes("/support/chat")) {
+        playMessageNotificationSound();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("kumbu:support-message", {
+              detail: event.notification,
+            }),
+          );
+        }
       }
     }
 

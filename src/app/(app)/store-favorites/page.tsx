@@ -42,6 +42,7 @@ export default async function FavoritesPage() {
             icon={Heart}
             title={t("emptyTitle")}
             description={t("emptyDescription")}
+            steps={[t("emptyStep1"), t("emptyStep2")]}
             actionLabel={t("exploreProducts")}
             actionHref="/search"
           />

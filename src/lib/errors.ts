@@ -1,5 +1,32 @@
 import { parseApiValidationError } from "@/lib/api-validation";
-import { ApiError } from "@/lib/kumbu-api/client";
+import { resolveUserFacingErrorMessage } from "@/lib/user-facing-error";
+
+const SERVER_ERROR_MESSAGES = {
+  backendDown: "Serviço temporariamente indisponível. Tente novamente dentro de momentos.",
+  wrongCredentials: "Email ou palavra-passe incorrectos.",
+  serverError: "Erro no servidor. Tente novamente dentro de momentos.",
+  unknown: "Erro desconhecido.",
+  tryAgain: "Ocorreu um erro. Tente novamente.",
+  fetchFailed: "Sem ligação ao servidor. Verifique a internet e tente outra vez.",
+  rateLimit: "Demasiados pedidos. Aguarde um momento e tente novamente.",
+  forbidden: "Não tem permissão para esta acção.",
+  notFound: "O conteúdo que procura não foi encontrado.",
+  validationFailed: "Verifique os campos assinalados.",
+  orderNotCreated: "O pedido não foi criado.",
+  orderNotCreatedAction: "Nenhum pagamento foi processado. Revise os dados e tente novamente.",
+  paymentMethodsFailed: "Não foi possível carregar os métodos de pagamento.",
+  paymentMethodsFailedAction: "Pode continuar — o pagamento combina-se com o vendedor no chat.",
+  loadListFailed: "Não foi possível carregar a lista.",
+  loadListFailedAction: "Actualize a página ou tente novamente dentro de momentos.",
+  loadDetailFailed: "Não foi possível carregar os detalhes.",
+  loadDetailFailedAction: "Verifique a ligação e tente novamente.",
+  cartSyncFailed: "O carrinho não foi guardado no servidor.",
+  cartSyncFailedAction: "Os artigos continuam no seu dispositivo — tente sincronizar outra vez.",
+  actionTryAgain: "Tente novamente.",
+  actionCheckConnection: "Verifique a ligação à internet e tente outra vez.",
+  actionLogin: "Inicie sessão e tente novamente.",
+  actionContactSupport: "Se o problema persistir, contacte o suporte.",
+};
 
 export function formatErrorMessage(err: unknown): string {
   const validation = parseApiValidationError(err);
@@ -11,73 +38,25 @@ export function formatErrorMessage(err: unknown): string {
     }
     return validation.message;
   }
-  return extractAuthErrorMessage(err);
+  return resolveUserFacingErrorMessage(err, SERVER_ERROR_MESSAGES);
 }
 
 export { parseApiValidationError, mapBackendFieldsToForm, toActionResult } from "@/lib/api-validation";
 export type { ActionResult, ApiValidationError } from "@/lib/api-validation";
 
-/** Extrai mensagem legível de erros Supabase Auth / hooks. */
+/** Extrai mensagem legível de erros OAuth / hooks. */
 export function extractAuthErrorMessage(err: unknown): string {
-    if (err instanceof ApiError) {
-    if (err.status === 0) {
-      return "Backend indisponível. Inicie o servidor Spring na porta 8080 e tente novamente.";
-    }
-    if (err.status === 401) return "Email ou palavra-passe incorrectos.";
-    if (err.status === 500 && /internal/i.test(err.message)) {
-      return "Erro no servidor. Verifique email e palavra-passe (mín. 8 caracteres).";
-    }
-    if (err.message.trim()) return err.message.trim();
-  }
-  if (err == null) return "Erro desconhecido.";
-  if (typeof err === "string") {
-    const s = err.trim();
-    if (s === "{}") return "Falha ao enviar SMS. Tente novamente.";
-    return s || "Erro desconhecido.";
-  }
-  if (err instanceof Error) {
-    const msg = err.message.trim();
-    if (msg === "{}") return "Falha ao enviar SMS. Tente novamente.";
-    if (
-      /^fetch failed$/i.test(msg) ||
-      /failed to fetch|networkerror|load failed|econnreset|etimedout|aborted|socket hang up/i.test(
-        msg,
-      )
-    ) {
-      return "Ligação falhou com o servidor. Confirme que o backend está a correr (porta 8080) e reinicie o site com npm run dev:lan se estiver no telemóvel.";
-    }
-    if (msg) return msg;
-  }
-  if (typeof err === "object") {
+  if (typeof err === "object" && err !== null) {
     const o = err as Record<string, unknown>;
     if (typeof o.message === "string" && o.message.trim()) {
       const parsed = parseNestedHookMessage(o.message);
       if (parsed) return parsed;
-      if (o.message.trim() !== "{}") return o.message.trim();
     }
-    if (typeof o.msg === "string" && o.msg.trim()) return o.msg.trim();
     if (typeof o.error_description === "string" && o.error_description.trim()) {
       return o.error_description.replace(/\+/g, " ");
     }
-    if (typeof o.error === "string" && o.error.trim()) return o.error.trim();
-    if (typeof o.error === "object" && o.error !== null) {
-      const nested = o.error as Record<string, unknown>;
-      if (typeof nested.message === "string" && nested.message.trim()) {
-        return nested.message.trim();
-      }
-    }
-    if (typeof o.details === "string" && o.details.trim()) return o.details.trim();
-    if (typeof o.code === "string" && o.code.trim()) {
-      return `Erro de autenticação (${o.code}).`;
-    }
-    try {
-      const json = JSON.stringify(err);
-      if (json && json !== "{}") return json;
-    } catch {
-      /* ignore */
-    }
   }
-  return "Ocorreu um erro. Tente novamente.";
+  return formatErrorMessage(err);
 }
 
 function parseNestedHookMessage(message: string): string | null {

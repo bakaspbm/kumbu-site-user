@@ -590,6 +590,25 @@ export function getDescriptionPlaceholder(
   );
 }
 
+export function hasDescriptionBySub(
+  categoryId: string,
+  subcategoryId: string,
+): boolean {
+  return `${categoryId}:${subcategoryId}` in DESCRIPTION_BY_SUB;
+}
+
+export function hasDescriptionByCategory(categoryId: string): boolean {
+  return categoryId in DESCRIPTION_BY_CATEGORY;
+}
+
+export function hasTitleBySub(categoryId: string, subcategoryId: string): boolean {
+  return `${categoryId}:${subcategoryId}` in TITLE_BY_SUB;
+}
+
+export function hasTitleByCategory(categoryId: string): boolean {
+  return categoryId in TITLE_BY_CATEGORY;
+}
+
 export function getLocationPlaceholder(categoryId: string): string {
   if (categoryId === "servicos") {
     return "Ex.: Luanda — zona onde presta o serviço";
@@ -733,6 +752,14 @@ export function formatProductAttributeLabel(key: string): string {
 export function formatProductAttributeValue(key: string, value: string | number): string {
   const s = String(value);
   return VALUE_LABELS[key]?.[s] ?? s;
+}
+
+/** Valores de selects conhecidos (condition, fuel, …) — não texto livre como tamanho "M". */
+export function hasPredefinedProductAttributeOption(
+  key: string,
+  value: string | number,
+): boolean {
+  return VALUE_LABELS[key]?.[String(value)] != null;
 }
 
 export function productMetaEntries(

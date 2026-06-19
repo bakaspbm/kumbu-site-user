@@ -1,5 +1,6 @@
 "use client";
 
+import { SentryUserBridge } from "@/components/monitoring/sentry-user-bridge";
 import { FetchGuard } from "@/components/providers/fetch-guard";
 import { AuthUrlHandler } from "@/components/auth/auth-url-handler";
 import { MultiAccountHint } from "@/components/auth/multi-account-hint";
@@ -18,6 +19,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <ServiceWorkerRegister />
       <AuthUrlHandler />
       <AuthProvider>
+        <SentryUserBridge />
         <LiveSyncProvider>
           <MessagesProvider>
             <MultiAccountHint />

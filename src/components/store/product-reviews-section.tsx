@@ -10,6 +10,7 @@ import {
 import { ProductReviewForm } from "@/components/store/product-review-form";
 import { ReviewMediaGallery } from "@/components/store/review-media-gallery";
 import { Button } from "@/components/ui/button";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import {
   getReviewEmptyHint,
   resolveListingKind,
@@ -150,6 +151,7 @@ export function ProductReviewsSection({
   categoryId,
 }: ProductReviewsSectionProps) {
   const t = useTranslations("product");
+  const tCommon = useTranslations("common");
   const kind = resolveListingKind(listingKind, categoryId);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [canReview, setCanReview] = useState(false);
@@ -194,7 +196,14 @@ export function ProductReviewsSection({
       </h2>
 
       {loading && (
-        <p className="mt-3 text-sm text-kumbu-muted">{t("loadingReviews")}</p>
+        <div className="mt-3">
+          <LoadingIndicator
+            active={loading}
+            label={t("loadingReviews")}
+            slowHint={tCommon("loadingSlowHint")}
+            compact
+          />
+        </div>
       )}
       {error && (
         <p className="mt-3 text-sm text-red-600" role="alert">

@@ -74,8 +74,10 @@ function isApiUrlConfigured(): boolean {
 
 export function getKumbuApiBaseUrl(): string | null {
   if (!isApiUrlConfigured()) return null;
+  if (typeof window !== "undefined") {
+    return DEV_BROWSER_API_PROXY;
+  }
   if (isDevMode()) {
-    if (typeof window !== "undefined") return DEV_BROWSER_API_PROXY;
     return DEV_SERVER_API_URL;
   }
   const raw = process.env.NEXT_PUBLIC_KUMBU_API_URL ?? DEFAULT_KUMBU_API_URL;
@@ -146,10 +148,12 @@ export class KumbuApiClient {
   }
 
   getAccessToken(): string | null {
+    if (typeof window !== "undefined") return null;
     return readBrowserCookie(ACCESS_TOKEN_COOKIE);
   }
 
   getRefreshToken(): string | null {
+    if (typeof window !== "undefined") return null;
     return readBrowserCookie(REFRESH_TOKEN_COOKIE);
   }
 
@@ -168,11 +172,9 @@ export class KumbuApiClient {
     if (useAuth) {
       if (options?.accessToken) {
         token = options.accessToken;
-      } else {
-        token =
-          readBrowserCookie(ACCESS_TOKEN_COOKIE) ??
-          (await readServerCookie(ACCESS_TOKEN_COOKIE));
-        if (useAuth && token) {
+      } else if (typeof window === "undefined") {
+        token = await readServerCookie(ACCESS_TOKEN_COOKIE);
+        if (token) {
           token = await ensureFreshAccessToken(this.baseUrl);
         }
       }
@@ -200,7 +202,7 @@ export class KumbuApiClient {
       const msg = err instanceof Error ? err.message : String(err);
       if (/failed to fetch|networkerror|load failed|econnrefused|econnreset|etimedout/i.test(msg)) {
         throw new ApiError(
-          "Não foi possível ligar ao backend. No telemóvel use o IP do PC (ex.: http://192.168.x.x:3000) na mesma Wi‑Fi; confirme que o backend está a correr na porta 8080.",
+          "Não foi possível ligar ao servidor. Verifique a ligação à internet e tente outra vez.",
           0,
         );
       }
@@ -208,9 +210,36 @@ export class KumbuApiClient {
     }
 
     if (response.status === 401 && useAuth && !options?._retried) {
-      const refreshed = await refreshSessionTokens(this.baseUrl);
-      if (refreshed?.accessToken) {
-        return this.request<T>(path, { ...options, _retried: true });
+      if (typeof window !== "undefined") {
+        const refreshed = await fetch("/api/auth/refresh", {
+          method: "POST",
+          credentials: "include",
+        });
+        if (refreshed.ok) {
+          return this.request<T>(path, { ...options, _retried: true });
+        }
+      } else {
+        const refreshed = await refreshSessionTokens(this.baseUrl);
+        if (refreshed?.accessToken) {
+          return this.request<T>(path, { ...options, _retried: true });
+        }
+      }
+    }
+
+    if (response.status === 403 && useAuth && !options?._retried) {
+      if (typeof window !== "undefined") {
+        const refreshed = await fetch("/api/auth/refresh", {
+          method: "POST",
+          credentials: "include",
+        });
+        if (refreshed.ok) {
+          return this.request<T>(path, { ...options, _retried: true });
+        }
+      } else {
+        const refreshed = await refreshSessionTokens(this.baseUrl);
+        if (refreshed?.accessToken) {
+          return this.request<T>(path, { ...options, _retried: true });
+        }
       }
     }
 
@@ -223,7 +252,7 @@ export class KumbuApiClient {
           !("code" in (payload as Record<string, unknown>)));
       if (isProxyFailure) {
         throw new ApiError(
-          "Backend indisponível. Inicie o Kumbu Backend na porta 8080 e recarregue a página.",
+          "Serviço temporariamente indisponível. Tente recarregar a página.",
           0,
         );
       }

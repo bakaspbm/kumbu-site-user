@@ -5,6 +5,7 @@ import { OnboardingRedirect } from "@/components/home/onboarding-redirect";
 import { OfflineBootstrapSync } from "@/components/pwa/offline-bootstrap-sync";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
+import { AccountSuspendedBanner } from "@/components/account/account-suspended-banner";
 
 export default function AppShellLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
       <OnboardingRedirect />
       <DesktopNav />
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <AccountSuspendedBanner />
         <div className="kumbu-page-enter flex-1 pb-[4.75rem] md:pb-0">{children}</div>
         <SiteFooter />
         <CookieConsentBanner />

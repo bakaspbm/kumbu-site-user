@@ -10,7 +10,7 @@ function clientOrThrow(): KumbuApiClient {
   return client;
 }
 
-async function uploadFile(path: "/files/avatar" | "/files/listing" | `/verification/identity/${string}`, file: File): Promise<string> {
+async function uploadFile(path: "/files/avatar" | "/files/listing" | "/files/chat" | `/verification/identity/${string}`, file: File): Promise<string> {
   const client = clientOrThrow();
   const formData = new FormData();
   formData.append("file", file);
@@ -32,12 +32,23 @@ export async function uploadListingImageBackend(file: File): Promise<string> {
   return uploadFile("/files/listing", file);
 }
 
+export async function uploadChatAttachmentBackend(file: File): Promise<string> {
+  return uploadFile("/files/chat", file);
+}
+
 export type IdentitySide = "front" | "back" | "selfie";
+
+export type IdentityDocumentReview = {
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  rejection_reason: string | null;
+};
 
 export type IdentityStatus = {
   uploaded: Record<IdentitySide, boolean>;
   complete: boolean;
   reviewStatus: string;
+  adminNote?: string | null;
+  documentReviews?: Partial<Record<IdentitySide, IdentityDocumentReview>>;
 };
 
 export async function getIdentityStatusBackend(): Promise<IdentityStatus> {

@@ -8,6 +8,7 @@ import { ContaPageHeader } from "@/components/account/conta-page-header";
 import { ContaPanel } from "@/components/account/conta-section";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 import { listMyJobApplications } from "@/lib/site-data";
 import type { JobApplication } from "@/types/job";
 
@@ -47,7 +48,7 @@ export default function CandidaturasPage() {
           description={t("applicationsDescription")}
         />
         {loading ? (
-          <p className="py-12 text-center text-sm text-kumbu-muted">{tCommon("loading")}</p>
+          <PageLoadingIndicator label={tCommon("loading")} />
         ) : apps.length === 0 ? (
           <EmptyState
             icon={Briefcase}

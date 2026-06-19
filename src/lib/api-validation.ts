@@ -1,4 +1,5 @@
 import type { ApiError } from "@/lib/kumbu-api/client";
+import { formatErrorMessage } from "@/lib/errors";
 
 export type ApiValidationError = {
   message: string;
@@ -55,8 +56,5 @@ export function toActionResult(err: unknown): ActionResult {
       fields: mapBackendFieldsToForm(validation.fields),
     };
   }
-  if (err instanceof Error) {
-    return { ok: false, error: err.message };
-  }
-  return { ok: false, error: "Ocorreu um erro. Tente novamente." };
+  return { ok: false, error: formatErrorMessage(err) };
 }

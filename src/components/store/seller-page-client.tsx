@@ -10,6 +10,7 @@ import { ListingCard } from "@/components/store/listing-card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { useOfflineSeller } from "@/hooks/use-offline-seller";
 import { ReportContentDialog } from "@/components/legal/report-content-dialog";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { useAuth } from "@/contexts/auth-context";
 
 interface SellerPageClientProps {
@@ -62,7 +63,10 @@ export function SellerPageClient({ sellerId }: SellerPageClientProps) {
             )}
           </div>
           <div>
-            <h1 className="text-xl font-extrabold">{seller.displayName}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-extrabold">{seller.displayName}</h1>
+              {seller.sellerVerified ? <VerifiedBadge /> : null}
+            </div>
             {seller.city && (
               <p className="mt-0.5 flex items-center gap-1 text-sm text-kumbu-muted">
                 <User className="size-3.5" />

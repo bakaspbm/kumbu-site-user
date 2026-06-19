@@ -20,6 +20,7 @@ type ListingDto = {
   sellerId?: string | null;
   sellerName?: string | null;
   sellerPhotoUrl?: string | null;
+  sellerVerified?: boolean | null;
   categoryId?: string | null;
   subcategoryId?: string | null;
   title: string;
@@ -49,6 +50,7 @@ type UserProfileDto = {
   profileImageUrl?: string | null;
   phone?: string | null;
   city?: string | null;
+  sellerVerified?: boolean | null;
 };
 
 function clientOrThrow(): KumbuApiClient {
@@ -86,6 +88,7 @@ function toProduct(row: ListingDto, index: number): CatalogProduct {
           id: String(row.sellerId),
           displayName: row.sellerName ?? "Utilizador",
           photoUrl: normalizeBackendAssetUrl(row.sellerPhotoUrl),
+          sellerVerified: row.sellerVerified === true,
         }
       : null,
     categoryId: String(row.categoryId ?? ""),
@@ -148,6 +151,7 @@ function mapSeller(row: UserProfileDto): SellerSummary {
     photoUrl: normalizeBackendAssetUrl(row.profileImageUrl),
     phone: row.phone ?? null,
     city: row.city ?? null,
+    sellerVerified: row.sellerVerified === true,
   };
 }
 
@@ -302,6 +306,7 @@ export async function createCatalogProductBackend(
       description: input.description ?? null,
       priceLabel: input.priceLabel,
       categoryId: input.categoryId,
+      subcategoryId: input.subcategoryId ?? null,
       listingKind: input.listingKind ?? "general",
       imageUrls: input.imageUrls ?? (input.imageUrl ? [input.imageUrl] : []),
       deliveryText: input.deliveryText ?? null,

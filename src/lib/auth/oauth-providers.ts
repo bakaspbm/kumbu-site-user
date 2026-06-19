@@ -1,3 +1,5 @@
+import { sanitizeInternalPath } from "@/lib/auth/safe-redirect";
+
 export type OAuthProvider = "google" | "facebook";
 
 export const OAUTH_TERMS_COOKIE = "kumbu_oauth_terms";
@@ -26,7 +28,7 @@ function randomNonce(): string {
 export function encodeOAuthState(provider: OAuthProvider, nextPath: string): string {
   const payload: OAuthStatePayload = {
     provider,
-    next: nextPath.startsWith("/") ? nextPath : "/",
+    next: sanitizeInternalPath(nextPath, "/"),
     nonce: randomNonce(),
   };
   return btoa(JSON.stringify(payload));
@@ -37,7 +39,7 @@ export function decodeOAuthState(raw: string | null): OAuthStatePayload | null {
   try {
     const parsed = JSON.parse(atob(raw)) as OAuthStatePayload;
     if (parsed.provider !== "google" && parsed.provider !== "facebook") return null;
-    if (!parsed.next?.startsWith("/")) parsed.next = "/";
+    parsed.next = sanitizeInternalPath(parsed.next, "/");
     return parsed;
   } catch {
     return null;
@@ -62,13 +64,13 @@ export function startFacebookOAuth(nextPath: string, appId: string): void {
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("state", encodeOAuthState("facebook", nextPath));
   url.searchParams.set("scope", "email,public_profile");
-  url.searchParams.set("response_type", "token");
+  url.searchParams.set("response_type", "code");
 
   window.location.assign(url.toString());
 }
 
 export type OAuthCallbackResult =
-  | { ok: true; provider: OAuthProvider; token: string; next: string }
+  | { ok: true; provider: OAuthProvider; token: string; next: string; kind?: "code" | "token" }
   | { ok: false; error: string; next: string };
 
 /** Lê token devolvido no hash (#access_token= / #id_token=) após redirect OAuth. */
@@ -204,11 +206,11 @@ export function parseOAuthCallbackFromWindow(): OAuthCallbackResult {
   }
 
   if (state.provider === "facebook") {
-    const token = hashParams.get("access_token");
-    if (!token) {
-      return { ok: false, error: "Token Facebook em falta. Tente novamente.", next };
+    const code = queryParams.get("code");
+    if (!code) {
+      return { ok: false, error: "Código Facebook em falta. Tente novamente.", next };
     }
-    return { ok: true, provider: "facebook", token, next };
+    return { ok: true, provider: "facebook", token: code, next, kind: "code" };
   }
 
   const idToken = hashParams.get("id_token") ?? queryParams.get("id_token");

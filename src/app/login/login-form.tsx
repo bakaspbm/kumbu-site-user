@@ -8,12 +8,14 @@ import { ShieldCheck } from "lucide-react";
 import { KumbuLogo } from "@/components/brand/kumbu-logo";
 import { Button } from "@/components/ui/button";
 import { completeAuthRedirect } from "@/lib/auth/complete-auth";
+import { sanitizeInternalPath } from "@/lib/auth/safe-redirect";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import {
   useValidateEmail,
   useValidatePasswordForLogin,
   useValidatePasswordForSignup,
 } from "@/lib/i18n/use-auth-validation";
+import { checkBackendReachable } from "@/lib/kumbu-api/backend-reachable";
 import { loginWithBackend, registerWithBackend } from "@/lib/kumbu-api/auth";
 import { promiseWithTimeout } from "@/lib/promise-timeout";
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
@@ -45,7 +47,7 @@ export function LoginForm() {
   const validatePasswordForLogin = useValidatePasswordForLogin();
   const validatePasswordForSignup = useValidatePasswordForSignup();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") || "/";
+  const nextPath = sanitizeInternalPath(searchParams.get("next"), "/");
   const initialMode = searchParams.get("mode") === "signup" ? "signup" : "login";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,13 +72,9 @@ export function LoginForm() {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/backend-health")
-      .then((res) => {
-        if (!cancelled) setBackendReady(res.ok);
-      })
-      .catch(() => {
-        if (!cancelled) setBackendReady(false);
-      });
+    void checkBackendReachable().then((ready) => {
+      if (!cancelled) setBackendReady(ready);
+    });
     return () => {
       cancelled = true;
     };
@@ -93,7 +91,7 @@ export function LoginForm() {
   }, [searchParams, t]);
 
   function finishAuthRedirect() {
-    const target = nextPath.startsWith("/") ? nextPath : "/";
+    const target = sanitizeInternalPath(nextPath, "/");
     completeAuthRedirect(target);
   }
 
@@ -207,8 +205,8 @@ export function LoginForm() {
               {authView === "forgot"
                 ? t("loginPage.forgotSubtitle")
                 : authView === "signup"
-                  ? t("loginPage.signupSubtitle")
-                  : t("loginPage.loginSubtitle")}
+                  ? t("registerIntro")
+                  : t("loginIntro")}
             </p>
           </header>
 
@@ -311,7 +309,7 @@ export function LoginForm() {
                   disabled={loading}
                   requireTerms={authView === "signup"}
                   termsAccepted={termsAccepted}
-                  nextPath={nextPath.startsWith("/") ? nextPath : "/"}
+                  nextPath={sanitizeInternalPath(nextPath, "/")}
                   onTermsRequired={() => setError(t("loginPage.termsRequired"))}
                   onSuccess={() => {
                     void recordTermsConsentAction();

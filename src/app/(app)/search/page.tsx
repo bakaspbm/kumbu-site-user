@@ -1,13 +1,12 @@
 import { Suspense } from "react";
 import { CategoriesPage } from "@/components/store/categories-page";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 
 export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <p className="kumbu-container py-16 text-center text-sm text-kumbu-muted">
-          A carregar…
-        </p>
+        <PageLoadingIndicator className="kumbu-container flex min-h-[50vh] items-center justify-center py-16" />
       }
     >
       <CategoriesPage />

@@ -7,6 +7,11 @@ import {
   getPricePlaceholder,
   getSubcategoryFieldLabel,
   getTitlePlaceholder,
+  hasDescriptionBySub,
+  hasDescriptionByCategory,
+  hasTitleBySub,
+  hasTitleByCategory,
+  hasPredefinedProductAttributeOption,
   type ProductFieldDef,
 } from "@/lib/catalog/product-fields";
 
@@ -211,12 +216,15 @@ export function localizeTitlePlaceholder(
   t: CatalogFieldsTranslateFn,
 ): string {
   const fallback = getTitlePlaceholder(categoryId, subcategoryId);
-  if (subcategoryId) {
+  if (subcategoryId && hasTitleBySub(categoryId, subcategoryId)) {
     const subKey = `titleBySub.${categoryId}_${subcategoryId}`;
     const translated = tf(t, subKey, fallback);
     if (translated !== fallback) return translated;
   }
-  return tf(t, `titleByCategory.${categoryId}`, fallback);
+  if (hasTitleByCategory(categoryId)) {
+    return tf(t, `titleByCategory.${categoryId}`, fallback);
+  }
+  return tf(t, "titleByCategory.default", fallback);
 }
 
 export function localizeDescriptionPlaceholder(
@@ -225,13 +233,14 @@ export function localizeDescriptionPlaceholder(
   t: CatalogFieldsTranslateFn,
 ): string {
   const fallback = getDescriptionPlaceholder(categoryId, subcategoryId);
-  if (subcategoryId) {
+  if (subcategoryId && hasDescriptionBySub(categoryId, subcategoryId)) {
     const subKey = `descriptionBySub.${categoryId}_${subcategoryId}`;
     const translated = tf(t, subKey, fallback);
     if (translated !== fallback) return translated;
   }
-  const catTranslated = tf(t, `descriptionByCategory.${categoryId}`, fallback);
-  if (catTranslated !== fallback) return catTranslated;
+  if (hasDescriptionByCategory(categoryId)) {
+    return tf(t, `descriptionByCategory.${categoryId}`, fallback);
+  }
   return tf(t, "descriptionByCategory.default", fallback);
 }
 
@@ -262,9 +271,12 @@ export function localizeProductMetaEntries(
     .map(([key, value]) => {
       const fallbackLabel = formatProductAttributeLabel(key);
       const fallbackValue = formatProductAttributeValue(key, value as string | number);
+      const strValue = String(value);
       return {
         label: tf(t, resolveLabelKey(key, fallbackLabel), fallbackLabel),
-        value: tf(t, `${key}.options.${String(value)}`, fallbackValue),
+        value: hasPredefinedProductAttributeOption(key, strValue)
+          ? tf(t, `${key}.options.${strValue}`, fallbackValue)
+          : fallbackValue,
       };
     });
 }

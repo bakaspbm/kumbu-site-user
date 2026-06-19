@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Bell,
   Heart,
   Home,
   LogIn,
@@ -21,12 +20,13 @@ import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
 import { useMessages } from "@/contexts/messages-context";
 import { NavLanguageSwitcher } from "@/components/settings/nav-language-switcher";
+import { ProfileSignOut } from "@/components/auth/profile-sign-out";
 
 export function DesktopNav() {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const { count } = useCart();
-  const { isLoggedIn, unreadNotifications } = useAuth();
+  const { isLoggedIn } = useAuth();
   const { unreadCount } = useMessages();
 
   const mainLinks: {
@@ -38,7 +38,6 @@ export function DesktopNav() {
     { href: "/procurar", label: t("search"), icon: Search },
     { href: "/publicar", label: t("publish"), icon: PlusCircle },
     { href: "/mensagens", label: t("messages"), icon: MessageCircle },
-    { href: "/conta/notificacoes", label: t("alerts"), icon: Bell },
     { href: "/conta/perfil", label: t("profile"), icon: User },
   ];
 
@@ -77,17 +76,6 @@ export function DesktopNav() {
                     className="size-4 shrink-0"
                     strokeWidth={active ? 2.25 : 1.75}
                   />
-                  {href === "/conta/notificacoes" && unreadNotifications > 0 && (
-                    <span
-                      className={cn(
-                        "absolute -right-1 -top-1 size-2 rounded-full ring-2",
-                        active
-                          ? "bg-white ring-kumbu-primary"
-                          : "bg-kumbu-primary ring-kumbu-surface",
-                      )}
-                      aria-hidden
-                    />
-                  )}
                   {href === "/mensagens" && unreadCount > 0 && (
                     <span
                       className={cn(
@@ -111,18 +99,6 @@ export function DesktopNav() {
                     )}
                   >
                     {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
-                {href === "/conta/notificacoes" && unreadNotifications > 0 && (
-                  <span
-                    className={cn(
-                      "min-w-[1.25rem] rounded-full px-1.5 py-0.5 text-center text-[9px] font-bold",
-                      active
-                        ? "bg-white text-kumbu-primary"
-                        : "bg-kumbu-primary text-white",
-                    )}
-                  >
-                    {unreadNotifications > 9 ? "9+" : unreadNotifications}
                   </span>
                 )}
               </Link>
@@ -159,7 +135,7 @@ export function DesktopNav() {
           })}
         </nav>
 
-        {!isLoggedIn && (
+        {!isLoggedIn ? (
           <Link
             href="/login"
             className="flex h-10 items-center justify-center gap-2 rounded-xl kumbu-gradient-brand text-[13px] font-semibold text-white shadow-[var(--shadow-kumbu-xs)] transition-all hover:brightness-[1.02] active:scale-[0.99]"
@@ -167,6 +143,8 @@ export function DesktopNav() {
             <NavIcon icon={LogIn} className="size-4" />
             {t("login")}
           </Link>
+        ) : (
+          <ProfileSignOut variant="nav" />
         )}
       </div>
     </aside>

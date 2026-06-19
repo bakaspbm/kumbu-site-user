@@ -1,14 +1,16 @@
-import Link from "next/link";
-import { ChevronRight, Settings, Shield, User } from "lucide-react";
-import { getTranslations } from "next-intl/server";
 import { ContaPageHeader } from "@/components/account/conta-page-header";
 import { ContaPanel, ContaSection } from "@/components/account/conta-section";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { ThemeSelector } from "@/components/settings/theme-selector";
 import { LanguageSelector } from "@/components/settings/language-selector";
 import { AccountExport } from "@/components/settings/account-export";
+import { ChangePasswordForm } from "@/components/settings/change-password-form";
 import { IdentityUpload } from "@/components/settings/identity-upload";
 import { LegalLinksRow } from "@/components/legal/legal-links-row";
+import { ProfileSignOut } from "@/components/auth/profile-sign-out";
+import Link from "next/link";
+import { ChevronRight, KeyRound, Settings, Shield, User } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 function SettingsLinkRow({ href, label }: { href: string; label: string }) {
   return (
@@ -51,6 +53,12 @@ export default async function ContaDefinicoesPage() {
         </ContaPanel>
 
         <ContaPanel>
+          <ContaSection icon={KeyRound} title={t("password")} description={t("passwordDesc")}>
+            <ChangePasswordForm />
+          </ContaSection>
+        </ContaPanel>
+
+        <ContaPanel>
           <ContaSection icon={User} title={t("yourData")} description={t("yourDataDesc")}>
             <AccountExport />
           </ContaSection>
@@ -77,6 +85,15 @@ export default async function ContaDefinicoesPage() {
             <div className="divide-y divide-kumbu-border/70 rounded-xl ring-1 ring-kumbu-border/60">
               <SettingsLinkRow href="/conta/perfil" label={t("addressProfile")} />
               <SettingsLinkRow href="/support" label={t("support")} />
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-kumbu-muted">
+              {t("accountChangesNote")}{" "}
+              <Link href="/support" className="font-semibold text-kumbu-primary hover:underline">
+                {t("contactSupport")}
+              </Link>
+            </p>
+            <div className="mt-5 border-t border-kumbu-border/70 pt-5">
+              <ProfileSignOut />
             </div>
           </ContaSection>
         </ContaPanel>

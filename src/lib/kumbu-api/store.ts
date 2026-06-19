@@ -61,6 +61,14 @@ type UserProfileDto = {
   canPublish?: boolean | null;
   missingProfileFields?: string[] | null;
   emailVerified?: boolean | null;
+  sellerVerified?: boolean | null;
+  bannedAt?: string | null;
+  bannedUntil?: string | null;
+  banReason?: string | null;
+  accountSuspended?: boolean | null;
+  banned_at?: string | null;
+  banned_until?: string | null;
+  ban_reason?: string | null;
   cart?: unknown;
 };
 
@@ -107,10 +115,17 @@ type ConversationDto = {
 
 type MessageDto = {
   id: string;
-  conversationId: string;
-  senderId: string;
+  conversationId?: string;
+  conversation_id?: string;
+  senderId?: string;
+  sender_id?: string;
   body: string;
-  createdAt: string;
+  createdAt?: string;
+  created_at?: string;
+  messageKind?: string | null;
+  message_kind?: string | null;
+  attachmentUrl?: string | null;
+  attachment_url?: string | null;
 };
 
 type OrderDto = {
@@ -241,9 +256,10 @@ function toStoreUser(row: UserProfileDto): StoreUser {
     canPublish: Boolean(row.canPublish),
     missingProfileFields: row.missingProfileFields ?? [],
     emailVerified: row.emailVerified === true,
-    bannedAt: null,
-    bannedUntil: null,
-    banReason: null,
+    sellerVerified: row.sellerVerified === true,
+    bannedAt: (row.bannedAt ?? row.banned_at ?? null) as string | null,
+    bannedUntil: (row.bannedUntil ?? row.banned_until ?? null) as string | null,
+    banReason: (row.banReason ?? row.ban_reason ?? null) as string | null,
   };
 }
 
@@ -451,14 +467,19 @@ export async function listConversationMessagesBackend(
   const rows = await client.request<MessageDto[]>(
     `/chat/conversations/${encodeURIComponent(conversationId)}/messages`,
   );
-  return (rows ?? []).map((row) => ({
-    id: String(row.id),
-    conversationId: String(row.conversationId),
-    senderId: String(row.senderId),
-    body: String(row.body ?? ""),
-    createdAt: coerceDate(row.createdAt),
-    messageKind: "text",
-  }));
+  return (rows ?? []).map((row) => {
+    const kind = row.messageKind ?? row.message_kind ?? "text";
+    return {
+      id: String(row.id),
+      conversationId: String(row.conversationId ?? row.conversation_id ?? ""),
+      senderId: String(row.senderId ?? row.sender_id ?? ""),
+      body: String(row.body ?? ""),
+      createdAt: coerceDate(row.createdAt ?? row.created_at),
+      messageKind:
+        kind === "system" ? "system" : kind === "attachment" ? "attachment" : "text",
+      attachmentUrl: row.attachmentUrl ?? row.attachment_url ?? null,
+    };
+  });
 }
 
 export async function startConversationBackend(productId: string): Promise<string> {
@@ -482,13 +503,16 @@ export async function sendConversationMessageBackend(
       body: JSON.stringify({ body }),
     },
   );
+  const kind = row.messageKind ?? row.message_kind ?? "text";
   return {
     id: String(row.id),
-    conversationId: String(row.conversationId),
-    senderId: String(row.senderId),
+    conversationId: String(row.conversationId ?? row.conversation_id ?? ""),
+    senderId: String(row.senderId ?? row.sender_id ?? ""),
     body: String(row.body ?? ""),
-    createdAt: coerceDate(row.createdAt),
-    messageKind: "text",
+    createdAt: coerceDate(row.createdAt ?? row.created_at),
+    messageKind:
+      kind === "system" ? "system" : kind === "attachment" ? "attachment" : "text",
+    attachmentUrl: row.attachmentUrl ?? row.attachment_url ?? null,
   };
 }
 

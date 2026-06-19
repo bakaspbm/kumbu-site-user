@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Search } from "lucide-react";
 import { BackHeader } from "@/components/layout/back-header";
 import { ListingCard } from "@/components/store/listing-card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useCatalogBootstrap } from "@/hooks/use-catalog-bootstrap";
 
 export function ProcurarClient() {
@@ -119,12 +119,18 @@ export function ProcurarClient() {
         <p className="text-sm text-kumbu-muted">{t("listingCount", { count: results.length })}</p>
 
         {results.length === 0 ? (
-          <p className="rounded-2xl bg-kumbu-surface py-12 text-center text-sm text-kumbu-muted">
-            {t("noResults")}{" "}
-            <Link href="/publicar" className="font-bold text-kumbu-primary">
-              {t("noResultsPublish")}
-            </Link>
-          </p>
+          <EmptyState
+            icon={Search}
+            title={query.trim() ? t("noResultsTitle") : t("noResultsTitleBrowse")}
+            description={
+              query.trim()
+                ? t("noResultsFor", { query: query.trim() })
+                : t("noResults")
+            }
+            actionLabel={query.trim() ? t("clearSearch") : t("noResultsPublish")}
+            actionHref={query.trim() ? "/procurar" : "/publicar"}
+            className="py-10"
+          />
         ) : (
           <ul className="kumbu-listing-grid">
             {results.map((p) => (

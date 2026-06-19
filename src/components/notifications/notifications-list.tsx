@@ -6,11 +6,13 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Bell, ChevronRight } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { useAuth } from "@/contexts/auth-context";
 import type { NotificationPushEvent } from "@/lib/kumbu-api/notifications-realtime";
 import { listNotifications as listNotificationsUnified, markNotificationRead as markNotificationReadUnified } from "@/lib/site-data";
 import type { UserNotification } from "@/types/store";
+import { sanitizeAppLink } from "@/lib/urls/safe-link";
 import { cn } from "@/lib/utils";
 
 function previewBody(body: string | null | undefined, max = 100) {
@@ -25,6 +27,7 @@ export function NotificationsList({
   detailHref?: (id: string) => string;
 }) {
   const t = useTranslations("notifications");
+  const tCommon = useTranslations("common");
   const pathname = usePathname();
   const { refreshNotifications, markNotificationReadLocal } = useAuth();
   const [items, setItems] = useState<UserNotification[]>([]);
@@ -73,17 +76,26 @@ export function NotificationsList({
   return (
     <RequireAuth>
       {loading ? (
-        <p className="py-12 text-center text-sm text-kumbu-muted">{t("loading")}</p>
+        <div className="py-8">
+          <LoadingIndicator
+            active={loading}
+            label={t("loading")}
+            slowHint={tCommon("loadingSlowHint")}
+          />
+        </div>
       ) : items.length === 0 ? (
         <EmptyState
           icon={Bell}
           title={t("emptyTitle")}
           description={t("emptyDescription")}
+          steps={[t("emptyStep1"), t("emptyStep2"), t("emptyStep3")]}
+          actionLabel={t("emptyAction")}
+          actionHref="/procurar"
         />
       ) : (
         <ul className="flex flex-col gap-2.5">
           {items.map((n) => {
-            const href = n.actionUrl?.trim() || detailHref(n.id);
+            const href = sanitizeAppLink(n.actionUrl) ?? detailHref(n.id);
             return (
             <li key={n.id}>
               <Link

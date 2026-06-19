@@ -12,9 +12,9 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import {
-  countUnreadMessagesAction,
   listConversationsAction,
   markConversationReadAction,
+  type ConversationsListResult,
 } from "@/app/actions/chat";
 import { listMyConversations } from "@/lib/site-data";
 import { playMessageNotificationSound } from "@/lib/chat/notification-sound";
@@ -80,28 +80,30 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
 
     try {
       const onMessagesRoute = pathnameRef.current.startsWith("/mensagens");
-      const convsApi = await listMyConversations(undefined);
-      const enriched = enrichConversationsWithUnread(user.id, convsApi);
-      setConversations(enriched);
-      setUnreadCount(sumUnreadMessages(enriched));
+      let convs: ConversationSummary[] | null = null;
 
-      if (!onMessagesRoute) return;
-
-      const result = await promiseWithTimeoutFallback(
-        listConversationsAction(),
-        12_000,
-        { ok: true as const, conversations: [] },
-      );
-
-      if (!result.ok) {
-        setConversations([]);
-        setUnreadCount(0);
-        return;
+      if (onMessagesRoute) {
+        const result = await promiseWithTimeoutFallback<ConversationsListResult | null>(
+          listConversationsAction(),
+          12_000,
+          null,
+        );
+        if (result?.ok) {
+          convs = result.conversations;
+        }
       }
 
-      const convs = result.conversations;
-      const currentKeys = new Set<string>();
+      if (!convs) {
+        try {
+          convs = await listMyConversations(undefined);
+        } catch {
+          convs = null;
+        }
+      }
 
+      if (!convs) return;
+
+      const currentKeys = new Set<string>();
       for (const c of convs) {
         const msg = c.lastMessage;
         if (!msg) continue;
@@ -122,12 +124,13 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
       }
       seenMessageKeysRef.current = currentKeys;
 
-      setConversations(convs);
+      const enriched = enrichConversationsWithUnread(user.id, convs);
+      setConversations(enriched);
       const localUnread = countUnreadConversations(user.id, convs);
-      const fromServer = sumUnreadMessages(convs);
+      const fromServer = sumUnreadMessages(enriched);
       setUnreadCount(Math.max(localUnread, fromServer));
     } catch {
-      setUnreadCount(0);
+      /* mantém a última lista válida */
     } finally {
       refreshInFlightRef.current = false;
       setConversationsReady(true);
@@ -207,6 +210,7 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
     const unsubMessages = subscribeUserMessages((event) => {
       const msg = event.message;
       if (msg.senderId === user.id) return;
+      if (msg.fromSupport) return;
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(

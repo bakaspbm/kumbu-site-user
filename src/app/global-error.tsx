@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
+import * as Sentry from "@sentry/nextjs";
+import { useEffect } from "react";
 
 export default function GlobalError({
   error,
@@ -10,21 +10,25 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const t = useTranslations("errors");
-  const formatErrorMessage = useFormatErrorMessage();
-  const message = formatErrorMessage(error);
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
 
   return (
     <html lang="pt">
-      <body className="min-h-screen bg-[#f5f5f5] p-8 font-sans text-[#1d1d1d]">
-        <h1 className="text-xl font-bold">{t("globalErrorTitle")}</h1>
-        <p className="mt-3 text-sm text-[#6b6b6b]">{message}</p>
+      <body className="flex min-h-screen flex-col items-center justify-center gap-4 bg-neutral-50 px-4 text-center">
+        <h1 className="text-xl font-semibold text-neutral-900">
+          Algo correu mal
+        </h1>
+        <p className="max-w-md text-sm text-neutral-600">
+          O erro foi registado. Tente recarregar a página ou volte mais tarde.
+        </p>
         <button
           type="button"
           onClick={() => reset()}
-          className="mt-6 rounded-lg bg-[#d62828] px-4 py-2 text-sm font-bold text-white"
+          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
         >
-          {t("errorPageRetry")}
+          Tentar novamente
         </button>
       </body>
     </html>

@@ -13,7 +13,7 @@ import { serverActionError } from "@/lib/i18n/server-errors";
 import { serverLoginRequiredError } from "@/lib/i18n/server-errors";
 import { getServerSessionUserId } from "@/lib/server-auth";
 
-export type ContentReportTargetType = "product" | "user" | "message" | "review";
+export type ContentReportTargetType = "product" | "user" | "message" | "review" | "conversation";
 
 type ActionFail = { ok: false; error: string; needsLogin?: boolean };
 type ActionOk = { ok: true };

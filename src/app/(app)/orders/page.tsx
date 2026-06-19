@@ -4,17 +4,26 @@ import { getTranslations } from "next-intl/server";
 import { SiteHeader } from "@/components/layout/site-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
+import { UserFacingErrorAlert } from "@/components/ui/user-facing-error-alert";
+import { resolveUserFacingErrorServer } from "@/lib/i18n/format-error-server";
 import { resolveServerAuth } from "@/lib/server-page-auth";
 import { listOrders } from "@/lib/site-data";
+
 export default async function OrdersPage() {
   const t = await getTranslations("orders");
   const auth = await resolveServerAuth();
   const needsLogin = auth.status !== "logged_in";
 
-  const orders =
-    auth.status === "logged_in"
-      ? await listOrders().catch(() => [])
-      : [];
+  let orders: Awaited<ReturnType<typeof listOrders>> = [];
+  let loadError = null;
+
+  if (auth.status === "logged_in") {
+    try {
+      orders = await listOrders();
+    } catch (err) {
+      loadError = await resolveUserFacingErrorServer(err);
+    }
+  }
 
   return (
     <>
@@ -29,6 +38,8 @@ export default async function OrdersPage() {
             actionLabel={t("loginAction")}
             actionHref="/login"
           />
+        ) : loadError ? (
+          <UserFacingErrorAlert error={loadError} className="mt-4" />
         ) : orders.length === 0 ? (
           <EmptyState
             className="mt-4"

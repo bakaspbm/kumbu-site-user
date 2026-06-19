@@ -8,6 +8,7 @@ import { BackHeader } from "@/components/layout/back-header";
 import { useAuth } from "@/contexts/auth-context";
 import { markNotificationRead } from "@/lib/site-data";
 import type { UserNotification } from "@/types/store";
+import { sanitizeAppLink } from "@/lib/urls/safe-link";
 import { cn } from "@/lib/utils";
 
 interface NotificationDetailViewProps {
@@ -37,6 +38,8 @@ export function NotificationDetailView({
       })
     : "—";
 
+  const actionHref = sanitizeAppLink(notification.actionUrl);
+
   return (
     <>
       <BackHeader title={t("detailTitle")} href={backHref} />
@@ -65,9 +68,9 @@ export function NotificationDetailView({
             </p>
           </div>
 
-          {notification.actionUrl?.trim() ? (
+          {actionHref ? (
             <Link
-              href={notification.actionUrl.trim()}
+              href={actionHref}
               className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-kumbu-primary px-4 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
             >
               {t("viewAndRespond")}

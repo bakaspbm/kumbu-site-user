@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, Check, MessageCircle, X } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Calendar, Check, Home, MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 import { RequireAuth } from "@/components/auth/require-auth";
 import {
   listMyPropertyRentalRequests,
@@ -12,22 +15,23 @@ import {
 } from "@/lib/site-data";
 import type { PropertyRentalRequest } from "@/types/property";
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Aguarda confirmação",
-  confirmed: "Confirmado",
-  rejected: "Recusado",
-  cancelled: "Cancelado",
-};
-
 interface RentalRequestsManagerProps {
   mode: "owner" | "renter";
 }
 
 export function RentalRequestsManager({ mode }: RentalRequestsManagerProps) {
+  const t = useTranslations("property.rental");
   const router = useRouter();
   const [items, setItems] = useState<PropertyRentalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  const statusLabels: Record<string, string> = {
+    pending: t("statusPending"),
+    confirmed: t("statusConfirmed"),
+    rejected: t("statusRejected"),
+    cancelled: t("statusCancelled"),
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,7 +57,7 @@ export function RentalRequestsManager({ mode }: RentalRequestsManagerProps) {
         router.push(`/mensagens/${updated.conversationId}`);
       }
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Erro");
+      alert(e instanceof Error ? e.message : t("respondError"));
     } finally {
       setBusyId(null);
     }
@@ -62,13 +66,16 @@ export function RentalRequestsManager({ mode }: RentalRequestsManagerProps) {
   return (
     <RequireAuth>
       {loading ? (
-        <p className="py-12 text-center text-sm text-kumbu-muted">A carregar…</p>
+        <PageLoadingIndicator label={t("requestsLoading")} />
       ) : items.length === 0 ? (
-        <p className="py-12 text-center text-sm text-kumbu-muted">
-          {mode === "owner"
-            ? "Ainda não há pedidos de aluguer nos seus imóveis."
-            : "Ainda não enviou pedidos de aluguer."}
-        </p>
+        <EmptyState
+          icon={Home}
+          title={mode === "owner" ? t("emptyOwnerTitle") : t("emptyRenterTitle")}
+          description={mode === "owner" ? t("emptyOwnerDescription") : t("emptyRenterDescription")}
+          actionLabel={t("emptyExplore")}
+          actionHref="/procurar"
+          className="py-10"
+        />
       ) : (
         <ul className="kumbu-card-grid mt-4">
           {items.map((r) => (
@@ -79,10 +86,10 @@ export function RentalRequestsManager({ mode }: RentalRequestsManagerProps) {
                     href={`/produto/${r.productId}`}
                     className="font-bold text-kumbu-foreground hover:text-kumbu-primary"
                   >
-                    {r.productTitle ?? "Imóvel"}
+                    {r.productTitle ?? t("propertyFallback")}
                   </Link>
                   <p className="mt-1 text-xs font-semibold text-kumbu-muted">
-                    {STATUS_LABELS[r.status] ?? r.status}
+                    {statusLabels[r.status] ?? r.status}
                     {r.otherPartyName ? ` · ${r.otherPartyName}` : ""}
                   </p>
                 </div>
@@ -95,9 +102,9 @@ export function RentalRequestsManager({ mode }: RentalRequestsManagerProps) {
 
               {r.rentalMode === "daily" && r.checkIn && r.checkOut && (
                 <p className="mt-2 flex items-center gap-1.5 text-sm text-kumbu-muted">
-                  <Calendar className="size-3.5" />
+                  <Calendar className="size-3.5" aria-hidden />
                   {r.checkIn} → {r.checkOut}
-                  {r.nights ? ` (${r.nights} noite(s))` : ""}
+                  {r.nights ? ` (${t("nightsCount", { count: r.nights })})` : ""}
                 </p>
               )}
 
@@ -113,8 +120,8 @@ export function RentalRequestsManager({ mode }: RentalRequestsManagerProps) {
                     disabled={busyId === r.id}
                     onClick={() => void respond(r.id, "confirm")}
                   >
-                    <Check className="size-4" />
-                    Confirmar
+                    <Check className="size-4" aria-hidden />
+                    {t("confirmRequest")}
                   </Button>
                   <Button
                     type="button"
@@ -123,8 +130,8 @@ export function RentalRequestsManager({ mode }: RentalRequestsManagerProps) {
                     disabled={busyId === r.id}
                     onClick={() => void respond(r.id, "reject")}
                   >
-                    <X className="size-4" />
-                    Recusar
+                    <X className="size-4" aria-hidden />
+                    {t("rejectRequest")}
                   </Button>
                 </div>
               )}
@@ -136,8 +143,8 @@ export function RentalRequestsManager({ mode }: RentalRequestsManagerProps) {
                   fullWidth
                   className="mt-3 h-10 gap-2"
                 >
-                  <MessageCircle className="size-4" />
-                  Abrir chat
+                  <MessageCircle className="size-4" aria-hidden />
+                  {t("openChat")}
                 </Button>
               )}
             </li>

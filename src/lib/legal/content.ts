@@ -9,7 +9,7 @@ export type ReportReasonId =
   | "ip"
   | "other";
 
-export type ContentReportTargetType = "product" | "user" | "message" | "review";
+export type ContentReportTargetType = "product" | "user" | "message" | "review" | "conversation";
 
 export const CONSENT_TYPES = {
   termsPrivacy: "terms_privacy_v1",

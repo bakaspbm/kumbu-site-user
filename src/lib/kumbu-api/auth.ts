@@ -9,11 +9,9 @@ import type {
 import {
   clearSessionTokens,
   decodeAccessTokenClaims,
-  readBrowserCookie,
-  REFRESH_TOKEN_COOKIE,
+  readSessionUserSnapshot,
   saveSessionUserSnapshot,
   setSessionTokens,
-  setSessionTokensSync,
 } from "@/lib/kumbu-api/session-tokens";
 
 export type {
@@ -49,11 +47,11 @@ function toSession(payload: AuthResponse): KumbuSession {
   };
 }
 
-function persistSession(payload: AuthResponse): void {
+async function persistSession(payload: AuthResponse): Promise<void> {
   if (!payload.accessToken?.trim() || !payload.refreshToken?.trim()) {
     throw new Error("Resposta de autenticação incompleta (tokens em falta).");
   }
-  setSessionTokensSync(payload.accessToken, payload.refreshToken);
+  await setSessionTokens(payload.accessToken, payload.refreshToken);
   const claims = decodeAccessTokenClaims(payload.accessToken);
   const userId =
     payload.userId != null ? String(payload.userId) : (claims?.userId ?? "");
@@ -77,7 +75,7 @@ export async function loginWithBackend(email: string, password: string): Promise
     }),
     auth: false,
   });
-  persistSession(payload);
+  await persistSession(payload);
   return toSession(payload);
 }
 
@@ -94,7 +92,7 @@ export async function registerWithBackend(input: KumbuRegisterInput): Promise<Re
     }),
     auth: false,
   });
-  persistSession(payload);
+  await persistSession(payload);
   return {
     session: toSession(payload),
     emailActionLink: payload.emailActionLink ?? null,
@@ -102,6 +100,29 @@ export async function registerWithBackend(input: KumbuRegisterInput): Promise<Re
 }
 
 export async function refreshBackendToken(): Promise<KumbuSession> {
+  if (typeof window !== "undefined") {
+    const response = await fetch("/api/auth/refresh", {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("Sessão expirada. Inicie sessão novamente.");
+    }
+    const snapshot = readSessionUserSnapshot();
+    if (!snapshot?.id) {
+      throw new Error("Sessão expirada. Inicie sessão novamente.");
+    }
+    return {
+      user: {
+        id: snapshot.id,
+        email: snapshot.email ?? null,
+        displayName: snapshot.displayName ?? null,
+      },
+      accessToken: "",
+      refreshToken: "",
+    };
+  }
+
   const client = mustClient();
   const refreshToken = client.getRefreshToken();
   if (!refreshToken) throw new Error("Sessão expirada. Inicie sessão novamente.");
@@ -111,45 +132,26 @@ export async function refreshBackendToken(): Promise<KumbuSession> {
     body: JSON.stringify({ refreshToken }),
     auth: false,
   });
-  persistSession(payload);
+  await persistSession(payload);
   return toSession(payload);
 }
 
 export function getBackendSession(): KumbuSession | null {
-  const client = getKumbuApiClient();
-  if (!client) return null;
-  const accessToken = client.getAccessToken();
-  const refreshToken = readBrowserCookie(REFRESH_TOKEN_COOKIE);
-  if (!accessToken && !refreshToken) return null;
-
-  const claims = decodeAccessTokenClaims(accessToken);
-  const snapshotId = claims?.userId;
-
+  const snapshot = readSessionUserSnapshot();
+  if (!snapshot?.id) return null;
   return {
     user: {
-      id: snapshotId ?? "",
-      email: claims?.email ?? null,
-      displayName: null,
+      id: snapshot.id,
+      email: snapshot.email ?? null,
+      displayName: snapshot.displayName ?? null,
     },
-    accessToken: accessToken ?? "",
-    refreshToken: refreshToken ?? "",
+    accessToken: "",
+    refreshToken: "",
   };
 }
 
-export function logoutBackend(): void {
-  const client = getKumbuApiClient();
-  const refreshToken = client?.getRefreshToken();
-  if (client && refreshToken) {
-    void client
-      .request<void>("/auth/logout", {
-        method: "POST",
-        body: JSON.stringify({ refreshToken }),
-        auth: false,
-      })
-      .catch(() => undefined);
-  }
-  void clearSessionTokens();
-  client?.clearTokens();
+export async function logoutBackend(): Promise<void> {
+  await clearSessionTokens();
 }
 
 export async function forgotPasswordBackend(email: string): Promise<string | null> {
@@ -171,6 +173,17 @@ export async function resetPasswordBackend(token: string, password: string): Pro
   });
 }
 
+export async function changePasswordBackend(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const client = mustClient();
+  await client.request<void>("/users/me/password", {
+    method: "POST",
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
 export async function verifyEmailBackend(token: string): Promise<KumbuSession> {
   const client = mustClient();
   const payload = await client.request<AuthResponse>("/auth/verify-email", {
@@ -178,7 +191,7 @@ export async function verifyEmailBackend(token: string): Promise<KumbuSession> {
     body: JSON.stringify({ token: token.trim() }),
     auth: false,
   });
-  persistSession(payload);
+  await persistSession(payload);
   return toSession(payload);
 }
 
@@ -219,7 +232,7 @@ export async function verifyPhoneOtpBackend(phone: string, token: string): Promi
     body: JSON.stringify({ phone: phone.trim(), token: token.trim() }),
     auth: false,
   });
-  persistSession(payload);
+  await persistSession(payload);
   return toSession(payload);
 }
 
@@ -252,6 +265,24 @@ export async function oauthLoginBackend(
     }),
     auth: false,
   });
-  persistSession(payload);
+  await persistSession(payload);
+  return toSession(payload);
+}
+
+export async function oauthLoginFacebookCodeBackend(
+  code: string,
+  redirectUri: string,
+): Promise<KumbuSession> {
+  const client = mustClient();
+  const payload = await client.request<AuthResponse>("/auth/oauth/facebook/code", {
+    method: "POST",
+    body: JSON.stringify({
+      code,
+      redirectUri,
+      signupSource: "web",
+    }),
+    auth: false,
+  });
+  await persistSession(payload);
   return toSession(payload);
 }

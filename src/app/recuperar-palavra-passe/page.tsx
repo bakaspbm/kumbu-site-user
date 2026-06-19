@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
 import { KumbuLogo } from "@/components/brand/kumbu-logo";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 
 export default function RecuperarPalavraPassePage() {
   return (
@@ -12,7 +13,7 @@ export default function RecuperarPalavraPassePage() {
         <KumbuLogo height={32} variant="wordmark" href={undefined} />
         <h1 className="mt-4 text-2xl font-extrabold tracking-tight">Recuperar palavra-passe</h1>
         <div className="mt-6">
-          <Suspense fallback={<p className="text-sm text-kumbu-muted">A carregar…</p>}>
+          <Suspense fallback={<PageLoadingIndicator compact />}>
             <ResetPasswordForm />
           </Suspense>
         </div>

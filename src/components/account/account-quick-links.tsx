@@ -10,13 +10,13 @@ import {
   Settings,
   ShoppingBag,
   ShoppingCart,
-  Sparkles,
   Store,
   Tag,
   Users,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { MenuRow } from "@/components/ui/menu-row";
+import { ProfileSignOut } from "@/components/auth/profile-sign-out";
 import { cn } from "@/lib/utils";
 
 function MenuSection({
@@ -73,24 +73,18 @@ export function AccountQuickLinks({ variant = "default" }: AccountQuickLinksProp
 
       <MenuSection title={t("sell")} compact={compact}>
         <MenuRow href="/conta/anuncios" label={t("myListings")} icon={Tag} className={rowClass} />
-        <MenuRow
-          href="/conta/pagamentos"
-          label={t("highlightPayments")}
-          icon={Sparkles}
-          className={rowClass}
-        />
         <MenuRow href="/conta/vendas" label={t("mySales")} icon={Store} className={rowClass} />
-        <MenuRow
-          href="/conta/vagas-candidaturas"
-          label={t("jobApplicants")}
-          icon={Users}
-          className={rowClass}
-        />
         <MenuRow href="/conta/reservas" label={t("rentals")} icon={MapPin} className={rowClass} />
       </MenuSection>
 
       <MenuSection title={t("jobs")} compact={compact}>
         <MenuRow href="/emprego" label={t("exploreJobs")} icon={Briefcase} className={rowClass} />
+        <MenuRow
+          href="/conta/vagas-candidaturas"
+          label={t("myJobListings")}
+          icon={Users}
+          className={rowClass}
+        />
         <MenuRow href="/conta/cvs" label={t("myCvs")} icon={FileText} className={rowClass} />
         <MenuRow
           href="/conta/candidaturas"
@@ -108,6 +102,7 @@ export function AccountQuickLinks({ variant = "default" }: AccountQuickLinksProp
           className={rowClass}
         />
         <MenuRow href="/support" label={t("supportLegal")} icon={HelpCircle} className={rowClass} />
+        <ProfileSignOut variant="row" className={rowClass} />
       </MenuSection>
     </>
   );

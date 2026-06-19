@@ -8,12 +8,21 @@ import { ListingImage } from "@/components/ui/listing-image";
 import { ChatComposer } from "@/components/messages/chat-composer";
 import { ChatDealActions } from "@/components/messages/chat-deal-actions";
 import { ChatMessageBubble } from "@/components/messages/chat-message-bubble";
+import { ReportContentDialog } from "@/components/legal/report-content-dialog";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
+import { uploadChatAttachmentAction } from "@/app/actions/chat-upload";
 import {
   loadChatRoomAction,
   listConversationMessagesAction,
   sendChatMessageAction,
 } from "@/app/actions/chat";
 import { formatUserPresence, isUserOnline } from "@/lib/chat/presence";
+import {
+  confirmSentMessage,
+  mergeConversationMessages,
+} from "@/lib/chat/merge-messages";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { getConversationBackend } from "@/lib/kumbu-api/chat";
 import { subscribeConversationTopic } from "@/lib/kumbu-api/kumbu-realtime";
@@ -39,6 +48,7 @@ export function ChatRoom({
   initialNeedsLogin = false,
 }: ChatRoomProps) {
   const t = useTranslations("chat");
+  const tCommon = useTranslations("common");
   const tPresence = useTranslations("chat.presence");
   const formatErrorMessage = useFormatErrorMessage();
   const locale = useLocale();
@@ -57,6 +67,7 @@ export function ChatRoom({
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(!hasServerData && !initialError);
   const [sending, setSending] = useState(false);
+  const [attachBusy, setAttachBusy] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -172,12 +183,7 @@ export function ChatRoom({
       void listConversationMessagesAction(conversationId)
         .then((msgs) => {
           if (msgs.length === 0) return;
-          setMessages((prev) => {
-            const prevLast = prev[prev.length - 1]?.id;
-            const nextLast = msgs[msgs.length - 1]?.id;
-            if (prevLast === nextLast && prev.length === msgs.length) return prev;
-            return msgs;
-          });
+          setMessages((prev) => mergeConversationMessages(prev, msgs));
           setMessagesLoading(false);
         })
         .catch(() => {});
@@ -285,8 +291,8 @@ export function ChatRoom({
     scrollBottom();
   }, [messages, scrollBottom]);
 
-  async function handleSend() {
-    if (!text.trim() || sending || !user) return;
+  async function handleSend(attachmentUrl?: string | null) {
+    if ((!text.trim() && !attachmentUrl) || sending || !user) return;
 
     const body = text.trim();
     const tempId = `pending-${Date.now()}`;
@@ -306,7 +312,7 @@ export function ChatRoom({
 
     try {
       const result = await promiseWithTimeout(
-        sendChatMessageAction(conversationId, body),
+        sendChatMessageAction(conversationId, body, attachmentUrl),
         60_000,
         t("sendTimeout"),
       );
@@ -320,9 +326,7 @@ export function ChatRoom({
         setError(result.error);
         return;
       }
-      setMessages((prev) =>
-        prev.map((m) => (m.id === tempId ? result.message : m)),
-      );
+      setMessages((prev) => confirmSentMessage(prev, tempId, result.message));
       void refreshUnread();
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
@@ -334,6 +338,26 @@ export function ChatRoom({
     }
   }
 
+  async function handleAttach(file: File) {
+    if (!user || sending || attachBusy) return;
+    setAttachBusy(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await uploadChatAttachmentAction(formData);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      await handleSend(result.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : formatErrorMessage(err));
+    } finally {
+      setAttachBusy(false);
+    }
+  }
+
   const searchParams = useSearchParams();
   const pedidosParam = searchParams.get("pedidos");
   const multiOrders =
@@ -341,7 +365,12 @@ export function ChatRoom({
 
   const waitingAuth = authLoading && !hasServerData;
   if (waitingAuth || loading) {
-    return <p className="py-12 text-center text-sm text-kumbu-muted">{t("loadingChat")}</p>;
+    return (
+      <PageLoadingIndicator
+        label={t("loadingChat")}
+        rotatingLabels={[t("loadingHintConnect"), t("loadingHintMessages")]}
+      />
+    );
   }
 
   if (!conv) {
@@ -381,7 +410,10 @@ export function ChatRoom({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-extrabold text-kumbu-foreground">{otherName}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate font-extrabold text-kumbu-foreground">{otherName}</p>
+              {conv.otherParty?.sellerVerified ? <VerifiedBadge /> : null}
+            </div>
             <p className="flex items-center gap-1.5 text-xs text-kumbu-muted">
               {otherOnline && (
                 <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
@@ -397,6 +429,13 @@ export function ChatRoom({
               {t("listingLink")}
             </Link>
           )}
+          <ReportContentDialog
+            targetType="conversation"
+            targetId={conversationId}
+            reportedUserId={conv.otherParty?.id}
+            label={t("reportChat")}
+            className="shrink-0 rounded-full border border-kumbu-border px-3 py-1.5 text-xs font-semibold text-kumbu-muted hover:border-red-200 hover:text-red-700"
+          />
         </div>
         {conv.productTitle && (
           <p className="mx-auto mt-2 max-w-2xl truncate text-center text-xs text-kumbu-muted">
@@ -418,7 +457,13 @@ export function ChatRoom({
             </p>
           )}
           {messagesLoading && messages.length === 0 && (
-            <p className="py-8 text-center text-sm text-kumbu-muted">{t("loading")}</p>
+            <LoadingIndicator
+              active
+              label={t("loading")}
+              rotatingLabels={[t("loadingHintMessages")]}
+              slowHint={tCommon("loadingSlowHint")}
+              compact
+            />
           )}
           {!messagesLoading && messages.length === 0 && (
             <div className="rounded-2xl border border-dashed border-kumbu-border bg-kumbu-surface/60 px-4 py-8 text-center">
@@ -437,7 +482,9 @@ export function ChatRoom({
             const day = formatDayLabel(m.createdAt);
             const showDay = day !== lastDay;
             if (showDay) lastDay = day;
-            const mine = m.senderId === user?.id;
+            const mine =
+              user != null &&
+              m.senderId.toLowerCase() === user.id.toLowerCase();
 
             return (
               <div key={m.id}>
@@ -452,6 +499,7 @@ export function ChatRoom({
                   mine={mine}
                   pending={m.id === pendingId}
                   system={m.messageKind === "system"}
+                  attachmentUrl={m.attachmentUrl}
                 />
               </div>
             );
@@ -483,8 +531,10 @@ export function ChatRoom({
           value={text}
           onChange={setText}
           onSubmit={() => void handleSend()}
+          onAttach={(file) => void handleAttach(file)}
           disabled={!user}
           sending={sending}
+          attachBusy={attachBusy}
         />
       )}
     </div>

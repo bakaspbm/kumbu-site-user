@@ -82,7 +82,7 @@ function mapPayment(row: Record<string, unknown>): MonetizationPayment {
     amountLabel: (row.amount_label ?? row.amountLabel) as string | null | undefined,
     providerId: (row.provider_id ?? row.providerId) as string | null | undefined,
     providerName: (row.provider_name ?? row.providerName) as string | null | undefined,
-    instructions: row.instructions as string | null | undefined,
+    instructions: (row.instructions ?? row.payment_instructions) as string | null | undefined,
     proofUrl: (row.proof_url ?? row.proofUrl) as string | null | undefined,
     proofNote: (row.proof_note ?? row.proofNote) as string | null | undefined,
     targetType: (row.target_type ?? row.targetType) as string | null | undefined,

@@ -41,6 +41,7 @@ interface CartContextValue {
   count: number;
   totalLabel: string;
   isSyncing: boolean;
+  syncError: string | null;
   addProduct: (product: CatalogProduct, qty?: number) => boolean;
   removeProduct: (productId: string) => void;
   setQuantity: (productId: string, quantity: number) => void;
@@ -76,6 +77,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const serverLoadedForUser = useRef<string | null>(null);
   const syncUserIdRef = useRef<string | null>(null);
 
@@ -128,8 +130,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (syncUserIdRef.current !== syncForUser) return;
       setIsSyncing(true);
       try {
-        await syncCartAction(items);
+        const result = await syncCartAction(items);
+        if (!result.ok) {
+          setSyncError(result.error);
+        } else {
+          setSyncError(null);
+        }
       } catch {
+        setSyncError("O carrinho não foi guardado na sua conta.");
       } finally {
         if (syncUserIdRef.current === syncForUser) setIsSyncing(false);
       }
@@ -201,6 +209,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       count,
       totalLabel,
       isSyncing,
+      syncError,
       addProduct,
       removeProduct,
       setQuantity,
@@ -213,6 +222,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       count,
       totalLabel,
       isSyncing,
+      syncError,
       addProduct,
       removeProduct,
       setQuantity,

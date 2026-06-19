@@ -21,6 +21,8 @@ import { ProductViewTracker } from "@/components/store/product-view-tracker";
 import { ReportContentDialog } from "@/components/legal/report-content-dialog";
 import { ProductCard } from "@/components/store/product-card";
 import { PromoteListingDialog } from "@/components/monetization/promote-listing-dialog";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
+import { useUserMonetizationVisible } from "@/hooks/use-user-monetization-visible";
 import { formatViewCount } from "@/lib/listing/display-stats";
 import { useOfflineProduct } from "@/hooks/use-offline-product";
 import { isKumbuApiEnabled } from "@/lib/kumbu-api/client";
@@ -62,6 +64,7 @@ function ProductDetailLoaded({
   const t = useTranslations("product");
   const tCommon = useTranslations("common");
   const isOwner = user?.id === product.sellerId;
+  const monetizationVisible = useUserMonetizationVisible();
   const [similar, setSimilar] = useState<CatalogProduct[]>([]);
   const [promoteOpen, setPromoteOpen] = useState(false);
   const views = viewCount ?? product.viewCount ?? 0;
@@ -125,6 +128,7 @@ function ProductDetailLoaded({
                     {sellerRole}
                   </p>
                   <p className="truncate font-bold text-kumbu-foreground">{sellerName}</p>
+                  {product.seller?.sellerVerified ? <VerifiedBadge className="mt-1" /> : null}
                   {product.seller?.sellerRating != null &&
                     (product.seller.sellerReviewCount ?? 0) > 0 && (
                       <p className="text-xs font-semibold text-amber-600">
@@ -154,7 +158,7 @@ function ProductDetailLoaded({
                   {viewsLabel}
                 </p>
               )}
-              {isOwner && isKumbuApiEnabled() && (
+              {isOwner && isKumbuApiEnabled() && monetizationVisible && (
                 <button
                   type="button"
                   onClick={() => setPromoteOpen(true)}
@@ -227,12 +231,14 @@ function ProductDetailLoaded({
           </div>
         </div>
       </section>
-      <PromoteListingDialog
-        listingId={productId}
-        categoryId={product.categoryId}
-        open={promoteOpen}
-        onClose={() => setPromoteOpen(false)}
-      />
+      {monetizationVisible && (
+        <PromoteListingDialog
+          listingId={productId}
+          categoryId={product.categoryId}
+          open={promoteOpen}
+          onClose={() => setPromoteOpen(false)}
+        />
+      )}
     </article>
   );
 }

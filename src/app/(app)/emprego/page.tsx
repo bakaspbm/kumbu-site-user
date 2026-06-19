@@ -6,6 +6,8 @@ import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ListingCard } from "@/components/store/listing-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 import { AngolaProvinceMunicipalityFields } from "@/components/geo/angola-province-municipality-fields";
 import {
   useJobContractLabel,
@@ -135,9 +137,16 @@ export default function EmpregoPage() {
         </div>
 
         {loading ? (
-          <p className="mt-8 text-center text-sm text-kumbu-muted">{tCommon("loading")}</p>
+          <PageLoadingIndicator label={tCommon("loading")} className="mt-8" />
         ) : jobs.length === 0 ? (
-          <p className="mt-8 text-center text-sm text-kumbu-muted">{t("noActiveJobs")}</p>
+          <EmptyState
+            icon={Search}
+            title={t("noActiveJobsTitle")}
+            description={t("noActiveJobs")}
+            actionLabel={t("publishJob")}
+            actionHref="/publicar"
+            className="mt-8 py-10"
+          />
         ) : (
           <ul className="kumbu-listing-grid mt-6">
             {jobs.map((j) => (

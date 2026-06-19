@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
+import { useResolveUserFacingError } from "@/lib/i18n/use-format-error";
 import { Button } from "@/components/ui/button";
+import { UserFacingErrorAlert } from "@/components/ui/user-facing-error-alert";
 
 export default function Error({
   error,
@@ -13,24 +14,24 @@ export default function Error({
   reset: () => void;
 }) {
   const t = useTranslations("errors");
-  const formatErrorMessage = useFormatErrorMessage();
+  const resolveError = useResolveUserFacingError();
 
   useEffect(() => {
     console.error(error);
   }, [error]);
 
-  const message = formatErrorMessage(error);
+  const facing = resolveError(error);
 
   return (
     <div className="kumbu-page-bg flex min-h-screen flex-col items-center justify-center px-6">
-      <div className="kumbu-card max-w-md p-8 text-center">
-        <h1 className="text-xl font-extrabold text-kumbu-foreground">{t("errorPageTitle")}</h1>
-        <p className="mt-3 text-sm text-kumbu-muted">{message}</p>
-        <div className="mt-6 flex flex-col gap-2">
-          <Button type="button" onClick={() => reset()}>
-            {t("errorPageRetry")}
-          </Button>
-          <Button href="/" variant="secondary">
+      <div className="kumbu-card max-w-md p-8">
+        <UserFacingErrorAlert
+          error={facing}
+          onRetry={() => reset()}
+          retryLabel={t("errorPageRetry")}
+        />
+        <div className="mt-4">
+          <Button href="/" variant="secondary" fullWidth>
             {t("errorPageGoHome")}
           </Button>
         </div>

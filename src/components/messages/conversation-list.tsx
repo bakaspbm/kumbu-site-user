@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { PlatformAlertsBanner } from "@/components/messages/platform-alerts-banner";
 import { ListingImage } from "@/components/ui/listing-image";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { enrichConversationsWithUnread } from "@/lib/chat/unread-tracker";
 import { useAuth } from "@/contexts/auth-context";
 import { useMessages } from "@/contexts/messages-context";
 import type { ConversationSummary } from "@/types/store";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { cn } from "@/lib/utils";
 
 function formatTime(iso: string, dateLocale: string) {
@@ -31,6 +33,7 @@ function formatTime(iso: string, dateLocale: string) {
 
 export function ConversationList() {
   const t = useTranslations("chat");
+  const tCommon = useTranslations("common");
   const locale = useLocale();
   const dateLocale = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "pt-PT";
   const { user } = useAuth();
@@ -84,34 +87,33 @@ export function ConversationList() {
 
   if (!conversationsReady) {
     return (
-      <p className="py-12 text-center text-sm text-kumbu-muted">{t("loadingConversations")}</p>
+      <div className="px-4 py-8">
+        <LoadingIndicator
+          active
+          label={t("loadingConversations")}
+          slowHint={tCommon("loadingSlowHint")}
+        />
+      </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-md space-y-4 px-4 py-8">
-        <PlatformAlertsBanner />
-        <div className="flex flex-col items-center px-2 py-10 text-center">
-          <span className="flex size-20 items-center justify-center rounded-full bg-kumbu-primary-soft">
-            <MessageCircle className="size-10 text-kumbu-primary" />
-          </span>
-          <h2 className="mt-6 text-lg font-extrabold">{t("noConversationsTitle")}</h2>
-          <p className="mt-2 max-w-sm text-sm text-kumbu-muted">{t("noConversationsDesc")}</p>
-          <Link
-            href="/procurar"
-            className="mt-6 text-sm font-bold text-kumbu-primary hover:underline"
-          >
-            {t("exploreListings")}
-          </Link>
-        </div>
+      <div className="mx-auto max-w-md px-4 py-4">
+        <EmptyState
+          icon={MessageCircle}
+          title={t("noConversationsTitle")}
+          description={t("noConversationsDesc")}
+          steps={[t("emptyStep1"), t("emptyStep2"), t("emptyStep3")]}
+          actionLabel={t("exploreListings")}
+          actionHref="/procurar"
+        />
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-2xl px-3 py-3 md:px-4">
-      <PlatformAlertsBanner compact className="mb-3" />
       <ul className="space-y-2">
         {items.map((c) => {
           const name = c.otherParty?.displayName ?? t("defaultUser");
@@ -144,14 +146,17 @@ export function ConversationList() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <p
-                      className={cn(
-                        "truncate",
-                        unread ? "font-extrabold text-kumbu-foreground" : "font-bold",
-                      )}
-                    >
-                      {name}
-                    </p>
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <p
+                        className={cn(
+                          "truncate",
+                          unread ? "font-extrabold text-kumbu-foreground" : "font-bold",
+                        )}
+                      >
+                        {name}
+                      </p>
+                      {c.otherParty?.sellerVerified ? <VerifiedBadge className="shrink-0" /> : null}
+                    </div>
                     <span
                       className={cn(
                         "shrink-0 text-[11px] tabular-nums",

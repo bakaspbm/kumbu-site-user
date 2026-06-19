@@ -2,6 +2,8 @@ import { Package } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { OrderDetailView } from "@/components/orders/order-detail-view";
 import { EmptyState } from "@/components/ui/empty-state";
+import { UserFacingErrorAlert } from "@/components/ui/user-facing-error-alert";
+import { resolveUserFacingErrorServer } from "@/lib/i18n/format-error-server";
 import { resolveServerAuth } from "@/lib/server-page-auth";
 import { getOrder } from "@/lib/site-data";
 import { notFound } from "next/navigation";
@@ -28,7 +30,23 @@ export default async function CompraDetailPage({ params }: PageProps) {
     );
   }
 
-  const order = await getOrder(id).catch(() => null);
+  let order: Awaited<ReturnType<typeof getOrder>> | null = null;
+  let loadError = null;
+
+  try {
+    order = await getOrder(id);
+  } catch (err) {
+    loadError = await resolveUserFacingErrorServer(err);
+  }
+
+  if (loadError) {
+    return (
+      <div className="mt-8">
+        <UserFacingErrorAlert error={loadError} />
+      </div>
+    );
+  }
+
   if (!order || order.userId !== auth.userId) notFound();
 
   return (

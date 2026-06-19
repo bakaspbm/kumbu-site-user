@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 import createNextIntlPlugin from "next-intl/plugin";
+import { buildContentSecurityPolicy } from "./src/lib/security/content-security-policy";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
@@ -9,9 +11,50 @@ const devAllowedOrigins = (process.env.DEV_ALLOWED_ORIGINS ?? "192.168.0.173")
   .map((s) => s.trim())
   .filter(Boolean);
 
+function apiImageRemotePatterns(): NonNullable<
+  NextConfig["images"]
+>["remotePatterns"] {
+  const patterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [
+    { protocol: "http", hostname: "localhost", pathname: "/files/**" },
+    { protocol: "http", hostname: "127.0.0.1", pathname: "/files/**" },
+    { protocol: "http", hostname: "192.168.*", pathname: "/files/**" },
+  ];
+  const apiUrl = process.env.NEXT_PUBLIC_KUMBU_API_URL?.trim();
+  if (!apiUrl) return patterns;
+  try {
+    const parsed = new URL(apiUrl);
+    const protocol = parsed.protocol.replace(":", "") as "http" | "https";
+    patterns.push({
+      protocol,
+      hostname: parsed.hostname,
+      pathname: "/files/**",
+    });
+  } catch {
+    /* ignore invalid URL */
+  }
+  return patterns;
+}
+
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   allowedDevOrigins: devAllowedOrigins,
   headers: async () => [
+    {
+      source: "/:path*",
+      headers: [
+        { key: "X-Frame-Options", value: "DENY" },
+        { key: "X-Content-Type-Options", value: "nosniff" },
+        { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        {
+          key: "Permissions-Policy",
+          value: "camera=(), microphone=(), geolocation=()",
+        },
+        {
+          key: "Content-Security-Policy",
+          value: buildContentSecurityPolicy(),
+        },
+      ],
+    },
     {
       source: "/sw.js",
       headers: [
@@ -33,23 +76,7 @@ const nextConfig: NextConfig = {
   images: {
     /* Em dev o optimizador dava timeout (500) em JPGs grandes do Storage. */
     unoptimized: process.env.NODE_ENV === "development",
-    remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "localhost",
-        pathname: "/files/**",
-      },
-      {
-        protocol: "http",
-        hostname: "127.0.0.1",
-        pathname: "/files/**",
-      },
-      {
-        protocol: "http",
-        hostname: "192.168.*",
-        pathname: "/files/**",
-      },
-    ],
+    remotePatterns: apiImageRemotePatterns(),
     minimumCacheTTL: 60,
   },
   async rewrites() {
@@ -116,4 +143,23 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+const hasSentryUpload = Boolean(
+  process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT,
+);
+
+const sentryEnabled = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN?.trim());
+
+export default withSentryConfig(withNextIntl(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !hasSentryUpload,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  sourcemaps: {
+    disable: !hasSentryUpload,
+  },
+  tunnelRoute: sentryEnabled ? "/monitoring" : undefined,
+});

@@ -4,9 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Check, Download, Eye, MessageCircle, X } from "lucide-react";
+import { Check, Download, Eye, MessageCircle, X, Briefcase, Users } from "lucide-react";
 import { loadEmployerJobsDataAction } from "@/app/actions/jobs";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 import { isJobListing } from "@/lib/jobs/category";
 import { promiseWithTimeout } from "@/lib/promise-timeout";
 import { ANGOLA_PROVINCES } from "@/lib/property/constants";
@@ -215,16 +217,23 @@ export function EmployerApplicationsManager() {
       )}
 
       {showSpinner ? (
-        <p className="py-8 text-center text-sm text-kumbu-muted">{t("loading")}</p>
+        <PageLoadingIndicator label={t("loading")} />
       ) : jobs.length === 0 ? (
-        <p className="py-8 text-center text-sm text-kumbu-muted">
-          {t("noJobs")}{" "}
-          <Link href="/publicar" className="font-semibold text-kumbu-primary">
-            {tJobs("publishJob")}
-          </Link>
-        </p>
+        <EmptyState
+          icon={Briefcase}
+          title={t("noJobsTitle")}
+          description={t("noJobs")}
+          actionLabel={t("noJobsAction")}
+          actionHref="/publicar"
+          className="py-10"
+        />
       ) : apps.length === 0 ? (
-        <p className="py-8 text-center text-sm text-kumbu-muted">{t("noApps")}</p>
+        <EmptyState
+          icon={Users}
+          title={t("noAppsTitle")}
+          description={t("noApps")}
+          className="py-10"
+        />
       ) : (
         <ul className="kumbu-card-grid">
             {apps.map((a) => (

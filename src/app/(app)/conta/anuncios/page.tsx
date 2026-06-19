@@ -7,6 +7,7 @@ import { Plus, Tag } from "lucide-react";
 import { ContaPageHeader } from "@/components/account/conta-page-header";
 import { ContaPanel } from "@/components/account/conta-section";
 import { Button } from "@/components/ui/button";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 
 const MyListingsManager = dynamic(
   () =>
@@ -21,7 +22,7 @@ const MyListingsManager = dynamic(
 
 function ListingsLoading() {
   const t = useTranslations("accountPages.listings");
-  return <p className="py-12 text-center text-sm text-kumbu-muted">{t("loading")}</p>;
+  return <PageLoadingIndicator label={t("loading")} />;
 }
 
 export default function ContaAnunciosPage() {

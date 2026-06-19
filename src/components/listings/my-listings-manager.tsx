@@ -13,9 +13,13 @@ import { productPlaceholderStyle } from "@/lib/utils";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 import { requestCatalogRefresh } from "@/lib/catalog-refresh";
+import { isJobListing } from "@/lib/jobs/category";
+import { useUserMonetizationVisible } from "@/hooks/use-user-monetization-visible";
 import {
   listMyListings,
+  markJobAsFilled,
   softDeleteCatalogProduct,
   updateCatalogProduct,
 } from "@/lib/site-data";
@@ -24,16 +28,24 @@ import {
   isBrowserOnline,
   setOfflineMyListings,
 } from "@/lib/offline/store";
+import { useAuth } from "@/contexts/auth-context";
+import { cn } from "@/lib/utils";
 import type { CatalogProduct } from "@/types/store";
 
 async function sessionUserId(): Promise<string | undefined> {
   return undefined;
 }
 
+function isListingInactive(p: CatalogProduct): boolean {
+  return p.isOutOfStock || (p.jobListingStatus != null && p.jobListingStatus !== "active");
+}
+
 function MyListingsManagerInner() {
   const t = useTranslations("accountPages.listings");
   const tCommon = useTranslations("common");
   const tProduct = useTranslations("product");
+  const { user } = useAuth();
+  const monetizationVisible = useUserMonetizationVisible();
   const [listings, setListings] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -86,6 +98,18 @@ function MyListingsManagerInner() {
     }
   }
 
+  async function closeJob(p: CatalogProduct) {
+    if (!user?.id || !confirm(t("closeJobConfirm"))) return;
+    setBusy(true);
+    try {
+      await markJobAsFilled(p.id, user.id);
+      requestCatalogRefresh();
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function saveEdit(id: string) {
     setBusy(true);
     try {
@@ -125,9 +149,7 @@ function MyListingsManagerInner() {
   }
 
   if (loading) {
-    return (
-      <p className="py-12 text-center text-sm text-kumbu-muted">{t("loading")}</p>
-    );
+    return <PageLoadingIndicator label={t("loading")} />;
   }
 
   if (listings.length === 0) {
@@ -150,8 +172,19 @@ function MyListingsManagerInner() {
         </p>
       )}
       <ul className="kumbu-listing-grid">
-        {listings.map((p) => (
-          <li key={p.id} className="kumbu-card-elevated flex flex-col overflow-hidden">
+        {listings.map((p) => {
+          const inactive = isListingInactive(p);
+          const isJob = isJobListing(p);
+          const jobClosed = isJob && p.jobListingStatus !== "active";
+
+          return (
+          <li
+            key={p.id}
+            className={cn(
+              "kumbu-card-elevated flex flex-col overflow-hidden transition-opacity",
+              inactive && "opacity-60 saturate-[0.85]",
+            )}
+          >
             {editingId === p.id ? (
               <div className="flex flex-1 flex-col p-4">
                 <div className="space-y-3">
@@ -200,6 +233,11 @@ function MyListingsManagerInner() {
                       <ImageIcon className="size-8 text-white/60" />
                     </div>
                   )}
+                  {inactive && (
+                    <span className="absolute left-2 top-2 rounded-full bg-kumbu-foreground/75 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                      {jobClosed ? t("jobClosedBadge") : t("inactiveBadge")}
+                    </span>
+                  )}
                 </Link>
                 <div className="flex flex-1 flex-col p-3">
                   <div className="flex items-start justify-between gap-2">
@@ -225,19 +263,24 @@ function MyListingsManagerInner() {
                       {p.isOutOfStock && (
                         <p className="mt-1 text-xs font-semibold text-red-600">{tProduct("outOfStock")}</p>
                       )}
+                      {jobClosed && (
+                        <p className="mt-1 text-xs font-semibold text-kumbu-muted">{t("jobClosedHint")}</p>
+                      )}
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <button
-                        type="button"
-                        aria-label={t("highlight")}
-                        onClick={() => {
-                          setPromoteId(p.id);
-                          setPromoteCategoryId(p.categoryId);
-                        }}
-                        className="flex size-9 items-center justify-center rounded-lg border border-kumbu-border text-kumbu-primary"
-                      >
-                        <Sparkles className="size-4" />
-                      </button>
+                      {monetizationVisible && (
+                        <button
+                          type="button"
+                          aria-label={t("highlight")}
+                          onClick={() => {
+                            setPromoteId(p.id);
+                            setPromoteCategoryId(p.categoryId);
+                          }}
+                          className="flex size-9 items-center justify-center rounded-lg border border-kumbu-border text-kumbu-primary"
+                        >
+                          <Sparkles className="size-4" />
+                        </button>
+                      )}
                       <button
                         type="button"
                         aria-label={t("edit")}
@@ -261,23 +304,37 @@ function MyListingsManagerInner() {
                       </button>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    fullWidth
-                    className="mt-3 h-9"
-                    disabled={busy}
-                    onClick={() => void toggleStock(p)}
-                  >
-                    {p.isOutOfStock ? t("available") : tProduct("outOfStock")}
-                  </Button>
+                  {isJob && !jobClosed ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      fullWidth
+                      className="mt-3 h-9"
+                      disabled={busy}
+                      onClick={() => void closeJob(p)}
+                    >
+                      {t("closeJob")}
+                    </Button>
+                  ) : !isJob ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      fullWidth
+                      className="mt-3 h-9"
+                      disabled={busy}
+                      onClick={() => void toggleStock(p)}
+                    >
+                      {p.isOutOfStock ? t("available") : tProduct("outOfStock")}
+                    </Button>
+                  ) : null}
                 </div>
               </>
             )}
           </li>
-        ))}
+          );
+        })}
       </ul>
-      {promoteId && (
+      {monetizationVisible && promoteId && (
         <PromoteListingDialog
           listingId={promoteId}
           categoryId={promoteCategoryId}

@@ -12,6 +12,7 @@ export interface SellerSummary {
   city?: string | null;
   sellerRating?: number | null;
   sellerReviewCount?: number;
+  sellerVerified?: boolean;
   online?: boolean;
   lastSeenAt?: string | null;
 }
@@ -129,6 +130,7 @@ export interface StoreUser {
   canPublish?: boolean;
   missingProfileFields?: string[];
   emailVerified?: boolean;
+  sellerVerified?: boolean;
   bannedAt?: string | null;
   bannedUntil?: string | null;
   banReason?: string | null;
@@ -154,7 +156,9 @@ export interface ConversationMessage {
   senderId: string;
   body: string;
   createdAt: string;
-  messageKind?: "text" | "system";
+  messageKind?: "text" | "system" | "attachment" | "support";
+  attachmentUrl?: string | null;
+  fromSupport?: boolean;
 }
 
 export interface ConversationSummary {

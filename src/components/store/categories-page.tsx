@@ -16,6 +16,7 @@ import {
   partitionCategoriesForExplore,
 } from "@/lib/catalog/category-links";
 import { localizeCategoryKindLabel } from "@/lib/catalog/localize-product-fields";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { cn } from "@/lib/utils";
 
 type Tab = "categories" | "products";
@@ -28,6 +29,7 @@ const SECTION_TITLE_KEYS = {
 
 export function CategoriesPage() {
   const t = useTranslations("search");
+  const tCommon = useTranslations("common");
   const tCatalogFields = useTranslations("catalogFields");
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "products" ? "products" : "categories";
@@ -142,7 +144,13 @@ export function CategoriesPage() {
 
         {tab === "categories" ? (
           loading ? (
-            <p className="mt-16 text-center text-sm text-kumbu-muted">{t("loadingCategories")}</p>
+            <div className="mt-16">
+              <LoadingIndicator
+                active={loading}
+                label={t("loadingCategories")}
+                slowHint={tCommon("loadingSlowHint")}
+              />
+            </div>
           ) : shownCategories.length === 0 ? (
             <p className="mt-16 text-center text-sm text-kumbu-muted">{t("noCategoriesFound")}</p>
           ) : (

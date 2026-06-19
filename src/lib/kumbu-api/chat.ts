@@ -9,6 +9,7 @@ type ConversationDto = {
   sellerId: string;
   otherPartyId?: string | null;
   otherPartyName?: string | null;
+  otherPartyVerified?: boolean | null;
   lastMessageBody?: string | null;
   lastMessageSenderId?: string | null;
   lastMessageAt?: string | null;
@@ -22,11 +23,17 @@ type ConversationDto = {
 
 type MessageDto = {
   id: string;
-  conversationId: string;
-  senderId: string;
+  conversationId?: string;
+  conversation_id?: string;
+  senderId?: string;
+  sender_id?: string;
   body: string;
-  createdAt: string;
+  createdAt?: string;
+  created_at?: string;
   messageKind?: string | null;
+  message_kind?: string | null;
+  attachmentUrl?: string | null;
+  attachment_url?: string | null;
 };
 
 function clientOrThrow(): KumbuApiClient {
@@ -36,18 +43,25 @@ function clientOrThrow(): KumbuApiClient {
 }
 
 function coerceDate(value: string | null | undefined): string {
-  return value ?? new Date().toISOString();
+  if (value == null || value === "") return new Date().toISOString();
+  return value;
 }
 
 function toMessage(row: MessageDto): ConversationMessage {
+  const kind = row.messageKind ?? row.message_kind ?? "text";
   return {
     id: String(row.id),
-    conversationId: String(row.conversationId),
-    senderId: String(row.senderId),
+    conversationId: String(row.conversationId ?? row.conversation_id ?? ""),
+    senderId: String(row.senderId ?? row.sender_id ?? ""),
     body: String(row.body ?? ""),
-    createdAt: coerceDate(row.createdAt),
-    messageKind: row.messageKind === "system" ? "system" : "text",
+    createdAt: coerceDate(row.createdAt ?? row.created_at),
+    messageKind: kind === "system" ? "system" : kind === "attachment" ? "attachment" : "text",
+    attachmentUrl: row.attachmentUrl ?? row.attachment_url ?? null,
   };
+}
+
+export function parseChatMessageRow(row: MessageDto): ConversationMessage {
+  return toMessage(row);
 }
 
 function toConversation(row: ConversationDto): ConversationSummary {
@@ -65,6 +79,7 @@ function toConversation(row: ConversationDto): ConversationSummary {
           id: String(row.otherPartyId),
           displayName: row.otherPartyName ?? "Utilizador",
           photoUrl: null,
+          sellerVerified: row.otherPartyVerified === true,
           online: row.otherPartyOnline === true,
           lastSeenAt: row.otherPartyLastSeenAt ?? null,
         }
@@ -128,13 +143,14 @@ export async function startConversationBackend(productId: string): Promise<strin
 export async function sendConversationMessageBackend(
   conversationId: string,
   body: string,
+  attachmentUrl?: string | null,
 ): Promise<ConversationMessage> {
   const client = clientOrThrow();
   const row = await client.request<MessageDto>(
     `/chat/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
       method: "POST",
-      body: JSON.stringify({ body }),
+      body: JSON.stringify({ body, attachmentUrl: attachmentUrl ?? undefined }),
     },
   );
   return toMessage(row);

@@ -21,7 +21,11 @@ export function IdentityUpload() {
     back: false,
     selfie: false,
   });
+  const [documentReviews, setDocumentReviews] = useState<
+    Partial<Record<IdentitySide, { status: string; rejection_reason: string | null }>>
+  >({});
   const [reviewStatus, setReviewStatus] = useState("NOT_SUBMITTED");
+  const [adminNote, setAdminNote] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -45,13 +49,18 @@ export function IdentityUpload() {
     [t],
   );
 
+  function applyStatus(status: Awaited<ReturnType<typeof getIdentityStatusBackend>>) {
+    setUploaded(status.uploaded);
+    setReviewStatus(status.reviewStatus);
+    setAdminNote(status.adminNote ?? null);
+    setDocumentReviews(status.documentReviews ?? {});
+  }
+
   useEffect(() => {
     if (!isLoggedIn) return;
     void (async () => {
       try {
-        const status = await getIdentityStatusBackend();
-        setUploaded(status.uploaded);
-        setReviewStatus(status.reviewStatus);
+        applyStatus(await getIdentityStatusBackend());
       } catch {
         /* ignore */
       }
@@ -64,9 +73,7 @@ export function IdentityUpload() {
     setMessage(null);
     setBusy(side);
     try {
-      const status = await uploadIdentityDocumentBackend(side, file);
-      setUploaded(status.uploaded);
-      setReviewStatus(status.reviewStatus);
+      applyStatus(await uploadIdentityDocumentBackend(side, file));
       setMessage(t("identityUploadSuccess"));
     } catch (e) {
       setError(e instanceof Error ? e.message : t("identityUploadError"));
@@ -80,9 +87,7 @@ export function IdentityUpload() {
     setMessage(null);
     setSubmitting(true);
     try {
-      const status = await submitIdentityVerificationBackend();
-      setUploaded(status.uploaded);
-      setReviewStatus(status.reviewStatus);
+      applyStatus(await submitIdentityVerificationBackend());
       setMessage(t("identitySubmitSuccess"));
     } catch (e) {
       setError(e instanceof Error ? e.message : t("identitySubmitError"));
@@ -93,6 +98,15 @@ export function IdentityUpload() {
 
   const complete = sides.every(({ id }) => uploaded[id]);
   const statusLabel = reviewLabels[reviewStatus] ?? reviewStatus;
+  const hasRejectedDocs = sides.some(
+    ({ id }) => documentReviews[id]?.status === "REJECTED",
+  );
+  const canSubmit =
+    complete &&
+    !submitting &&
+    reviewStatus !== "PENDING" &&
+    reviewStatus !== "APPROVED" &&
+    !hasRejectedDocs;
 
   return (
     <div className="space-y-3">
@@ -100,29 +114,60 @@ export function IdentityUpload() {
       <p className="text-xs font-semibold text-kumbu-foreground">
         {t("identityStatus", { status: statusLabel })}
       </p>
-      {sides.map(({ id, label }) => (
-        <label
-          key={id}
-          className="flex cursor-pointer items-center justify-between rounded-xl border border-kumbu-border bg-kumbu-surface px-4 py-3"
-        >
-          <span className="text-sm font-semibold">{label}</span>
-          <span className="flex items-center gap-2 text-xs font-bold text-kumbu-primary">
-            {uploaded[id] ? t("identityUploaded") : busy === id ? t("identityUploading") : (
-              <>
-                <Upload className="size-4" />
-                {t("identityUpload")}
-              </>
-            )}
-          </span>
-          <input
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            disabled={busy !== null || submitting}
-            onChange={(e) => void handleFile(id, e.target.files?.[0] ?? null)}
-          />
-        </label>
-      ))}
+
+      {reviewStatus === "REJECTED" && adminNote ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 whitespace-pre-wrap">
+          <p className="font-semibold">{t("identityRejectionReason")}</p>
+          <p className="mt-1">{adminNote}</p>
+        </div>
+      ) : null}
+
+      {sides.map(({ id, label }) => {
+        const review = documentReviews[id];
+        const rejected = review?.status === "REJECTED";
+        const approved = review?.status === "APPROVED";
+
+        return (
+          <div key={id} className="space-y-1.5">
+            <label className="flex cursor-pointer items-center justify-between rounded-xl border border-kumbu-border bg-kumbu-surface px-4 py-3">
+              <span className="text-sm font-semibold">{label}</span>
+              <span className="flex items-center gap-2 text-xs font-bold text-kumbu-primary">
+                {approved ? (
+                  <span className="text-emerald-600">{t("identityDocApproved")}</span>
+                ) : rejected ? (
+                  <span className="text-red-600">{t("identityDocRejected")}</span>
+                ) : uploaded[id] ? (
+                  t("identityUploaded")
+                ) : busy === id ? (
+                  t("identityUploading")
+                ) : (
+                  <>
+                    <Upload className="size-4" />
+                    {t("identityUpload")}
+                  </>
+                )}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                disabled={busy !== null || submitting || reviewStatus === "APPROVED"}
+                onChange={(e) => void handleFile(id, e.target.files?.[0] ?? null)}
+              />
+            </label>
+            {rejected && review?.rejection_reason ? (
+              <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+                {review.rejection_reason}
+              </p>
+            ) : null}
+          </div>
+        );
+      })}
+
+      {hasRejectedDocs ? (
+        <p className="text-xs text-red-700">{t("identityReplaceRejected")}</p>
+      ) : null}
+
       {error && (
         <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
@@ -133,7 +178,7 @@ export function IdentityUpload() {
         type="button"
         fullWidth
         className="h-11"
-        disabled={!complete || submitting || reviewStatus === "PENDING" || reviewStatus === "APPROVED"}
+        disabled={!canSubmit}
         onClick={() => void handleSubmit()}
       >
         {submitting ? t("identitySubmitting") : t("identitySubmit")}

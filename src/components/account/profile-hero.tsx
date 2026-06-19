@@ -3,6 +3,7 @@
 import { Camera, CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ProfileEmailVerificationStatus } from "@/components/auth/profile-email-verification-status";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { cn } from "@/lib/utils";
 
 interface ProfileHeroProps {
@@ -14,6 +15,7 @@ interface ProfileHeroProps {
   completionPct: number;
   profileComplete: boolean;
   signupDevEmailLink: string | null;
+  sellerVerified?: boolean;
   onAvatarChange: (file: File | null) => void;
 }
 
@@ -26,6 +28,7 @@ export function ProfileHero({
   completionPct,
   profileComplete,
   signupDevEmailLink,
+  sellerVerified = false,
   onAvatarChange,
 }: ProfileHeroProps) {
   const t = useTranslations("account");
@@ -70,8 +73,12 @@ export function ProfileHero({
                 {displayName || t("defaultUserName")}
               </h2>
               {email ? (
-                <p className="mt-0.5 truncate text-sm text-kumbu-muted">{email}</p>
+                <>
+                  <p className="mt-0.5 truncate text-sm text-kumbu-muted">{email}</p>
+                  <p className="mt-1 text-xs text-kumbu-muted">{t("emailReadonlyNote")}</p>
+                </>
               ) : null}
+              {sellerVerified ? <VerifiedBadge className="mt-2" /> : null}
               {profileComplete ? (
                 <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200/80">
                   <CheckCircle2 className="size-3.5" aria-hidden />

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
 import { isKumbuApiEnabled } from "@/lib/kumbu-api/client";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 import {
   listMyMonetizationPaymentsBackend,
   type MonetizationPayment,
@@ -61,7 +62,7 @@ export function MyMonetizationPaymentsPanel() {
   }
 
   if (loading) {
-    return <p className="py-8 text-center text-sm text-kumbu-muted">{t("loading")}</p>;
+    return <PageLoadingIndicator label={t("loading")} />;
   }
 
   if (error) {

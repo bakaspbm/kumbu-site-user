@@ -4,15 +4,16 @@
   "private": true,
   "scripts": {
     "clean": "node scripts/clean-next.mjs",
-    "dev": "next dev -H 0.0.0.0 -p 3001",
-    "dev:lan": "next dev -H 0.0.0.0 -p 3001",
-    "dev:turbo": "next dev --turbopack -H 0.0.0.0 -p 3001",
+    "dev": "next dev -H 0.0.0.0 -p 3000",
+    "dev:lan": "next dev -H 0.0.0.0 -p 3000",
+    "dev:turbo": "next dev --turbopack -H 0.0.0.0 -p 3000",
     "build": "next build",
-    "start": "next start -p 3001",
+    "start": "next start -p 3000",
     "lint": "next lint"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
+    "@sentry/nextjs": "^10.58.0",
     "@stomp/stompjs": "^7.3.0",
     "clsx": "^2.1.1",
     "jspdf": "^4.2.1",

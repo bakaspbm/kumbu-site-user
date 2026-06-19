@@ -47,6 +47,20 @@ import { uploadListingImagesFromBrowser } from "@/lib/listings/upload-images";
 import { requestCatalogRefresh } from "@/lib/catalog-refresh";
 import { PublishRulesConsent } from "@/components/legal/publish-rules-consent";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
+import { isListingLimitError } from "@/lib/monetization/listing-limit";
+import { useUserMonetizationVisible } from "@/hooks/use-user-monetization-visible";
+import { VipUpgradeDialog } from "@/components/monetization/vip-upgrade-dialog";
+import {
+  classifyPublishError,
+  sanitizePublishError,
+} from "@/lib/publish/publish-user-message";
+import {
+  PublishErrorNotice,
+  PublishLoadingNotice,
+} from "@/components/listings/publish-status-notice";
+import { ActionSuccessNotice } from "@/components/ui/action-success-notice";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 import {
   publishDebug,
   publishDebugFail,
@@ -67,6 +81,7 @@ export function PublishForm({
   const tCommon = useTranslations("common");
   const formatErrorMessage = useFormatErrorMessage();
   const router = useRouter();
+  const monetizationVisible = useUserMonetizationVisible();
   const { isProfileComplete, profileFields, isLoading: authLoading } = useAuth();
   const [step, setStep] = useState(0);
   const [categories, setCategories] = useState<CatalogCategory[]>(
@@ -77,6 +92,7 @@ export function PublishForm({
   );
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [subcategories, setSubcategories] = useState<CatalogSubcategory[]>([]);
+  const [subcategoriesLoading, setSubcategoriesLoading] = useState(false);
   const [categoryId, setCategoryId] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
   const [generalState, setGeneralState] = useState<GeneralProductPublishState>(
@@ -84,16 +100,31 @@ export function PublishForm({
   );
   const [imageItems, setImageItems] = useState<ListingImageItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorNotice, setErrorNotice] = useState<ReturnType<typeof classifyPublishError> | null>(
+    null,
+  );
   const [propertyState, setPropertyState] = useState<PropertyPublishState>(
     defaultPropertyPublishState,
   );
   const [jobState, setJobState] = useState<JobPublishState>(defaultJobPublishState);
   const [acceptPublishRules, setAcceptPublishRules] = useState(false);
+  const [vipDialogOpen, setVipDialogOpen] = useState(false);
   const publishingRef = useRef(false);
 
+  useEffect(() => {
+    if (!publishSuccess) return;
+    const id = window.setTimeout(() => {
+      router.push("/");
+      router.refresh();
+    }, 1600);
+    return () => window.clearTimeout(id);
+  }, [publishSuccess, router]);
+
   const selectedCategory = categories.find((c) => c.id === categoryId);
+  const listingLimitReached = isListingLimitError(error);
   const isProperty = isPropertyCategory(selectedCategory);
   const isJob = isJobCategory(selectedCategory);
 
@@ -120,17 +151,15 @@ export function PublishForm({
   useEffect(() => {
     if (authLoading) return;
 
-    const cached = initialCategories.length > 0 ? initialCategories : categories;
-
     void (async () => {
-      if (cached.length === 0) setCategoriesLoading(true);
+      if (initialCategories.length === 0) setCategoriesLoading(true);
       setCategoriesError(null);
       try {
         const cats = await listCatalogCategories();
         if (cats.length > 0) {
           setCategories(cats);
-        } else if (cached.length > 0) {
-          setCategories(cached);
+        } else if (initialCategories.length > 0) {
+          setCategories(initialCategories);
           setCategoriesError(t("categoriesCacheWarning"));
         } else {
           setCategories(publishFallbackCategories);
@@ -138,28 +167,41 @@ export function PublishForm({
         }
       } catch (err) {
         const msg = formatErrorMessage(err);
-        setCategories(cached.length > 0 ? cached : publishFallbackCategories);
+        setCategories(
+          initialCategories.length > 0 ? initialCategories : publishFallbackCategories,
+        );
         setCategoriesError(msg);
       } finally {
         setCategoriesLoading(false);
       }
     })();
-  }, [authLoading, categories, formatErrorMessage, initialCategories, t]);
+  }, [authLoading, formatErrorMessage, initialCategories, t]);
 
   useEffect(() => {
     if (!categoryId) {
       setSubcategories([]);
+      setSubcategoryId("");
+      setSubcategoriesLoading(false);
       return;
     }
+
     const cat = categories.find((c) => c.id === categoryId);
     if (cat && (isPropertyCategory(cat) || isJobCategory(cat))) {
       setSubcategories([]);
       setSubcategoryId("");
+      setSubcategoriesLoading(false);
       return;
     }
+
+    let cancelled = false;
+    setSubcategories([]);
+    setSubcategoryId("");
+    setSubcategoriesLoading(true);
+
     void (async () => {
       try {
         const subs = await listCatalogSubcategories(categoryId);
+        if (cancelled) return;
         if (subs.length > 0) {
           setSubcategories(subs);
         } else {
@@ -173,8 +215,8 @@ export function PublishForm({
             })),
           );
         }
-        setSubcategoryId("");
       } catch {
+        if (cancelled) return;
         const raw = DEMO_SUBCATEGORIES[categoryId] ?? [];
         setSubcategories(
           raw.map((s: { id: string; name: string }) => ({
@@ -184,10 +226,18 @@ export function PublishForm({
             sortOrder: 0,
           })),
         );
-        setSubcategoryId("");
+      } finally {
+        if (!cancelled) setSubcategoriesLoading(false);
       }
     })();
-  }, [categoryId, categories]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryId]);
+
+  const showSubcategoryField =
+    !isProperty && !isJob && Boolean(categoryId) && (subcategoriesLoading || subcategories.length > 0);
 
   const categoryName = categories.find((c) => c.id === categoryId)?.name ?? "—";
   const subcategoryName =
@@ -196,6 +246,7 @@ export function PublishForm({
   function canAdvance(): boolean {
     if (step === 0) {
       if (!categoryId) return false;
+      if (!isProperty && !isJob && subcategoriesLoading) return false;
       if (!isProperty && !isJob && subcategories.length > 0 && !subcategoryId) {
         return false;
       }
@@ -224,16 +275,33 @@ export function PublishForm({
     return true;
   }
 
+  function setPublishError(raw: string | null) {
+    if (!raw) {
+      setError(null);
+      setErrorNotice(null);
+      return;
+    }
+    const cleaned = sanitizePublishError(raw);
+    setError(cleaned);
+    setErrorNotice(
+      classifyPublishError(cleaned, {
+        restrictedTitle: t("restrictedTitle"),
+        restrictedBody: t("restrictedBody"),
+        contactSupport: t("contactSupport"),
+      }),
+    );
+  }
+
   async function handlePublish() {
     if (publishingRef.current) return;
-    setError(null);
+    setPublishError(null);
     setStatus(null);
     if (!acceptPublishRules) {
-      setError(t("acceptRules"));
+      setPublishError(t("acceptRules"));
       return;
     }
     if (!isProfileComplete) {
-      setError(t("completeProfile"));
+      setPublishError(t("completeProfile"));
       return;
     }
     publishingRef.current = true;
@@ -241,7 +309,7 @@ export function PublishForm({
     try {
       const files = imageItems.map((i) => i.file).filter((f): f is File => Boolean(f));
       if (files.length === 0) {
-        setError(t("addPhoto"));
+        setPublishError(t("addPhoto"));
         setLoading(false);
         return;
       }
@@ -300,7 +368,7 @@ export function PublishForm({
       if (!published.ok) {
         setStatus(null);
         publishDebugFail("P1_GRAVAR_ANUNCIO", published.error, undefined, { productId });
-        setError(t("step1Error", { error: published.error }));
+        setPublishError(published.error);
         if (published.needsLogin) {
           router.push("/login?next=/publicar");
         }
@@ -318,7 +386,7 @@ export function PublishForm({
         publishDebugFail("P2B_UPLOAD_DIRECTO", uploaded.error, undefined, {
           productId: published.productId,
         });
-        setError(
+        setPublishError(
           t("step2Error", {
             error: uploaded.error,
             productId: published.productId,
@@ -343,21 +411,20 @@ export function PublishForm({
           productId: published.productId,
           urls: uploaded.urls,
         });
-        setError(t("step3Error", { error: attached.error }));
+        setPublishError(t("step3Error", { error: attached.error }));
         return;
       }
 
       publishDebug("P3_LIGAR_FOTOS", "publicação completa", {
         productId: published.productId,
       });
-      setStatus(t("statusDone"));
+      setStatus(null);
       requestCatalogRefresh();
-      router.push("/");
-      router.refresh();
+      setPublishSuccess(true);
     } catch (err) {
       setStatus(null);
       publishDebugFail("P1_GRAVAR_ANUNCIO", "excepção inesperada", err);
-      setError(formatErrorMessage(err));
+      setPublishError(formatErrorMessage(err));
     } finally {
       publishingRef.current = false;
       setLoading(false);
@@ -367,7 +434,7 @@ export function PublishForm({
   if (authLoading) {
     return (
       <RequireAuth>
-        <p className="mt-8 text-center text-sm text-kumbu-muted">{tCommon("loading")}</p>
+        <PageLoadingIndicator label={tCommon("loading")} />
       </RequireAuth>
     );
   }
@@ -382,6 +449,20 @@ export function PublishForm({
 
   return (
     <RequireAuth>
+      {publishSuccess ? (
+        <div className="mt-6">
+          <ActionSuccessNotice
+            title={t("successTitle")}
+            message={t("success")}
+            dismissLabel={tCommon("continue")}
+            onDismiss={() => {
+              router.push("/");
+              router.refresh();
+            }}
+          />
+        </div>
+      ) : (
+      <>
       <div className="mt-6">
         <div className="kumbu-card-elevated p-5 md:p-6">
           <div className="flex gap-1.5">
@@ -407,7 +488,12 @@ export function PublishForm({
           {step === 0 && (
             <>
               {categoriesLoading && (
-                <p className="text-sm text-kumbu-muted">{t("loadingCategories")}</p>
+                <LoadingIndicator
+                  active={categoriesLoading}
+                  label={t("loadingCategories")}
+                  slowHint={tCommon("loadingSlowHint")}
+                  compact
+                />
               )}
               {categoriesError && !categoriesLoading && (
                 <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900" role="alert">
@@ -448,19 +534,22 @@ export function PublishForm({
                   {t("jobHint")}
                 </p>
               )}
-              {subcategories.length > 0 && !isProperty && !isJob && (
+              {showSubcategoryField && (
                 <label className="flex flex-col gap-1.5 text-sm font-semibold">
                   {localizeSubcategoryFieldLabel(categoryId, tCatalogFields)} *
                   <select
                     required
+                    disabled={subcategoriesLoading}
                     value={subcategoryId}
                     onChange={(e) => {
                       setSubcategoryId(e.target.value);
                       setGeneralState((s) => ({ ...s, attributes: {} }));
                     }}
-                    className="kumbu-input font-normal"
+                    className="kumbu-input font-normal disabled:cursor-wait disabled:opacity-70"
                   >
-                    <option value="">{t("selectSubcategory")}</option>
+                    <option value="">
+                      {subcategoriesLoading ? tCommon("loading") : t("selectSubcategory")}
+                    </option>
                     {subcategories.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
@@ -583,11 +672,52 @@ export function PublishForm({
           )}
 
           {status && (
-            <p className="rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-800">{status}</p>
+            <PublishLoadingNotice
+              active={loading}
+              message={status}
+              slowHint={tCommon("loadingSlowHint")}
+              hint={
+                status === t("statusStep1")
+                  ? t("loadingHintSave")
+                  : status === t("statusStep2")
+                    ? t("loadingHintPhotos")
+                    : status === t("statusStep3")
+                      ? t("loadingHintFinalize")
+                      : undefined
+              }
+            />
           )}
-          {error && (
-            <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-          )}
+          {errorNotice &&
+            !(listingLimitReached && monetizationVisible) && (
+              <PublishErrorNotice notice={errorNotice} />
+            )}
+          {error && listingLimitReached && monetizationVisible ? (
+            <div className="rounded-2xl border border-kumbu-primary/30 bg-kumbu-primary/5 px-4 py-4">
+              <p className="text-sm font-semibold text-kumbu-ink">{t("vipLimitHintTitle")}</p>
+              <p className="mt-1 text-sm text-kumbu-muted">{t("vipLimitHintDescription")}</p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  className="h-10 flex-1"
+                  onClick={() => setVipDialogOpen(true)}
+                >
+                  {t("upgradeToVip")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-10 flex-1"
+                  onClick={() =>
+                    router.push(
+                      `/conta/vip?limit=1${categoryId ? `&category=${encodeURIComponent(categoryId)}` : ""}`,
+                    )
+                  }
+                >
+                  {t("vipPlanPage")}
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="flex gap-2 pt-2">
             {step > 0 && (
@@ -622,6 +752,16 @@ export function PublishForm({
           </div>
         </div>
       </div>
+      {monetizationVisible && (
+        <VipUpgradeDialog
+          open={vipDialogOpen}
+          onClose={() => setVipDialogOpen(false)}
+          categoryId={categoryId || null}
+          limitReached
+        />
+      )}
+      </>
+      )}
     </RequireAuth>
   );
 }

@@ -111,13 +111,16 @@ export async function markConversationReadAction(
 export async function sendChatMessageAction(
   conversationId: string,
   body: string,
+  attachmentUrl?: string | null,
 ): Promise<SendChatMessageResult> {
   try {
     const userId = await getServerSessionUserId();
     if (!userId) {
       return { ok: false, error: await serverLoginRequiredError(), needsLogin: true };
     }
-    const message = await sendConversationMessage(conversationId, body);
+    const message = await sendConversationMessage(conversationId, body, undefined, userId, {
+      attachmentUrl,
+    });
     return { ok: true, message };
   } catch (e) {
     const msg = e instanceof Error ? e.message : await serverSendMessageError();

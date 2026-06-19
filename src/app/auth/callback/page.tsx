@@ -10,7 +10,8 @@ import {
   parseOAuthCallbackFromWindow,
 } from "@/lib/auth/oauth-providers";
 import { fetchOAuthPublicConfig } from "@/lib/kumbu-api/oauth-config";
-import { oauthLoginBackend } from "@/lib/kumbu-api/auth";
+import { oauthLoginBackend, oauthLoginFacebookCodeBackend } from "@/lib/kumbu-api/auth";
+import { oauthCallbackUrl } from "@/lib/auth/oauth-providers";
 import { useFormatOAuthError, useOAuthCallbackError } from "@/lib/i18n/use-oauth-errors";
 
 function AuthCallbackInner() {
@@ -31,8 +32,12 @@ function AuthCallbackInner() {
       try {
         const oauthConfig = await fetchOAuthPublicConfig();
         if (parsed.provider === "facebook") {
-          const profile = await fetchFacebookProfileInBrowser(parsed.token);
-          await oauthLoginBackend("facebook", parsed.token, profile);
+          if (parsed.kind === "code") {
+            await oauthLoginFacebookCodeBackend(parsed.token, oauthCallbackUrl());
+          } else {
+            const profile = await fetchFacebookProfileInBrowser(parsed.token);
+            await oauthLoginBackend("facebook", parsed.token, profile);
+          }
         } else {
           const profile = decodeGoogleIdToken(parsed.token, oauthConfig.googleClientId);
           await oauthLoginBackend("google", parsed.token, profile);

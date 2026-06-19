@@ -14,10 +14,30 @@ export type SessionUserSnapshot = {
 };
 
 let refreshPromise: Promise<AuthResponse | null> | null = null;
+let lastRefreshAtMs = 0;
+const REFRESH_MIN_INTERVAL_MS = 30_000;
 
 export async function refreshSessionTokens(
   apiBaseUrl: string,
 ): Promise<AuthResponse | null> {
+  if (typeof window !== "undefined") {
+    if (refreshPromise) return refreshPromise;
+    refreshPromise = (async () => {
+      try {
+        const response = await fetch("/api/auth/refresh", {
+          method: "POST",
+          credentials: "include",
+        });
+        if (!response.ok) return null;
+        lastRefreshAtMs = Date.now();
+        return { accessToken: "", refreshToken: "" } as AuthResponse;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+    return refreshPromise;
+  }
+
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
@@ -40,6 +60,7 @@ export async function refreshSessionTokens(
       if (!payload.accessToken || !payload.refreshToken) return null;
 
       await setSessionTokens(payload.accessToken, payload.refreshToken);
+      lastRefreshAtMs = Date.now();
       saveSessionUserSnapshot({
         id: String(payload.userId),
         email: payload.email ?? null,
@@ -132,10 +153,16 @@ function clearBrowserCookie(name: string): void {
   document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
 }
 
+function writeSessionPresenceCookie(present: boolean): void {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = present
+    ? `kumbu_session_present=1; Path=/; Max-Age=${TOKEN_MAX_AGE_SECONDS}; SameSite=Lax${secure}`
+    : `kumbu_session_present=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+}
+
 export function setSessionTokensSync(accessToken: string, refreshToken?: string | null): void {
-  if (typeof window === "undefined") return;
-  writeBrowserCookie(ACCESS_TOKEN_COOKIE, accessToken);
-  if (refreshToken) writeBrowserCookie(REFRESH_TOKEN_COOKIE, refreshToken);
+  void setSessionTokens(accessToken, refreshToken);
 }
 
 export async function setSessionTokens(
@@ -143,7 +170,16 @@ export async function setSessionTokens(
   refreshToken?: string | null,
 ): Promise<void> {
   if (typeof window !== "undefined") {
-    setSessionTokensSync(accessToken, refreshToken);
+    const response = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ accessToken, refreshToken }),
+    });
+    if (!response.ok) {
+      throw new Error("Falha ao guardar sessão.");
+    }
+    writeSessionPresenceCookie(true);
     return;
   }
 
@@ -154,14 +190,16 @@ export async function setSessionTokens(
       path: "/",
       maxAge: TOKEN_MAX_AGE_SECONDS,
       sameSite: "lax",
-      httpOnly: false,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
     });
     if (refreshToken) {
       jar.set(REFRESH_TOKEN_COOKIE, refreshToken, {
         path: "/",
         maxAge: TOKEN_MAX_AGE_SECONDS,
         sameSite: "lax",
-        httpOnly: false,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
       });
     }
   } catch {
@@ -171,8 +209,8 @@ export async function setSessionTokens(
 
 export async function clearSessionTokens(): Promise<void> {
   if (typeof window !== "undefined") {
-    clearBrowserCookie(ACCESS_TOKEN_COOKIE);
-    clearBrowserCookie(REFRESH_TOKEN_COOKIE);
+    await fetch("/api/auth/session", { method: "DELETE", credentials: "include" });
+    writeSessionPresenceCookie(false);
     clearSessionUserSnapshot();
     return;
   }
@@ -219,10 +257,12 @@ export function clearSessionUserSnapshot(): void {
 }
 
 export async function getStoredRefreshToken(): Promise<string | null> {
+  if (typeof window !== "undefined") return null;
   return readCookie(REFRESH_TOKEN_COOKIE);
 }
 
 export async function getStoredAccessToken(): Promise<string | null> {
+  if (typeof window !== "undefined") return null;
   return readCookie(ACCESS_TOKEN_COOKIE);
 }
 
@@ -230,7 +270,16 @@ export async function ensureFreshAccessToken(apiBaseUrl: string): Promise<string
   const accessToken = await getStoredAccessToken();
   const refreshToken = await getStoredRefreshToken();
   if (!refreshToken) return accessToken;
-  if (accessToken && !isAccessTokenExpiringSoon(accessToken)) return accessToken;
+
+  const claims = decodeAccessTokenClaims(accessToken);
+  const nowSec = Math.floor(Date.now() / 1000);
+  const stillValid = Boolean(accessToken && claims?.exp && claims.exp > nowSec);
+  const refreshedRecently = Date.now() - lastRefreshAtMs < REFRESH_MIN_INTERVAL_MS;
+
+  if (stillValid && (!isAccessTokenExpiringSoon(accessToken) || refreshedRecently)) {
+    return accessToken;
+  }
+
   const refreshed = await refreshSessionTokens(apiBaseUrl);
   return refreshed?.accessToken ?? (await getStoredAccessToken());
 }

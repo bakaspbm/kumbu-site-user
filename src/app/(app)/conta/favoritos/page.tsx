@@ -8,6 +8,7 @@ import { OfflineBanner } from "@/components/pwa/offline-banner";
 import { ListingCard } from "@/components/store/listing-card";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useAuth } from "@/contexts/auth-context";
 import { getCatalogProductsByIds } from "@/lib/site-data";
@@ -81,12 +82,13 @@ export default function FavoritosPage() {
           description={t("description")}
         />
         {loading && products.length === 0 ? (
-          <p className="py-12 text-center text-sm text-kumbu-muted">{t("loading")}</p>
+          <PageLoadingIndicator label={t("loading")} />
         ) : products.length === 0 ? (
           <EmptyState
             icon={Heart}
             title={t("emptyTitle")}
             description={t("emptyDescription")}
+            steps={[t("emptyStep1"), t("emptyStep2")]}
             actionLabel={t("emptyAction")}
             actionHref="/procurar"
           />
