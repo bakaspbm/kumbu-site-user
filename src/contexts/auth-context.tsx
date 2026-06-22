@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { fetchAccountShellAction } from "@/app/actions/session";
+import { hasClientSession } from "@/lib/auth/complete-auth";
 import { countUnreadNotificationsBackend } from "@/lib/kumbu-api/notifications";
 import {
   subscribeNotificationsRealtime,
@@ -25,7 +26,6 @@ import {
 import { getKumbuApiClient } from "@/lib/kumbu-api/client";
 import { touchPresenceBackend } from "@/lib/kumbu-api/presence";
 import {
-  decodeAccessTokenClaims,
   isAccessTokenExpiringSoon,
   readSessionUserSnapshot,
   saveSessionUserSnapshot,
@@ -195,16 +195,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applySessionUser]);
 
   const restoreSessionFromStorage = useCallback(async (): Promise<KumbuSessionUser | null> => {
+    if (typeof window !== "undefined" && !hasClientSession()) {
+      return null;
+    }
+
     const session = getBackendSession();
-    const accessToken =
-      session?.accessToken ?? getKumbuApiClient()?.getAccessToken() ?? null;
-    const refreshToken = session?.refreshToken ?? getKumbuApiClient()?.getRefreshToken() ?? null;
-
-    if (!accessToken && !refreshToken) return null;
-
-    const claims = decodeAccessTokenClaims(accessToken);
     const snapshot = readSessionUserSnapshot();
-    const userId = claims?.userId ?? snapshot?.id ?? session?.user.id ?? null;
+    const userId = snapshot?.id ?? session?.user.id ?? null;
     if (!userId) return null;
 
     const offline = await getOfflineStoreUser(userId);
@@ -219,25 +216,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (snapshot?.id === userId) {
       return {
         id: snapshot.id,
-        email: snapshot.email ?? claims?.email ?? null,
+        email: snapshot.email ?? null,
         displayName: snapshot.displayName ?? null,
       };
     }
 
     return {
       id: userId,
-      email: claims?.email ?? null,
-      displayName: null,
+      email: snapshot?.email ?? session?.user.email ?? null,
+      displayName: snapshot?.displayName ?? session?.user.displayName ?? null,
     };
   }, []);
 
   const refresh = useCallback(async () => {
     const client = getKumbuApiClient();
-    const accessToken = client?.getAccessToken();
-    const hasRefreshToken = !!client?.getRefreshToken();
+    const browserSession = typeof window !== "undefined" && hasClientSession();
     const existingUserId = activeUserIdRef.current;
 
-    if (!accessToken && !hasRefreshToken) {
+    if (typeof window !== "undefined" && !browserSession) {
       applySessionUser(null);
       activeUserIdRef.current = null;
       setStoreUser(null);
@@ -254,11 +250,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (offline) setStoreUser(offline);
     }
 
-    if (hasRefreshToken && isAccessTokenExpiringSoon(accessToken)) {
+    if (browserSession) {
       try {
         await refreshBackendToken();
       } catch {
         /* tenta carregar perfil na mesma */
+      }
+    } else if (client) {
+      const accessToken = client.getAccessToken();
+      if (client.getRefreshToken() && isAccessTokenExpiringSoon(accessToken)) {
+        try {
+          await refreshBackendToken();
+        } catch {
+          /* tenta carregar perfil na mesma */
+        }
       }
     }
 
@@ -279,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (client?.getRefreshToken() || storedUser || existingUserId) {
+      if (browserSession || storedUser || existingUserId) {
         void refreshNotifications();
         return;
       }
@@ -290,7 +295,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUnreadNotifications(0);
       setUnreadMessages(0);
     } catch {
-      if (client?.getRefreshToken() || storedUser || existingUserId) return;
+      if (browserSession || storedUser || existingUserId) return;
       applySessionUser(null);
       activeUserIdRef.current = null;
       setStoreUser(null);
@@ -301,11 +306,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user?.id) return;
 
     const keepAlive = window.setInterval(() => {
-      const client = getKumbuApiClient();
-      if (!client?.getRefreshToken()) return;
-      if (isAccessTokenExpiringSoon(client.getAccessToken())) {
-        void refreshBackendToken().catch(() => {});
-      }
+      if (!hasClientSession()) return;
+      void refreshBackendToken().catch(() => {});
     }, 4 * 60_000);
 
     const touchPresence = () => {
@@ -316,11 +318,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
-      const client = getKumbuApiClient();
-      if (!client?.getRefreshToken()) return;
-      if (isAccessTokenExpiringSoon(client.getAccessToken())) {
-        void refreshBackendToken().catch(() => {});
-      }
+      if (!hasClientSession()) return;
+      void refreshBackendToken().catch(() => {});
       touchPresence();
     };
     document.addEventListener("visibilitychange", onVisible);
@@ -359,17 +358,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const session = getBackendSession();
-    if (!session?.accessToken && !session?.refreshToken) return;
+    if (!session?.user.id) return;
 
     const snapshot = readSessionUserSnapshot();
-    const claims = decodeAccessTokenClaims(session.accessToken);
-    const userId = claims?.userId ?? snapshot?.id ?? session.user.id;
-    if (!userId) return;
-
     applySessionUser({
-      id: userId,
-      email: snapshot?.email ?? session.user.email ?? claims?.email ?? null,
-      displayName: snapshot?.displayName ?? null,
+      id: session.user.id,
+      email: snapshot?.email ?? session.user.email ?? null,
+      displayName: snapshot?.displayName ?? session.user.displayName ?? null,
     });
   }, [applySessionUser]);
 

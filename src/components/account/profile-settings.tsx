@@ -10,6 +10,7 @@ import { AccountQuickLinks } from "@/components/account/account-quick-links";
 import { ProfileHero } from "@/components/account/profile-hero";
 import { ProfileIncompleteBlock } from "@/components/account/profile-incomplete-block";
 import { useAuth } from "@/contexts/auth-context";
+import { hasClientSession } from "@/lib/auth/complete-auth";
 import { Button } from "@/components/ui/button";
 import { RequireAuth } from "@/components/auth/require-auth";
 import {
@@ -289,7 +290,7 @@ export function ProfileSettings() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || (!isLoggedIn && hasClientSession())) {
     return <p className="mt-8 text-center text-sm text-kumbu-muted">{t("profileLoading")}</p>;
   }
 

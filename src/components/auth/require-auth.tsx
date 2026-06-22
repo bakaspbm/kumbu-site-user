@@ -4,8 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/auth-context";
-import { getBackendSession } from "@/lib/kumbu-api/auth";
-import { hasBrowserSession } from "@/lib/auth/complete-auth";
+import { hasClientSession } from "@/lib/auth/complete-auth";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -21,7 +20,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (hasBrowserSession() || getBackendSession()?.accessToken) {
+    if (hasClientSession()) {
       if (!recheckStartedRef.current) {
         recheckStartedRef.current = true;
         void refresh();
@@ -32,7 +31,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     router.replace(`/login?next=${encodeURIComponent(window.location.pathname)}`);
   }, [isLoading, isLoggedIn, router, refresh]);
 
-  const restoring = !isLoading && !isLoggedIn && (hasBrowserSession() || Boolean(getBackendSession()?.accessToken));
+  const restoring = !isLoading && !isLoggedIn && hasClientSession();
 
   if (isLoading || restoring) {
     return (

@@ -197,6 +197,7 @@ export class KumbuApiClient {
       response = await fetch(url, {
         ...options,
         headers,
+        credentials: typeof window !== "undefined" ? "include" : options?.credentials,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
