@@ -35,9 +35,11 @@ async function proxy(request: NextRequest, path: string) {
   const target = `${backendBase()}/${path}${request.nextUrl.search}`;
   const headers = new Headers();
   request.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key.toLowerCase())) {
-      headers.set(key, value);
+    const lower = key.toLowerCase();
+    if (HOP_BY_HOP.has(lower) || lower === "accept-encoding") {
+      return;
     }
+    headers.set(key, value);
   });
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
@@ -76,12 +78,15 @@ async function proxy(request: NextRequest, path: string) {
 
   const responseHeaders = new Headers();
   upstream.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key.toLowerCase())) {
-      responseHeaders.set(key, value);
+    const lower = key.toLowerCase();
+    if (HOP_BY_HOP.has(lower) || lower === "content-encoding") {
+      return;
     }
+    responseHeaders.set(key, value);
   });
 
-  return new NextResponse(upstream.body, {
+  const responseBody = await upstream.arrayBuffer();
+  return new NextResponse(responseBody, {
     status: upstream.status,
     headers: responseHeaders,
   });
