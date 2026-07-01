@@ -9,8 +9,9 @@ import {
   fetchFacebookProfileInBrowser,
   parseOAuthCallbackFromWindow,
 } from "@/lib/auth/oauth-providers";
+import { completeFacebookOAuthFromCode } from "@/app/actions/facebook-oauth";
 import { fetchOAuthPublicConfig } from "@/lib/kumbu-api/oauth-config";
-import { oauthLoginBackend, oauthLoginFacebookCodeBackend } from "@/lib/kumbu-api/auth";
+import { oauthLoginBackend } from "@/lib/kumbu-api/auth";
 import { oauthCallbackUrl } from "@/lib/auth/oauth-providers";
 import { useFormatOAuthError, useOAuthCallbackError } from "@/lib/i18n/use-oauth-errors";
 
@@ -33,7 +34,7 @@ function AuthCallbackInner() {
         const oauthConfig = await fetchOAuthPublicConfig();
         if (parsed.provider === "facebook") {
           if (parsed.kind === "code") {
-            await oauthLoginFacebookCodeBackend(parsed.token, oauthCallbackUrl());
+            await completeFacebookOAuthFromCode(parsed.token, oauthCallbackUrl());
           } else {
             const profile = await fetchFacebookProfileInBrowser(parsed.token);
             await oauthLoginBackend("facebook", parsed.token, profile);
