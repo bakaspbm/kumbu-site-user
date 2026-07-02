@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { GoogleLogin } from "@react-oauth/google";
 import { useOAuthConfig } from "@/components/auth/oauth-config-provider";
@@ -9,6 +9,7 @@ import {
   decodeGoogleIdToken,
   startFacebookOAuth,
 } from "@/lib/auth/oauth-providers";
+import { ensureCanonicalSiteOrigin } from "@/lib/urls/canonical-site-origin";
 import { useFormatOAuthError } from "@/lib/i18n/use-oauth-errors";
 
 type Props = {
@@ -44,6 +45,10 @@ export function OAuthLoginButtons({
   const googleConfigured = Boolean(config?.googleEnabled && config.googleClientId);
   const facebookConfigured = Boolean(config?.facebookEnabled && config.facebookAppId);
   const busy = disabled || googleLoading || fbLoading;
+
+  useEffect(() => {
+    ensureCanonicalSiteOrigin();
+  }, []);
 
   function guardTerms(): boolean {
     if (requireTerms && !termsAccepted) {

@@ -12,7 +12,10 @@ export function useFormatOAuthError() {
       if (/provider is not enabled|unsupported provider|validation failed/i.test(msg)) {
         return t("providerNotActive");
       }
-      if (/redirect_uri|redirect uri|URL blocked|can't load URL/i.test(msg)) {
+      if (/origin_mismatch|origin mismatch/i.test(msg)) {
+        return t("googleOriginMismatch");
+      }
+      if (/redirect_uri|redirect uri|URL blocked|can't load URL|url bloqueado/i.test(msg)) {
         return t("redirectMismatch");
       }
       if (/email.*already|already registered/i.test(msg)) {

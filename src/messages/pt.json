@@ -384,7 +384,8 @@
     },
     "oauth": {
       "providerNotActive": "Este método de entrada ainda não está activo no servidor. Use email ou contacte o suporte.",
-      "redirectMismatch": "URL de retorno incorrecta. Confirme http://localhost:3000/auth/callback no Facebook Login.",
+      "redirectMismatch": "URL de retorno incorrecta. Registe https://www.kumbu-market.com/auth/callback no Facebook Login e https://www.kumbu-market.com no Google Cloud Console.",
+      "googleOriginMismatch": "Domínio não autorizado no Google. Adicione https://www.kumbu-market.com em «Origens JavaScript autorizadas» no Google Cloud Console.",
       "emailAlreadyRegistered": "Este email já tem conta. Entre com email e palavra-passe ou use outro método.",
       "facebookEmailMissing": "O Facebook não partilhou o email. Autorize o acesso ao email ou use outro método.",
       "googleInvalid": "Sessão Google inválida. Tente novamente.",
@@ -498,7 +499,7 @@
     "invalidRequest": "Pedido de autenticação inválido.",
     "oauthServerError": "Erro temporário do fornecedor (Google/Facebook). Tente mais tarde.",
     "oauthClient": "App OAuth não autorizada. Verifique GOOGLE_CLIENT_ID / FACEBOOK_APP_ID.",
-    "redirectMismatch": "URL de retorno incorrecta. Adicione /auth/callback no Google/Facebook.",
+    "redirectMismatch": "URL de retorno incorrecta. Registe https://www.kumbu-market.com/auth/callback no Facebook e https://www.kumbu-market.com no Google.",
     "loginRequired": "Inicie sessão para continuar.",
     "uploadPhotosLogin": "Inicie sessão para enviar fotos.",
     "viewConversationLogin": "Inicie sessão para ver esta conversa.",

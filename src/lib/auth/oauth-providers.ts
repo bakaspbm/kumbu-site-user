@@ -1,22 +1,21 @@
 import { sanitizeInternalPath } from "@/lib/auth/safe-redirect";
+import {
+  ensureCanonicalSiteOrigin,
+  oauthCallbackUrl,
+} from "@/lib/urls/canonical-site-origin";
 
 export type OAuthProvider = "google" | "facebook";
 
 export const OAUTH_TERMS_COOKIE = "kumbu_oauth_terms";
 
+export { oauthCallbackUrl };
+
 type OAuthStatePayload = {
   provider: OAuthProvider;
   next: string;
   nonce: string;
+  redirectUri?: string;
 };
-
-export function oauthCallbackUrl(): string {
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
-  return `${origin}/auth/callback`;
-}
 
 function randomNonce(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -30,6 +29,7 @@ export function encodeOAuthState(provider: OAuthProvider, nextPath: string): str
     provider,
     next: sanitizeInternalPath(nextPath, "/"),
     nonce: randomNonce(),
+    redirectUri: oauthCallbackUrl(),
   };
   return btoa(JSON.stringify(payload));
 }
@@ -53,6 +53,8 @@ export function setOAuthTermsPending(): void {
 }
 
 export function startFacebookOAuth(nextPath: string, appId: string): void {
+  ensureCanonicalSiteOrigin();
+
   const facebookAppId = appId.trim();
   if (!facebookAppId) {
     throw new Error("Facebook OAuth não configurado no backend.");
@@ -70,7 +72,14 @@ export function startFacebookOAuth(nextPath: string, appId: string): void {
 }
 
 export type OAuthCallbackResult =
-  | { ok: true; provider: OAuthProvider; token: string; next: string; kind?: "code" | "token" }
+  | {
+      ok: true;
+      provider: OAuthProvider;
+      token: string;
+      next: string;
+      redirectUri: string;
+      kind?: "code" | "token";
+    }
   | { ok: false; error: string; next: string };
 
 /** Lê token devolvido no hash (#access_token= / #id_token=) após redirect OAuth. */
@@ -184,6 +193,7 @@ export function parseOAuthCallbackFromWindow(): OAuthCallbackResult {
   const stateParam = hashParams.get("state") ?? queryParams.get("state");
   const state = decodeOAuthState(stateParam);
   const next = state?.next ?? "/";
+  const redirectUri = state?.redirectUri?.trim() || oauthCallbackUrl();
 
   const oauthError =
     hashParams.get("error") ??
@@ -210,12 +220,12 @@ export function parseOAuthCallbackFromWindow(): OAuthCallbackResult {
     if (!code) {
       return { ok: false, error: "Código Facebook em falta. Tente novamente.", next };
     }
-    return { ok: true, provider: "facebook", token: code, next, kind: "code" };
+    return { ok: true, provider: "facebook", token: code, next, redirectUri, kind: "code" };
   }
 
   const idToken = hashParams.get("id_token") ?? queryParams.get("id_token");
   if (idToken) {
-    return { ok: true, provider: "google", token: idToken, next };
+    return { ok: true, provider: "google", token: idToken, next, redirectUri };
   }
 
   return { ok: false, error: "Resposta de login incompleta. Tente novamente.", next };
@@ -227,8 +237,11 @@ export function formatOAuthError(err: unknown): string {
   if (/provider is not enabled|unsupported provider|validation failed/i.test(msg)) {
     return "Este método de entrada ainda não está activo no servidor. Use email ou contacte o suporte.";
   }
-  if (/redirect_uri|redirect uri|URL blocked|can't load URL/i.test(msg)) {
-    return "URL de retorno incorrecta. Confirme http://localhost:3000/auth/callback no Facebook Login.";
+  if (/origin_mismatch|origin mismatch/i.test(msg)) {
+    return "Domínio não autorizado no Google. Registe https://www.kumbu-market.com nas Origens JavaScript do Google Cloud Console.";
+  }
+  if (/redirect_uri|redirect uri|URL blocked|can't load URL|url bloqueado/i.test(msg)) {
+    return "URL de retorno incorrecta. Registe https://www.kumbu-market.com/auth/callback nas definições OAuth do Facebook e Google.";
   }
   if (/email.*already|already registered/i.test(msg)) {
     return "Este email já tem conta. Entre com email e palavra-passe ou use outro método.";

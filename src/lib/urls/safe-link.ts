@@ -20,6 +20,12 @@ export function isSafeAppLink(href: string | null | undefined): boolean {
       const site = new URL(siteUrl);
       if (parsed.origin === site.origin) return true;
     }
+    if (
+      parsed.hostname === "kumbu-market.com" ||
+      parsed.hostname === "www.kumbu-market.com"
+    ) {
+      return true;
+    }
     return false;
   } catch {
     return false;
