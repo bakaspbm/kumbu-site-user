@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { isKumbuApiEnabled } from "@/lib/kumbu-api/client";
@@ -10,15 +10,14 @@ import { resendVerificationEmailBackend, verifyEmailBackend } from "@/lib/kumbu-
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { useAuth } from "@/contexts/auth-context";
 
-export function ConfirmEmailClient() {
+export function ConfirmEmailClient({ initialToken = "" }: { initialToken?: string }) {
   const t = useTranslations("auth.confirmEmail");
   const tAuth = useTranslations("auth");
   const tCommon = useTranslations("common");
   const formatErrorMessage = useFormatErrorMessage();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { refresh } = useAuth();
-  const token = searchParams.get("token") ?? "";
+  const token = initialToken;
   const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
   const [message, setMessage] = useState<string | null>(null);
   const [resendEmail, setResendEmail] = useState("");

@@ -16,14 +16,20 @@ import {
 
 interface ResetPasswordFormProps {
   onBackToLogin?: () => void;
+  /** Token vindo do servidor (evita depender de JS/useSearchParams). */
+  initialToken?: string | null;
+  initialAuthError?: string | null;
 }
 
-export function ResetPasswordForm({ onBackToLogin }: ResetPasswordFormProps = {}) {
+export function ResetPasswordForm({
+  onBackToLogin,
+  initialToken = null,
+  initialAuthError = null,
+}: ResetPasswordFormProps = {}) {
   const t = useTranslations("auth");
   const formatErrorMessage = useFormatErrorMessage();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const tokenFromUrl = searchParams.get("token");
+  const tokenFromUrl = initialToken?.trim() || null;
   const [step, setStep] = useState<"request" | "update">(
     tokenFromUrl ? "update" : "request",
   );
@@ -31,7 +37,7 @@ export function ResetPasswordForm({ onBackToLogin }: ResetPasswordFormProps = {}
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialAuthError);
   const [message, setMessage] = useState<string | null>(null);
   const [devLink, setDevLink] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -41,12 +47,8 @@ export function ResetPasswordForm({ onBackToLogin }: ResetPasswordFormProps = {}
   useEffect(() => {
     if (tokenFromUrl) {
       setStep("update");
-      return;
     }
-
-    const authError = searchParams.get("auth_error");
-    if (authError) setError(authError);
-  }, [searchParams, tokenFromUrl]);
+  }, [tokenFromUrl]);
 
   async function handleSendLink(e: React.FormEvent) {
     e.preventDefault();
@@ -203,5 +205,19 @@ export function ResetPasswordForm({ onBackToLogin }: ResetPasswordFormProps = {}
         </Link>
       )}
     </form>
+  );
+}
+
+/** Para uso dentro de Suspense (ex.: login) onde o token vem da URL no cliente. */
+export function ResetPasswordFormWithSearchParams(
+  props: Omit<ResetPasswordFormProps, "initialToken" | "initialAuthError">,
+) {
+  const searchParams = useSearchParams();
+  return (
+    <ResetPasswordForm
+      {...props}
+      initialToken={searchParams.get("token")}
+      initialAuthError={searchParams.get("auth_error")}
+    />
   );
 }

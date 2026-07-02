@@ -18,7 +18,7 @@ import {
 import { checkBackendReachable } from "@/lib/kumbu-api/backend-reachable";
 import { loginWithBackend, registerWithBackend } from "@/lib/kumbu-api/auth";
 import { promiseWithTimeout } from "@/lib/promise-timeout";
-import { ResetPasswordForm } from "@/components/auth/reset-password-form";
+import { ResetPasswordFormWithSearchParams } from "@/components/auth/reset-password-form";
 import { DevEmailActionLink } from "@/components/auth/dev-email-action-link";
 import { TermsConsentCheckbox } from "@/components/legal/terms-consent-checkbox";
 import { recordTermsConsentAction } from "@/app/actions/compliance";
@@ -212,7 +212,7 @@ export function LoginForm() {
 
           {authView === "forgot" ? (
             <div className="mt-7">
-              <ResetPasswordForm
+              <ResetPasswordFormWithSearchParams
                 onBackToLogin={() => {
                   setAuthView("login");
                   setError(null);

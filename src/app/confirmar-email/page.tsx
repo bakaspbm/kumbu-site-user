@@ -1,14 +1,19 @@
-import { Suspense } from "react";
 import { ConfirmEmailClient } from "@/components/auth/confirm-email-client";
-import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 
-export default function ConfirmarEmailPage() {
+type Props = {
+  searchParams: Promise<{ token?: string }>;
+};
+
+export default async function ConfirmarEmailPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const token = params.token?.trim() || "";
+
   return (
     <main className="kumbu-container py-8">
       <h1 className="text-center text-2xl font-extrabold text-kumbu-ink">Confirmar email</h1>
-      <Suspense fallback={<PageLoadingIndicator className="mt-8" />}>
-        <ConfirmEmailClient />
-      </Suspense>
+      <div className="mt-8">
+        <ConfirmEmailClient initialToken={token} />
+      </div>
     </main>
   );
 }
