@@ -1,4 +1,4 @@
-import { getKumbuApiBaseUrl, isKumbuApiEnabled } from "@/lib/kumbu-api/client";
+import { isKumbuApiEnabled } from "@/lib/kumbu-api/client";
 
 function isLoopbackHost(hostname: string): boolean {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
@@ -18,16 +18,13 @@ export function getKumbuWsEndpoint(): string | null {
     return `${window.location.origin}/ws-kumbu/chat`;
   }
 
-  const apiBase = getKumbuApiBaseUrl();
-  if (!apiBase) return null;
+  // Em produção o browser usa `/api/kumbu` como base da API (proxy Next).
+  // Para WebSocket/SockJS precisamos do origin real do backend.
+  const apiEnv = process.env.NEXT_PUBLIC_KUMBU_API_URL?.trim();
+  if (!apiEnv) return null;
 
   try {
-    const url = new URL(
-      apiBase.startsWith("/") ? `${window.location.origin}${apiBase}` : apiBase,
-    );
-    if (isLoopbackHost(url.hostname) && !isLoopbackHost(window.location.hostname)) {
-      url.hostname = window.location.hostname;
-    }
+    const url = new URL(apiEnv);
     url.pathname = "/ws/chat";
     url.search = "";
     url.hash = "";
