@@ -2,6 +2,7 @@ import {
   ensureBrowserAccessToken,
   refreshBrowserSessionCookies,
 } from "@/lib/kumbu-api/browser-session";
+import { withAssetCacheBust } from "@/lib/store/product-images";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
@@ -99,7 +100,7 @@ export function getServerKumbuApiBaseUrl(): string | null {
 export function normalizeBackendAssetUrl(url: string | null | undefined): string | null {
   if (!url?.trim()) return null;
   const trimmed = url.trim();
-  if (!isDevMode()) return trimmed;
+  if (!isDevMode()) return withAssetCacheBust(trimmed);
   if (trimmed.startsWith("/backend-files/")) return trimmed;
   try {
     const parsed = new URL(trimmed);

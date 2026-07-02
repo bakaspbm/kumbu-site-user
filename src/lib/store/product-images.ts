@@ -2,6 +2,24 @@ import type { CatalogProduct } from "@/types/store";
 
 export const MAX_LISTING_IMAGES = 10;
 
+/** Quebra cache CDN de respostas 5xx antigas em /files/ (ex.: Cloudflare). */
+export function withAssetCacheBust(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (
+      parsed.hostname === "api.kumbu-market.com" &&
+      parsed.pathname.startsWith("/files/") &&
+      !parsed.searchParams.has("v")
+    ) {
+      parsed.searchParams.set("v", "2");
+      return parsed.href;
+    }
+  } catch {
+    /* ignore */
+  }
+  return url;
+}
+
 export function normalizeListingImageUrl(raw: string): string | null {
   let s = raw.trim();
   if (!s) return null;
@@ -22,7 +40,7 @@ export function normalizeListingImageUrl(raw: string): string | null {
           return `/backend-files${parsed.pathname.slice("/files".length)}`;
         }
       }
-      return parsed.href;
+      return withAssetCacheBust(parsed.href);
     } catch {
       return null;
     }
@@ -31,7 +49,7 @@ export function normalizeListingImageUrl(raw: string): string | null {
   if (s.startsWith("//")) {
     s = `https:${s}`;
     try {
-      return new URL(s).href;
+      return withAssetCacheBust(new URL(s).href);
     } catch {
       return null;
     }
