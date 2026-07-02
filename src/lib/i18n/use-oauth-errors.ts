@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useTranslations } from "next-intl";
+import { isTechnicalErrorMessage } from "@/lib/user-facing-error";
 
 export function useFormatOAuthError() {
   const t = useTranslations("auth.oauth");
@@ -32,7 +33,9 @@ export function useFormatOAuthError() {
       }
       if (/n[aã]o configurado/i.test(msg)) return t("facebookNotConfigured");
       if (/cancelado|bloqueado|popup/i.test(msg)) return msg;
-      return msg.trim() || t("socialLoginFailed");
+      const trimmed = msg.trim();
+      if (trimmed && !isTechnicalErrorMessage(trimmed)) return trimmed;
+      return t("socialLoginFailed");
     },
     [t],
   );

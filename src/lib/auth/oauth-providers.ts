@@ -251,10 +251,15 @@ export function formatOAuthError(err: unknown): string {
     return "Sessão Google inválida. Tente novamente.";
   }
   if (/google.*rede|oauth2\.googleapis|contactar o google/i.test(msg)) {
-    return "O servidor não consegue validar com o Google (rede). Confirme que o backend está activo e facebook-trust-client-profile em dev.";
+    return "Não foi possível validar o login com o Google. Tente outra vez ou use email.";
   }
-  if (/n[aã]o configurado|cancelado|bloqueado|popup/i.test(msg)) {
+  if (/n[aã]o configurado/i.test(msg)) {
+    return "Este método de entrada não está disponível. Use email ou contacte o suporte.";
+  }
+  if (/cancelado|bloqueado|popup/i.test(msg)) {
     return msg;
   }
-  return msg || "Falha no login social.";
+  return msg && !/NEXT_PUBLIC|\.env|KUMBU_|backend|facebook-trust/i.test(msg)
+    ? msg
+    : "Falha no login social.";
 }

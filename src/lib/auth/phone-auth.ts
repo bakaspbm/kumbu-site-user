@@ -15,7 +15,7 @@ export function formatPhoneAuthError(err: unknown): string {
     return "Falha ao enviar SMS. Tente novamente ou use email.";
   }
   if (/sms.*n[aã]o configurado|provider|fornecedor/i.test(msg)) {
-    return "Login por SMS ainda não está activo no servidor. Configure o fornecedor SMS no backend ou use email.";
+    return "Login por SMS ainda não está disponível. Use email ou contacte o suporte.";
   }
   if (/rate limit|too many|over.*sms/i.test(msg)) {
     return "Muitas tentativas. Aguarde alguns minutos antes de pedir um novo código.";

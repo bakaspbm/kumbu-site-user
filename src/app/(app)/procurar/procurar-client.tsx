@@ -18,7 +18,7 @@ export function ProcurarClient() {
   const initialQ = searchParams.get("q") ?? "";
   const [query, setQuery] = useState(initialQ);
   const [categoryId, setCategoryId] = useState("");
-  const { feed, categories, isDemo, loading, refresh } = useCatalogBootstrap();
+  const { feed, categories, loading, refresh } = useCatalogBootstrap();
 
   useEffect(() => {
     const onVisible = () => {
@@ -61,12 +61,6 @@ export function ProcurarClient() {
     <article>
       <BackHeader title={t("title")} />
       <div className="kumbu-container space-y-4 py-4">
-        {isDemo && (
-          <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            {t("demoMode")}
-          </p>
-        )}
-
         <div className="kumbu-search-field">
           <Search className="size-4 text-kumbu-muted" aria-hidden />
           <input

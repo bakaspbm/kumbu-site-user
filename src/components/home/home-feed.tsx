@@ -30,7 +30,6 @@ interface HomeFeedProps {
   featured: CatalogProduct[];
   feed: CatalogProduct[];
   marketing?: AppMarketingBlock[];
-  isDemo?: boolean;
 }
 
 export function HomeFeed({
@@ -38,7 +37,6 @@ export function HomeFeed({
   featured,
   feed,
   marketing = [],
-  isDemo,
 }: HomeFeedProps) {
   const t = useTranslations("home");
   const [search, setSearch] = useState("");
@@ -67,20 +65,6 @@ export function HomeFeed({
       {heroBlock && <MarketingHero block={heroBlock} />}
 
       <TrustStrip />
-
-      {isDemo && (
-        <div className="kumbu-container py-2">
-          <p className="kumbu-card border-kumbu-accent/30 bg-kumbu-accent-soft px-4 py-2.5 text-[13px] text-kumbu-foreground">
-            {t.rich("demoMode", {
-              envFile: () => (
-                <code className="rounded bg-kumbu-surface px-1 py-0.5 text-[11px] font-semibold ring-1 ring-kumbu-border">
-                  {t("demoEnvFile")}
-                </code>
-              ),
-            })}
-          </p>
-        </div>
-      )}
 
       <HomeCategoryRow categories={categories} />
 

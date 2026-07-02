@@ -39,7 +39,7 @@ export type ErrorMessages = {
 };
 
 const TECHNICAL_PATTERN =
-  /sql|hibernate|jdbc|flyway|stacktrace|stack trace|nullpointer|null pointer|org\.spring|org\.hibernate|com\.kumbu|java\.|jackson|parseexception|constraintviolation|internal server error/i;
+  /sql|hibernate|jdbc|flyway|stacktrace|stack trace|nullpointer|null pointer|org\.spring|org\.hibernate|com\.kumbu|java\.|jackson|parseexception|constraintviolation|internal server error|NEXT_PUBLIC|\.env|KUMBU_|facebook-trust|backend não configurad|api backend/i;
 
 export function isTechnicalErrorMessage(message: string): boolean {
   const trimmed = message.trim();

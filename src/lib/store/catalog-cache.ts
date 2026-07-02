@@ -1,8 +1,10 @@
 import { unstable_cache } from "next/cache";
 import {
-  demoCategories,
-  demoProducts,
-} from "@/lib/store/demo-data";
+  demoCatalogBootstrap,
+  emptyCatalogBootstrap,
+  isDevCatalogDemo,
+} from "@/lib/store/catalog-bootstrap-state";
+import { demoProducts } from "@/lib/store/demo-data";
 import {
   getCatalogProduct,
   getFeaturedProducts,
@@ -45,13 +47,10 @@ async function fetchCatalogBootstrap(): Promise<CatalogBootstrap> {
       fetchedAt: Date.now(),
     };
   } catch {
-    return {
-      categories: demoCategories,
-      featured: demoProducts.slice(0, 5),
-      feed: demoProducts,
-      isDemo: true,
-      fetchedAt: Date.now(),
-    };
+    if (isDevCatalogDemo()) {
+      return demoCatalogBootstrap();
+    }
+    return emptyCatalogBootstrap();
   }
 }
 
@@ -65,6 +64,7 @@ async function fetchProduct(id: string): Promise<CatalogProduct | null> {
   try {
     return await getCatalogProduct(id);
   } catch {
+    if (!isDevCatalogDemo()) return null;
     return demoProducts.find((p) => p.id === id) ?? null;
   }
 }
@@ -87,7 +87,9 @@ async function fetchCategoryPage(
   subcategoryId: string | undefined,
   sortMode: SortMode,
 ): Promise<CategoryPageData> {
-  const fallback = demoProducts.filter((p) => p.categoryId === categoryId);
+  const fallback = isDevCatalogDemo()
+    ? demoProducts.filter((p) => p.categoryId === categoryId)
+    : [];
   try {
     const subs = await listCatalogSubcategories(categoryId);
     const products = await listCatalogProducts({

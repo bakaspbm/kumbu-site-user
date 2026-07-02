@@ -4,7 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { onCatalogRefresh } from "@/lib/catalog-refresh";
 import { getFeaturedProductsBackend } from "@/lib/kumbu-api/store";
 import { getHomeRecommendationsBackend } from "@/lib/kumbu-api/recommendations";
-import { demoCategories, demoProducts } from "@/lib/store/demo-data";
+import {
+  demoCatalogBootstrap,
+  emptyCatalogBootstrap,
+  initialCatalogBootstrap,
+  isDevCatalogDemo,
+} from "@/lib/store/catalog-bootstrap-state";
 import {
   listCatalogCategories,
   listFeedProducts,
@@ -20,16 +25,6 @@ import { promiseWithTimeout, promiseWithTimeoutFallback } from "@/lib/promise-ti
 import type { CatalogCategory, CatalogProduct } from "@/types/store";
 
 const BOOTSTRAP_TIMEOUT_MS = 12_000;
-
-function demoBootstrap(): CatalogBootstrap {
-  return {
-    categories: demoCategories,
-    featured: demoProducts.slice(0, 5),
-    feed: demoProducts,
-    isDemo: true,
-    fetchedAt: Date.now(),
-  };
-}
 
 const SESSION_KEY = "kumbu_catalog_bootstrap_v2";
 
@@ -50,6 +45,7 @@ function writeSessionCache(data: CatalogBootstrap) {
   try {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
   } catch {
+    /* quota */
   }
 }
 
@@ -90,7 +86,7 @@ async function loadInitial(): Promise<CatalogBootstrap | null> {
 }
 
 export function useCatalogBootstrap() {
-  const [data, setData] = useState<CatalogBootstrap | null>(demoBootstrap);
+  const [data, setData] = useState<CatalogBootstrap | null>(initialCatalogBootstrap);
   const [loading, setLoading] = useState(false);
   const dataRef = useRef<CatalogBootstrap | null>(null);
   dataRef.current = data;
@@ -111,8 +107,10 @@ export function useCatalogBootstrap() {
       writeSessionCache(fresh);
       await setOfflineBootstrap(fresh);
     } catch {
-      if (!dataRef.current || dataRef.current.isDemo) {
-        setData(demoBootstrap());
+      if (isDevCatalogDemo()) {
+        setData(demoCatalogBootstrap());
+      } else if (!dataRef.current?.feed.length) {
+        setData(emptyCatalogBootstrap());
       }
     } finally {
       setLoading(false);
@@ -132,7 +130,7 @@ export function useCatalogBootstrap() {
 
       if (!isBrowserOnline()) {
         if (!initial) {
-          setData(demoBootstrap());
+          setData(initialCatalogBootstrap());
         }
         setLoading(false);
         return;
@@ -150,8 +148,7 @@ export function useCatalogBootstrap() {
     return () => {
       cancelled = true;
     };
-    
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     return onCatalogRefresh(() => {
@@ -163,7 +160,6 @@ export function useCatalogBootstrap() {
     categories: data?.categories ?? [],
     featured: data?.featured ?? [],
     feed: data?.feed ?? [],
-    isDemo: data?.isDemo ?? false,
     loading,
     refresh: () => refresh(true),
   };
