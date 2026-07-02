@@ -10,40 +10,50 @@ export const OAUTH_TERMS_COOKIE = "kumbu_oauth_terms";
 
 export { oauthCallbackUrl };
 
-type OAuthStatePayload = {
+export type OAuthStatePayload = {
   provider: OAuthProvider;
   next: string;
   nonce: string;
-  redirectUri?: string;
+  redirectUri: string;
 };
 
-function randomNonce(): string {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
+/** Pede state OAuth ao servidor (nonce guardado em cookie HttpOnly). */
+export async function prepareOAuthState(
+  provider: OAuthProvider,
+  nextPath: string,
+): Promise<string> {
+  const response = await fetch("/api/auth/oauth-state", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      provider,
+      next: sanitizeInternalPath(nextPath, "/"),
+    }),
+  });
+  if (!response.ok) {
+    throw new Error("Não foi possível iniciar login social.");
   }
-  return Math.random().toString(36).slice(2);
+  const json = (await response.json()) as { state?: string };
+  if (!json.state?.trim()) {
+    throw new Error("Resposta OAuth inválida.");
+  }
+  return json.state.trim();
 }
 
-export function encodeOAuthState(provider: OAuthProvider, nextPath: string): string {
-  const payload: OAuthStatePayload = {
-    provider,
-    next: sanitizeInternalPath(nextPath, "/"),
-    nonce: randomNonce(),
-    redirectUri: oauthCallbackUrl(),
-  };
-  return btoa(JSON.stringify(payload));
-}
-
-export function decodeOAuthState(raw: string | null): OAuthStatePayload | null {
-  if (!raw?.trim()) return null;
-  try {
-    const parsed = JSON.parse(atob(raw)) as OAuthStatePayload;
-    if (parsed.provider !== "google" && parsed.provider !== "facebook") return null;
-    parsed.next = sanitizeInternalPath(parsed.next, "/");
-    return parsed;
-  } catch {
-    return null;
-  }
+/** Valida state OAuth contra cookie HttpOnly no servidor. */
+export async function verifyOAuthStateParam(
+  stateParam: string | null,
+): Promise<OAuthStatePayload | null> {
+  if (!stateParam?.trim()) return null;
+  const response = await fetch("/api/auth/oauth-state/verify", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ state: stateParam.trim() }),
+  });
+  if (!response.ok) return null;
+  return (await response.json()) as OAuthStatePayload;
 }
 
 export function setOAuthTermsPending(): void {
@@ -52,7 +62,7 @@ export function setOAuthTermsPending(): void {
   document.cookie = `${OAUTH_TERMS_COOKIE}=1; Path=/; Max-Age=600; SameSite=Lax${secure}`;
 }
 
-export function startFacebookOAuth(nextPath: string, appId: string): void {
+export async function startFacebookOAuth(nextPath: string, appId: string): Promise<void> {
   ensureCanonicalSiteOrigin();
 
   const facebookAppId = appId.trim();
@@ -61,10 +71,11 @@ export function startFacebookOAuth(nextPath: string, appId: string): void {
   }
 
   const redirectUri = oauthCallbackUrl();
+  const state = await prepareOAuthState("facebook", nextPath);
   const url = new URL("https://www.facebook.com/v21.0/dialog/oauth");
   url.searchParams.set("client_id", facebookAppId);
   url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("state", encodeOAuthState("facebook", nextPath));
+  url.searchParams.set("state", state);
   url.searchParams.set("scope", "email,public_profile");
   url.searchParams.set("response_type", "code");
 
@@ -78,11 +89,10 @@ export type OAuthCallbackResult =
       token: string;
       next: string;
       redirectUri: string;
-      kind?: "code" | "token";
+      stateParam: string;
     }
   | { ok: false; error: string; next: string };
 
-/** Lê token devolvido no hash (#access_token= / #id_token=) após redirect OAuth. */
 export type FacebookProfileHint = {
   facebookId: string;
   email: string;
@@ -146,89 +156,77 @@ export function decodeGoogleIdToken(
   };
 }
 
-export async function fetchFacebookProfileInBrowser(accessToken: string): Promise<FacebookProfileHint> {
-  const url =
-    "https://graph.facebook.com/v21.0/me?" +
-    new URLSearchParams({
-      fields: "id,name,email,picture.type(large)",
-      access_token: accessToken,
-    }).toString();
-
-  const res = await fetch(url);
-  const json = (await res.json()) as {
-    id?: string;
-    name?: string;
-    email?: string;
-    picture?: { data?: { url?: string } };
-    error?: { message?: string };
-  };
-
-  if (!res.ok || json.error) {
-    throw new Error(json.error?.message ?? "Não foi possível obter perfil Facebook.");
-  }
-  if (!json.id || !json.email?.trim()) {
-    throw new Error("Email não disponível no Facebook. Autorize o acesso ao email.");
-  }
-
-  return {
-    facebookId: String(json.id),
-    email: json.email.trim(),
-    name: json.name?.trim() ?? "",
-    photoUrl: json.picture?.data?.url ?? null,
-  };
-}
-
-export function parseOAuthCallbackFromWindow(): OAuthCallbackResult {
-  if (typeof window === "undefined") {
-    return { ok: false, error: "Callback indisponível.", next: "/" };
-  }
-
+function readOAuthUrlParams(): {
+  hashParams: URLSearchParams;
+  queryParams: URLSearchParams;
+  stateParam: string | null;
+} {
   const hash = window.location.hash.startsWith("#")
     ? window.location.hash.slice(1)
     : window.location.hash;
   const hashParams = new URLSearchParams(hash);
   const queryParams = new URLSearchParams(window.location.search);
-
-  // Facebook (response_type=token) devolve state no hash; Google pode usar query ou hash.
   const stateParam = hashParams.get("state") ?? queryParams.get("state");
-  const state = decodeOAuthState(stateParam);
-  const next = state?.next ?? "/";
-  const redirectUri = state?.redirectUri?.trim() || oauthCallbackUrl();
+  return { hashParams, queryParams, stateParam };
+}
 
-  const oauthError =
-    hashParams.get("error") ??
-    queryParams.get("error");
+/** Lê parâmetros OAuth da URL (validação do state é feita separadamente no servidor). */
+export function parseOAuthCallbackFromWindow(): OAuthCallbackResult {
+  if (typeof window === "undefined") {
+    return { ok: false, error: "Callback indisponível.", next: "/" };
+  }
+
+  const { hashParams, queryParams, stateParam } = readOAuthUrlParams();
+
+  const oauthError = hashParams.get("error") ?? queryParams.get("error");
   if (oauthError) {
     const description =
       hashParams.get("error_description") ??
       queryParams.get("error_description") ??
       hashParams.get("error_reason") ??
       oauthError;
-    return { ok: false, error: description, next };
+    return { ok: false, error: description, next: "/" };
   }
 
-  if (!state) {
+  if (!stateParam) {
     return {
       ok: false,
       error: "Sessão de login expirada ou resposta inválida. Tente novamente.",
-      next,
+      next: "/",
     };
   }
 
-  if (state.provider === "facebook") {
-    const code = queryParams.get("code");
-    if (!code) {
-      return { ok: false, error: "Código Facebook em falta. Tente novamente.", next };
-    }
-    return { ok: true, provider: "facebook", token: code, next, redirectUri, kind: "code" };
-  }
-
+  const code = queryParams.get("code");
   const idToken = hashParams.get("id_token") ?? queryParams.get("id_token");
-  if (idToken) {
-    return { ok: true, provider: "google", token: idToken, next, redirectUri };
+
+  if (code) {
+    return {
+      ok: true,
+      provider: "facebook",
+      token: code,
+      next: "/",
+      redirectUri: oauthCallbackUrl(),
+      stateParam,
+    };
   }
 
-  return { ok: false, error: "Resposta de login incompleta. Tente novamente.", next };
+  if (idToken) {
+    return {
+      ok: true,
+      provider: "google",
+      token: idToken,
+      next: "/",
+      redirectUri: oauthCallbackUrl(),
+      stateParam,
+    };
+  }
+
+  return { ok: false, error: "Resposta de login incompleta. Tente novamente.", next: "/" };
+}
+
+export function clearOAuthCallbackUrl(): void {
+  if (typeof window === "undefined" || !window.history.replaceState) return;
+  window.history.replaceState(null, "", "/auth/callback");
 }
 
 /** @deprecated Prefer `useFormatOAuthError` from `@/lib/i18n/use-oauth-errors` in client components. */

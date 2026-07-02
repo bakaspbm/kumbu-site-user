@@ -16,11 +16,9 @@ const STEP_LABELS: Record<PublishStep, string> = {
 
 export function isPublishDebugEnabled(): boolean {
   if (typeof process === "undefined") return false;
-  return (
-    process.env.NODE_ENV === "development" ||
-    process.env.PUBLISH_DEBUG === "1" ||
-    process.env.NEXT_PUBLIC_PUBLISH_DEBUG === "1"
-  );
+  if (process.env.NODE_ENV !== "development") return false;
+  if (process.env.PUBLISH_DEBUG === "0") return false;
+  return true;
 }
 
 function nowClock(): string {

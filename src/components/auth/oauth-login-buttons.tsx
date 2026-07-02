@@ -79,15 +79,17 @@ export function OAuthLoginButtons({
   function handleFacebook() {
     if (!guardTerms()) return;
     setFbLoading(true);
-    try {
-      if (!config?.facebookAppId) {
-        throw new Error(t("facebookNotConfigured"));
+    void (async () => {
+      try {
+        if (!config?.facebookAppId) {
+          throw new Error(t("facebookNotConfigured"));
+        }
+        await startFacebookOAuth(nextPath, config.facebookAppId);
+      } catch (err) {
+        setFbLoading(false);
+        onError(formatOAuthError(err));
       }
-      startFacebookOAuth(nextPath, config.facebookAppId);
-    } catch (err) {
-      setFbLoading(false);
-      onError(formatOAuthError(err));
-    }
+    })();
   }
 
   if (configLoading) {

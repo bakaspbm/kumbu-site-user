@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { completeAuthRedirect } from "@/lib/auth/complete-auth";
 import {
+  clearOAuthCallbackUrl,
   decodeGoogleIdToken,
-  fetchFacebookProfileInBrowser,
   parseOAuthCallbackFromWindow,
+  verifyOAuthStateParam,
 } from "@/lib/auth/oauth-providers";
 import { completeFacebookOAuthFromCode } from "@/app/actions/facebook-oauth";
 import { fetchOAuthPublicConfig } from "@/lib/kumbu-api/oauth-config";
@@ -21,8 +22,9 @@ function AuthCallbackInner() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const parsed = parseOAuthCallbackFromWindow();
+    clearOAuthCallbackUrl();
 
+    const parsed = parseOAuthCallbackFromWindow();
     if (!parsed.ok) {
       setError(formatOAuthError(mapCallbackError(parsed.error)));
       return;
@@ -30,23 +32,25 @@ function AuthCallbackInner() {
 
     void (async () => {
       try {
+        const verified = await verifyOAuthStateParam(parsed.stateParam);
+        if (!verified) {
+          setError(
+            formatOAuthError(
+              "Sessão de login expirada ou resposta inválida. Tente novamente.",
+            ),
+          );
+          return;
+        }
+
         const oauthConfig = await fetchOAuthPublicConfig();
-        if (parsed.provider === "facebook") {
-          if (parsed.kind === "code") {
-            await completeFacebookOAuthFromCode(parsed.token, parsed.redirectUri);
-          } else {
-            const profile = await fetchFacebookProfileInBrowser(parsed.token);
-            await oauthLoginBackend("facebook", parsed.token, profile);
-          }
+        if (verified.provider === "facebook") {
+          await completeFacebookOAuthFromCode(parsed.token, verified.redirectUri);
         } else {
           const profile = decodeGoogleIdToken(parsed.token, oauthConfig.googleClientId);
           await oauthLoginBackend("google", parsed.token, profile);
         }
 
-        if (window.history.replaceState) {
-          window.history.replaceState(null, "", "/auth/callback");
-        }
-        completeAuthRedirect(parsed.next);
+        completeAuthRedirect(verified.next);
       } catch (err) {
         setError(formatOAuthError(err));
       }

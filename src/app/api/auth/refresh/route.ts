@@ -50,14 +50,14 @@ export async function POST() {
   jar.set(ACCESS_TOKEN_COOKIE, payload.accessToken, {
     httpOnly: true,
     secure,
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge,
   });
   jar.set(REFRESH_TOKEN_COOKIE, payload.refreshToken, {
     httpOnly: true,
     secure,
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge: TOKEN_MAX_AGE_SECONDS,
   });

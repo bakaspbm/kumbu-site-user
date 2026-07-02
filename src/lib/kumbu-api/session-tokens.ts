@@ -189,7 +189,7 @@ export async function setSessionTokens(
     jar.set(ACCESS_TOKEN_COOKIE, accessToken, {
       path: "/",
       maxAge: TOKEN_MAX_AGE_SECONDS,
-      sameSite: "lax",
+      sameSite: "strict",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
     });
@@ -197,7 +197,7 @@ export async function setSessionTokens(
       jar.set(REFRESH_TOKEN_COOKIE, refreshToken, {
         path: "/",
         maxAge: TOKEN_MAX_AGE_SECONDS,
-        sameSite: "lax",
+        sameSite: "strict",
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
       });

@@ -13,6 +13,7 @@ import {
   validateEmail,
   validatePasswordForSignup,
 } from "@/lib/auth/validation";
+import { clearSensitiveTokenFromUrl } from "@/lib/security/clear-url-token";
 
 interface ResetPasswordFormProps {
   onBackToLogin?: () => void;
@@ -47,6 +48,7 @@ export function ResetPasswordForm({
   useEffect(() => {
     if (tokenFromUrl) {
       setStep("update");
+      clearSensitiveTokenFromUrl();
     }
   }, [tokenFromUrl]);
 

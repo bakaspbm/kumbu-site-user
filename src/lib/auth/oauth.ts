@@ -3,9 +3,9 @@ import { oauthLoginBackend } from "@/lib/kumbu-api/auth";
 
 export type { OAuthProvider };
 export {
-  encodeOAuthState,
   oauthCallbackUrl,
   OAUTH_TERMS_COOKIE,
+  prepareOAuthState,
   setOAuthTermsPending,
   startFacebookOAuth,
 } from "@/lib/auth/oauth-providers";

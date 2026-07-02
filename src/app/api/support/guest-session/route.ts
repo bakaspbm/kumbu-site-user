@@ -5,6 +5,7 @@ import {
   GUEST_SUPPORT_TOKEN_COOKIE,
   GUEST_SUPPORT_TOKEN_MAX_AGE,
 } from "@/lib/support/guest-session-cookies";
+import { assertSameOriginRequest } from "@/lib/security/request-origin";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -29,6 +30,10 @@ function presenceOptions(present: boolean) {
 }
 
 export async function POST(request: Request) {
+  if (!assertSameOriginRequest(request)) {
+    return NextResponse.json({ error: "Pedido não autorizado" }, { status: 403 });
+  }
+
   const body = (await request.json()) as {
     accessToken?: string;
     guestName?: string;

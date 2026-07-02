@@ -1,3 +1,4 @@
+import { assertSameOriginRequest } from "@/lib/security/request-origin";
 import { getKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
 import {
   ACCESS_TOKEN_COOKIE,
@@ -11,13 +12,17 @@ function cookieOptions(maxAge = TOKEN_MAX_AGE_SECONDS) {
   return {
     httpOnly: true as const,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
+    sameSite: "strict" as const,
     path: "/",
     maxAge,
   };
 }
 
 export async function POST(request: Request) {
+  if (!assertSameOriginRequest(request)) {
+    return NextResponse.json({ error: "Pedido não autorizado" }, { status: 403 });
+  }
+
   const body = (await request.json()) as {
     accessToken?: string;
     refreshToken?: string;

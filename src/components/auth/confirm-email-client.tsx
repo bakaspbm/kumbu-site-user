@@ -9,6 +9,7 @@ import { isKumbuApiEnabled } from "@/lib/kumbu-api/client";
 import { resendVerificationEmailBackend, verifyEmailBackend } from "@/lib/kumbu-api/auth";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { useAuth } from "@/contexts/auth-context";
+import { clearSensitiveTokenFromUrl } from "@/lib/security/clear-url-token";
 
 export function ConfirmEmailClient({ initialToken = "" }: { initialToken?: string }) {
   const t = useTranslations("auth.confirmEmail");
@@ -23,6 +24,12 @@ export function ConfirmEmailClient({ initialToken = "" }: { initialToken?: strin
   const [resendEmail, setResendEmail] = useState("");
   const [resendBusy, setResendBusy] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (token.trim()) {
+      clearSensitiveTokenFromUrl();
+    }
+  }, [token]);
 
   useEffect(() => {
     if (!token.trim()) {
