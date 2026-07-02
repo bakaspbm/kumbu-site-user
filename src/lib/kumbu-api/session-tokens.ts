@@ -1,3 +1,8 @@
+import {
+  bootstrapBrowserAccessToken,
+  clearBrowserAccessToken,
+  setBrowserAccessToken,
+} from "@/lib/kumbu-api/browser-session";
 import type { AuthResponse } from "@/lib/kumbu-api/auth-types";
 
 export const ACCESS_TOKEN_COOKIE = "kumbu_access_token";
@@ -30,6 +35,7 @@ export async function refreshSessionTokens(
         });
         if (!response.ok) return null;
         lastRefreshAtMs = Date.now();
+        await bootstrapBrowserAccessToken();
         return { accessToken: "", refreshToken: "" } as AuthResponse;
       } finally {
         refreshPromise = null;
@@ -172,13 +178,17 @@ export async function setSessionTokens(
   if (typeof window !== "undefined") {
     const response = await fetch("/api/auth/session", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Origin: window.location.origin,
+      },
       credentials: "include",
       body: JSON.stringify({ accessToken, refreshToken }),
     });
     if (!response.ok) {
       throw new Error("Falha ao guardar sessão.");
     }
+    setBrowserAccessToken(accessToken);
     writeSessionPresenceCookie(true);
     return;
   }
@@ -210,6 +220,7 @@ export async function setSessionTokens(
 export async function clearSessionTokens(): Promise<void> {
   if (typeof window !== "undefined") {
     await fetch("/api/auth/session", { method: "DELETE", credentials: "include" });
+    clearBrowserAccessToken();
     writeSessionPresenceCookie(false);
     clearSessionUserSnapshot();
     return;

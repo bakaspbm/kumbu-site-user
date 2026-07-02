@@ -2,6 +2,7 @@ import { getKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
+  TOKEN_MAX_AGE_SECONDS,
 } from "@/lib/kumbu-api/session-tokens";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -39,6 +40,44 @@ async function proxy(request: NextRequest, path: string) {
   }
 }
 
+function cookieOptions(maxAge = TOKEN_MAX_AGE_SECONDS) {
+  return {
+    httpOnly: true as const,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge,
+  };
+}
+
+async function refreshAccessTokenInline(refreshToken: string): Promise<string | null> {
+  const upstream = await fetch(`${backendBase()}/auth/refresh`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refreshToken }),
+    cache: "no-store",
+  });
+  if (!upstream.ok) return null;
+
+  const payload = (await upstream.json()) as {
+    accessToken?: string;
+    refreshToken?: string;
+    expiresInSeconds?: number;
+  };
+  if (!payload.accessToken?.trim()) return null;
+
+  const jar = await cookies();
+  const maxAge = Math.max(payload.expiresInSeconds ?? TOKEN_MAX_AGE_SECONDS, 60);
+  jar.set(ACCESS_TOKEN_COOKIE, payload.accessToken.trim(), cookieOptions(maxAge));
+  if (payload.refreshToken?.trim()) {
+    jar.set(REFRESH_TOKEN_COOKIE, payload.refreshToken.trim(), cookieOptions());
+  }
+  return payload.accessToken.trim();
+}
+
 async function proxyUpstream(request: NextRequest, path: string) {
   const jar = await cookies();
   const accessToken = jar.get(ACCESS_TOKEN_COOKIE)?.value;
@@ -73,16 +112,10 @@ async function proxyUpstream(request: NextRequest, path: string) {
   let upstream = await fetch(target, upstreamInit());
 
   if (upstream.status === 401 && refreshToken) {
-    const refreshRes = await fetch(new URL("/api/auth/refresh", request.url), {
-      method: "POST",
-      headers: { cookie: request.headers.get("cookie") ?? "" },
-    });
-    if (refreshRes.ok) {
-      const newAccess = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
-      if (newAccess) {
-        headers.set("Authorization", `Bearer ${newAccess}`);
-        upstream = await fetch(target, upstreamInit());
-      }
+    const newAccess = await refreshAccessTokenInline(refreshToken);
+    if (newAccess) {
+      headers.set("Authorization", `Bearer ${newAccess}`);
+      upstream = await fetch(target, upstreamInit());
     }
   }
 

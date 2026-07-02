@@ -7,6 +7,10 @@ import type {
   RegisterBackendResult,
 } from "@/lib/kumbu-api/auth-types";
 import {
+  bootstrapBrowserAccessToken,
+  setBrowserAccessToken,
+} from "@/lib/kumbu-api/browser-session";
+import {
   clearSessionTokens,
   decodeAccessTokenClaims,
   readSessionUserSnapshot,
@@ -52,6 +56,7 @@ export async function persistClientSession(session: KumbuSession): Promise<void>
     throw new Error("Resposta de autenticação incompleta (tokens em falta).");
   }
   await setSessionTokens(session.accessToken, session.refreshToken);
+  setBrowserAccessToken(session.accessToken);
   saveSessionUserSnapshot(session.user);
 }
 
@@ -105,6 +110,7 @@ export async function refreshBackendToken(): Promise<KumbuSession> {
     if (!response.ok) {
       throw new Error("Sessão expirada. Inicie sessão novamente.");
     }
+    await bootstrapBrowserAccessToken();
     const snapshot = readSessionUserSnapshot();
     if (!snapshot?.id) {
       throw new Error("Sessão expirada. Inicie sessão novamente.");

@@ -1,4 +1,8 @@
 import {
+  bootstrapBrowserAccessToken,
+  ensureBrowserAccessToken,
+} from "@/lib/kumbu-api/browser-session";
+import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
   clearSessionTokens,
@@ -113,8 +117,11 @@ function getDirectPublicApiBaseUrl(): string | null {
 }
 
 function resolveRequestBaseUrl(clientBaseUrl: string, useAuth: boolean): string {
-  if (typeof window !== "undefined" && !useAuth) {
-    return getDirectPublicApiBaseUrl() ?? clientBaseUrl;
+  if (typeof window !== "undefined") {
+    const direct = getDirectPublicApiBaseUrl();
+    if (direct && (!useAuth || direct !== clientBaseUrl)) {
+      return direct;
+    }
   }
   return clientBaseUrl;
 }
@@ -185,7 +192,9 @@ export class KumbuApiClient {
     if (useAuth) {
       if (options?.accessToken) {
         token = options.accessToken;
-      } else if (typeof window === "undefined") {
+      } else if (typeof window !== "undefined") {
+        token = await ensureBrowserAccessToken();
+      } else {
         token = await readServerCookie(ACCESS_TOKEN_COOKIE);
         if (token) {
           token = await ensureFreshAccessToken(this.baseUrl);
@@ -229,30 +238,13 @@ export class KumbuApiClient {
       throw err;
     }
 
-    if (response.status === 401 && useAuth && !options?._retried) {
+    if ((response.status === 401 || response.status === 403) && useAuth && !options?._retried) {
       if (typeof window !== "undefined") {
         const refreshed = await fetch("/api/auth/refresh", {
           method: "POST",
           credentials: "include",
         });
-        if (refreshed.ok) {
-          return this.request<T>(path, { ...options, _retried: true });
-        }
-      } else {
-        const refreshed = await refreshSessionTokens(this.baseUrl);
-        if (refreshed?.accessToken) {
-          return this.request<T>(path, { ...options, _retried: true });
-        }
-      }
-    }
-
-    if (response.status === 403 && useAuth && !options?._retried) {
-      if (typeof window !== "undefined") {
-        const refreshed = await fetch("/api/auth/refresh", {
-          method: "POST",
-          credentials: "include",
-        });
-        if (refreshed.ok) {
+        if (refreshed.ok && (await bootstrapBrowserAccessToken())) {
           return this.request<T>(path, { ...options, _retried: true });
         }
       } else {

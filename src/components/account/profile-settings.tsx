@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogIn, MapPin, User } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -10,6 +9,7 @@ import { AccountQuickLinks } from "@/components/account/account-quick-links";
 import { ProfileHero } from "@/components/account/profile-hero";
 import { ProfileIncompleteBlock } from "@/components/account/profile-incomplete-block";
 import { useAuth } from "@/contexts/auth-context";
+import { refreshBackendToken } from "@/lib/kumbu-api/auth";
 import { hasClientSession } from "@/lib/auth/complete-auth";
 import { Button } from "@/components/ui/button";
 import { RequireAuth } from "@/components/auth/require-auth";
@@ -58,11 +58,10 @@ const GENDER_LABEL_KEYS = {
 } as const;
 
 export function ProfileSettings() {
-  const router = useRouter();
   const t = useTranslations("account");
   const tAuth = useTranslations("auth");
   const formatErrorMessage = useFormatErrorMessage();
-  const { isLoggedIn, storeUser, user, applyStoreUser, isLoading, refresh } = useAuth();
+  const { isLoggedIn, storeUser, user, applyStoreUser, isLoading } = useAuth();
   const feedbackRef = useRef<HTMLDivElement>(null);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
@@ -264,7 +263,7 @@ export function ProfileSettings() {
         );
       } catch (err) {
         if (isStoreApiUnauthorized(err)) {
-          await refresh();
+          await refreshBackendToken();
           savedProfile = await promiseWithTimeout(
             updateStoreUser(updatePayload),
             45_000,
@@ -298,7 +297,7 @@ export function ProfileSettings() {
       }
     } catch (err) {
       if (isStoreApiUnauthorized(err)) {
-        router.push(`/login?next=/conta/perfil`);
+        showFeedback(t("sessionExpiredRelogin"), null);
         return;
       }
       showFeedback(formatErrorMessage(err), null);

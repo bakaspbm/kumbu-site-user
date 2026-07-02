@@ -22,6 +22,7 @@ import {
   getBackendSession,
   refreshBackendToken,
 } from "@/lib/kumbu-api/auth";
+import { bootstrapBrowserAccessToken } from "@/lib/kumbu-api/browser-session";
 import { getKumbuApiClient } from "@/lib/kumbu-api/client";
 import { touchPresenceBackend } from "@/lib/kumbu-api/presence";
 import {
@@ -254,6 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (browserSession) {
       try {
+        await bootstrapBrowserAccessToken();
         await refreshBackendToken();
       } catch {
         /* tenta carregar perfil na mesma */
@@ -377,6 +379,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      if (typeof window !== "undefined" && (hasClientSession() || (await probeHttpOnlySession()))) {
+        await bootstrapBrowserAccessToken();
+      }
       await promiseWithTimeoutFallback(refresh(), 10_000, undefined);
       if (!cancelled) setIsLoading(false);
     })();
