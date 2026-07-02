@@ -1,4 +1,4 @@
-import { getKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
+import { getKumbuApiBaseUrl, getServerKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
@@ -19,7 +19,7 @@ const HOP_BY_HOP = new Set([
 ]);
 
 function backendBase(): string {
-  const base = getKumbuApiBaseUrl();
+  const base = getServerKumbuApiBaseUrl() ?? getKumbuApiBaseUrl();
   if (!base) throw new Error("API URL missing");
   if (base.startsWith("/")) {
     return process.env.NEXT_PUBLIC_KUMBU_API_URL?.replace(/\/+$/, "")

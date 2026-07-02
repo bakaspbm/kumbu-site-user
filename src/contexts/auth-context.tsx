@@ -22,7 +22,7 @@ import {
   getBackendSession,
   refreshBackendToken,
 } from "@/lib/kumbu-api/auth";
-import { bootstrapBrowserAccessToken } from "@/lib/kumbu-api/browser-session";
+import { ensureBrowserAccessToken, getBrowserAccessToken } from "@/lib/kumbu-api/browser-session";
 import { getKumbuApiClient } from "@/lib/kumbu-api/client";
 import { touchPresenceBackend } from "@/lib/kumbu-api/presence";
 import {
@@ -255,8 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (browserSession) {
       try {
-        await bootstrapBrowserAccessToken();
-        await refreshBackendToken();
+        await ensureBrowserAccessToken();
       } catch {
         /* tenta carregar perfil na mesma */
       }
@@ -307,16 +306,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applySessionUser, refreshNotifications, restoreSessionFromStorage]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || isLoading) return;
 
     const keepAlive = window.setInterval(() => {
       void (async () => {
-        if (!(hasClientSession() || (await probeHttpOnlySession()))) return;
+        if (!(await probeHttpOnlySession())) return;
         void refreshBackendToken().catch(() => {});
       })();
     }, 4 * 60_000);
 
     const touchPresence = () => {
+      if (!getBrowserAccessToken()) return;
       void touchPresenceBackend().catch(() => {});
     };
     touchPresence();
@@ -325,7 +325,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
       void (async () => {
-        if (!(hasClientSession() || (await probeHttpOnlySession()))) return;
+        if (!(await probeHttpOnlySession())) return;
         void refreshBackendToken().catch(() => {});
       })();
       touchPresence();
@@ -337,10 +337,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.clearInterval(presenceInterval);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [user?.id]);
+  }, [user?.id, isLoading]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || isLoading) return;
 
     void refreshNotifications();
 
@@ -362,7 +362,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [user?.id, refreshNotifications, applyNotificationPush]);
+  }, [user?.id, isLoading, refreshNotifications, applyNotificationPush]);
 
   useEffect(() => {
     const session = getBackendSession();
@@ -380,7 +380,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     void (async () => {
       if (typeof window !== "undefined" && (hasClientSession() || (await probeHttpOnlySession()))) {
-        await bootstrapBrowserAccessToken();
+        await ensureBrowserAccessToken();
       }
       await promiseWithTimeoutFallback(refresh(), 10_000, undefined);
       if (!cancelled) setIsLoading(false);

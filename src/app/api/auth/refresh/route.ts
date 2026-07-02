@@ -1,4 +1,5 @@
-import { getKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
+import { assertSameOriginRequest } from "@/lib/security/request-origin";
+import { getServerKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
@@ -7,14 +8,18 @@ import {
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-export async function POST() {
+export async function POST(request: Request) {
+  if (!assertSameOriginRequest(request)) {
+    return NextResponse.json({ error: "Pedido não autorizado" }, { status: 403 });
+  }
+
   const jar = await cookies();
   const refreshToken = jar.get(REFRESH_TOKEN_COOKIE)?.value;
   if (!refreshToken) {
     return NextResponse.json({ error: "Sem sessão" }, { status: 401 });
   }
 
-  const apiBase = getKumbuApiBaseUrl();
+  const apiBase = getServerKumbuApiBaseUrl();
   if (!apiBase) {
     return NextResponse.json({ error: "API não configurada" }, { status: 500 });
   }
@@ -34,7 +39,10 @@ export async function POST() {
       jar.delete(ACCESS_TOKEN_COOKIE);
       jar.delete(REFRESH_TOKEN_COOKIE);
     }
-    return NextResponse.json({ error: "Sessão expirada" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Sessão expirada" },
+      { status: upstream.status === 403 ? 403 : 401 },
+    );
   }
 
   const payload = (await upstream.json()) as {

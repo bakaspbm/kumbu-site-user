@@ -1,6 +1,6 @@
 import {
-  bootstrapBrowserAccessToken,
   clearBrowserAccessToken,
+  refreshBrowserSessionCookies,
   setBrowserAccessToken,
 } from "@/lib/kumbu-api/browser-session";
 import type { AuthResponse } from "@/lib/kumbu-api/auth-types";
@@ -29,13 +29,9 @@ export async function refreshSessionTokens(
     if (refreshPromise) return refreshPromise;
     refreshPromise = (async () => {
       try {
-        const response = await fetch("/api/auth/refresh", {
-          method: "POST",
-          credentials: "include",
-        });
-        if (!response.ok) return null;
+        const ok = await refreshBrowserSessionCookies();
+        if (!ok) return null;
         lastRefreshAtMs = Date.now();
-        await bootstrapBrowserAccessToken();
         return { accessToken: "", refreshToken: "" } as AuthResponse;
       } finally {
         refreshPromise = null;

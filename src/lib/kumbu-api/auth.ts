@@ -7,7 +7,7 @@ import type {
   RegisterBackendResult,
 } from "@/lib/kumbu-api/auth-types";
 import {
-  bootstrapBrowserAccessToken,
+  refreshBrowserSessionCookies,
   setBrowserAccessToken,
 } from "@/lib/kumbu-api/browser-session";
 import {
@@ -103,14 +103,10 @@ export async function registerWithBackend(input: KumbuRegisterInput): Promise<Re
 
 export async function refreshBackendToken(): Promise<KumbuSession> {
   if (typeof window !== "undefined") {
-    const response = await fetch("/api/auth/refresh", {
-      method: "POST",
-      credentials: "include",
-    });
-    if (!response.ok) {
+    const ok = await refreshBrowserSessionCookies();
+    if (!ok) {
       throw new Error("Sessão expirada. Inicie sessão novamente.");
     }
-    await bootstrapBrowserAccessToken();
     const snapshot = readSessionUserSnapshot();
     if (!snapshot?.id) {
       throw new Error("Sessão expirada. Inicie sessão novamente.");

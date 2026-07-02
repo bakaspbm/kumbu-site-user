@@ -1,6 +1,6 @@
 import {
-  bootstrapBrowserAccessToken,
   ensureBrowserAccessToken,
+  refreshBrowserSessionCookies,
 } from "@/lib/kumbu-api/browser-session";
 import {
   ACCESS_TOKEN_COOKIE,
@@ -81,11 +81,18 @@ export function getKumbuApiBaseUrl(): string | null {
   if (typeof window !== "undefined") {
     return DEV_BROWSER_API_PROXY;
   }
+  return getServerKumbuApiBaseUrl();
+}
+
+/** URL da API para rotas server-side (Vercel) — nunca usa o proxy /api/kumbu. */
+export function getServerKumbuApiBaseUrl(): string | null {
+  if (!isApiUrlConfigured()) return null;
   if (isDevMode()) {
     return DEV_SERVER_API_URL;
   }
-  const raw = process.env.NEXT_PUBLIC_KUMBU_API_URL ?? DEFAULT_KUMBU_API_URL;
-  return resolveApiBaseUrl(raw);
+  const raw = process.env.NEXT_PUBLIC_KUMBU_API_URL?.trim();
+  if (!raw) return null;
+  return trimTrailingSlash(raw);
 }
 
 /** Converte URLs do backend (porta 8080) para proxy do Next em dev — fotos no telemóvel. */
@@ -240,11 +247,7 @@ export class KumbuApiClient {
 
     if ((response.status === 401 || response.status === 403) && useAuth && !options?._retried) {
       if (typeof window !== "undefined") {
-        const refreshed = await fetch("/api/auth/refresh", {
-          method: "POST",
-          credentials: "include",
-        });
-        if (refreshed.ok && (await bootstrapBrowserAccessToken())) {
+        if (await refreshBrowserSessionCookies()) {
           return this.request<T>(path, { ...options, _retried: true });
         }
       } else {

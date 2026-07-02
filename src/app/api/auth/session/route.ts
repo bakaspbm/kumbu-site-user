@@ -1,5 +1,5 @@
 import { assertSameOriginRequest } from "@/lib/security/request-origin";
-import { getKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
+import { getServerKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 export async function DELETE() {
   const jar = await cookies();
   const refreshToken = jar.get(REFRESH_TOKEN_COOKIE)?.value;
-  const apiBase = getKumbuApiBaseUrl();
+  const apiBase = getServerKumbuApiBaseUrl();
   if (refreshToken && apiBase) {
     try {
       await fetch(`${apiBase.replace(/\/+$/, "")}/auth/logout`, {
