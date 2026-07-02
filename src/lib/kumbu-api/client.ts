@@ -106,6 +106,19 @@ export function normalizeBackendAssetUrl(url: string | null | undefined): string
   return trimmed;
 }
 
+function getDirectPublicApiBaseUrl(): string | null {
+  const raw = process.env.NEXT_PUBLIC_KUMBU_API_URL?.trim();
+  if (!raw) return null;
+  return resolveApiBaseUrl(trimTrailingSlash(raw));
+}
+
+function resolveRequestBaseUrl(clientBaseUrl: string, useAuth: boolean): string {
+  if (typeof window !== "undefined" && !useAuth) {
+    return getDirectPublicApiBaseUrl() ?? clientBaseUrl;
+  }
+  return clientBaseUrl;
+}
+
 function withQuery(url: string, query?: ApiRequestOptions["query"]): string {
   if (!query) return url;
   const params = new URLSearchParams();
@@ -180,7 +193,8 @@ export class KumbuApiClient {
       }
     }
 
-    const url = withQuery(`${this.baseUrl}${path}`, options?.query);
+    const apiBase = resolveRequestBaseUrl(this.baseUrl, useAuth);
+    const url = withQuery(`${apiBase}${path}`, options?.query);
     const headers: Record<string, string> = {
       Accept: "application/json",
       ...options?.headers,
@@ -197,7 +211,12 @@ export class KumbuApiClient {
       response = await fetch(url, {
         ...options,
         headers,
-        credentials: typeof window !== "undefined" ? "include" : options?.credentials,
+        credentials:
+          typeof window !== "undefined"
+            ? useAuth
+              ? "include"
+              : "omit"
+            : options?.credentials,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

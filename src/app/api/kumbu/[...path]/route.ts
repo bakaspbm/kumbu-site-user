@@ -28,6 +28,18 @@ function backendBase(): string {
 }
 
 async function proxy(request: NextRequest, path: string) {
+  try {
+    return await proxyUpstream(request, path);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "upstream failed";
+    return NextResponse.json(
+      { code: "UPSTREAM_ERROR", message },
+      { status: 502 },
+    );
+  }
+}
+
+async function proxyUpstream(request: NextRequest, path: string) {
   const jar = await cookies();
   const accessToken = jar.get(ACCESS_TOKEN_COOKIE)?.value;
   const refreshToken = jar.get(REFRESH_TOKEN_COOKIE)?.value;
@@ -55,7 +67,7 @@ async function proxy(request: NextRequest, path: string) {
     headers,
     body,
     cache: "no-store",
-    signal: AbortSignal.timeout(12_000),
+    signal: AbortSignal.timeout(25_000),
   });
 
   let upstream = await fetch(target, upstreamInit());
