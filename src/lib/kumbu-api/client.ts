@@ -244,6 +244,10 @@ export class KumbuApiClient {
       }
     }
 
+  if (response.status === 204 || response.status === 205) {
+    return undefined as T;
+  }
+
     const payload = await parseJsonSafe(response);
     if (!response.ok) {
       const isProxyFailure =
