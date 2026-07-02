@@ -96,6 +96,28 @@ export function getServerKumbuApiBaseUrl(): string | null {
   return trimTrailingSlash(raw);
 }
 
+const SECURE_CHAT_FILE_PATH = /\/api\/v1\/files\/chat\/(.+)$/;
+
+/** Anexos de chat exigem sessão — no browser usam o proxy Next (cookies HttpOnly). */
+export function toBrowserSecureFileUrl(url: string | null | undefined): string | null {
+  if (!url?.trim()) return null;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("/api/kumbu/files/chat/")) return trimmed;
+
+  let relativePath: string | null = null;
+  try {
+    const parsed = new URL(trimmed);
+    const match = parsed.pathname.match(SECURE_CHAT_FILE_PATH);
+    if (match) relativePath = match[1];
+  } catch {
+    const match = trimmed.match(/^\/?api\/v1\/files\/chat\/(.+)$/);
+    if (match) relativePath = match[1];
+  }
+
+  if (!relativePath) return trimmed;
+  return `/api/kumbu/files/chat/${relativePath}`;
+}
+
 /** Converte URLs do backend (porta 8080) para proxy do Next em dev — fotos no telemóvel. */
 export function normalizeBackendAssetUrl(url: string | null | undefined): string | null {
   if (!url?.trim()) return null;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { toBrowserSecureFileUrl } from "@/lib/kumbu-api/client";
 import { sanitizeAppLink } from "@/lib/urls/safe-link";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,7 @@ export function ChatMessageBubble({
   }
 
   const isPdf = attachmentUrl?.toLowerCase().includes(".pdf");
-  const safeAttachmentUrl = sanitizeAppLink(attachmentUrl);
+  const safeAttachmentUrl = sanitizeAppLink(toBrowserSecureFileUrl(attachmentUrl));
 
   return (
     <div className={cn("flex w-full", mine ? "justify-end" : "justify-start")}>
@@ -53,17 +54,33 @@ export function ChatMessageBubble({
         )}
       >
         {safeAttachmentUrl ? (
-          <a
-            href={safeAttachmentUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "mb-2 block rounded-lg px-2 py-1.5 text-xs font-semibold underline",
-              mine ? "bg-white/15 text-white" : "bg-kumbu-secondary text-kumbu-primary",
-            )}
-          >
-            {isPdf ? tChat("attachmentPdf") : tChat("attachmentImage")} — {tChat("openAttachment")}
-          </a>
+          isPdf ? (
+            <a
+              href={safeAttachmentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "mb-2 block rounded-lg px-2 py-1.5 text-xs font-semibold underline",
+                mine ? "bg-white/15 text-white" : "bg-kumbu-secondary text-kumbu-primary",
+              )}
+            >
+              {tChat("attachmentPdf")} — {tChat("openAttachment")}
+            </a>
+          ) : (
+            <a
+              href={safeAttachmentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mb-2 block overflow-hidden rounded-lg"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={safeAttachmentUrl}
+                alt={tChat("attachmentImage")}
+                className="max-h-48 w-full object-cover"
+              />
+            </a>
+          )
         ) : null}
         {body && body !== "📎 Ficheiro partilhado" ? (
           <p className="whitespace-pre-wrap break-words">{body}</p>
