@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { completeAuthRedirect } from "@/lib/auth/complete-auth";
+import { completeAuthRedirect, resolvePostAuthRedirect } from "@/lib/auth/complete-auth";
 import {
   clearOAuthCallbackUrl,
   decodeGoogleIdToken,
@@ -12,7 +12,7 @@ import {
 } from "@/lib/auth/oauth-providers";
 import { completeFacebookOAuthFromCode } from "@/app/actions/facebook-oauth";
 import { fetchOAuthPublicConfig } from "@/lib/kumbu-api/oauth-config";
-import { oauthLoginBackend } from "@/lib/kumbu-api/auth";
+import { oauthLoginBackend, persistClientSession } from "@/lib/kumbu-api/auth";
 import { useFormatOAuthError, useOAuthCallbackError } from "@/lib/i18n/use-oauth-errors";
 
 function AuthCallbackInner() {
@@ -43,14 +43,18 @@ function AuthCallbackInner() {
         }
 
         const oauthConfig = await fetchOAuthPublicConfig();
+        let session;
         if (verified.provider === "facebook") {
-          await completeFacebookOAuthFromCode(parsed.token, verified.redirectUri);
+          session = await completeFacebookOAuthFromCode(parsed.token, verified.redirectUri);
         } else {
           const profile = decodeGoogleIdToken(parsed.token, oauthConfig.googleClientId);
-          await oauthLoginBackend("google", parsed.token, profile);
+          session = await oauthLoginBackend("google", parsed.token, profile);
         }
 
-        completeAuthRedirect(verified.next);
+        if (verified.provider === "facebook") {
+          await persistClientSession(session);
+        }
+        completeAuthRedirect(resolvePostAuthRedirect(verified.next));
       } catch (err) {
         setError(formatOAuthError(err));
       }

@@ -29,6 +29,7 @@ import {
   isProfileComplete,
   profileFieldLabel,
 } from "@/lib/profile-completion";
+import { saveSessionUserSnapshot } from "@/lib/kumbu-api/session-tokens";
 import { resizeAvatarFile } from "@/lib/images/resize-avatar";
 import { normalizePhoneE164 } from "@/lib/phone";
 import type { UserGender } from "@/lib/user-profile";
@@ -60,7 +61,7 @@ export function ProfileSettings() {
   const t = useTranslations("account");
   const tAuth = useTranslations("auth");
   const formatErrorMessage = useFormatErrorMessage();
-  const { isLoggedIn, storeUser, user, applyStoreUser, isLoading } = useAuth();
+  const { isLoggedIn, storeUser, user, applyStoreUser, isLoading, refresh } = useAuth();
   const feedbackRef = useRef<HTMLDivElement>(null);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
@@ -262,13 +263,34 @@ export function ProfileSettings() {
 
       if (!result.ok) {
         if (result.needsLogin) {
-          router.push(`/login?next=/conta/perfil`);
+          await refresh();
+          const retry = await updateProfileAction(updatePayload);
+          if (!retry.ok) {
+            if (retry.needsLogin) {
+              router.push(`/login?next=/conta/perfil`);
+            }
+            showFeedback(retry.error, null);
+            return;
+          }
+          applyStoreUser(retry.profile);
+          savedProfile = retry.profile;
+          saveSessionUserSnapshot({
+            id: savedProfile.id,
+            email: savedProfile.email,
+            displayName: savedProfile.displayName,
+          });
+        } else {
+          showFeedback(result.error, null);
         }
-        showFeedback(result.error, null);
         return;
       }
       applyStoreUser(result.profile);
       savedProfile = result.profile;
+      saveSessionUserSnapshot({
+        id: savedProfile.id,
+        email: savedProfile.email,
+        displayName: savedProfile.displayName,
+      });
 
       if (isProfileComplete(savedProfile)) {
         showFeedback(null, t("profileSavedComplete"));

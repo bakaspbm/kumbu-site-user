@@ -8,6 +8,27 @@ export function completeAuthRedirect(target: string): void {
   window.location.assign(path);
 }
 
+/** Novos utilizadores OAuth costumam precisar de completar o perfil antes de publicar. */
+export function resolvePostAuthRedirect(target: string): string {
+  const path = sanitizeInternalPath(target, "/");
+  return path === "/" ? "/conta/perfil" : path;
+}
+
+export async function probeHttpOnlySession(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  try {
+    const response = await fetch("/api/auth/session", {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!response.ok) return false;
+    const payload = (await response.json()) as { authenticated?: boolean };
+    return Boolean(payload.authenticated);
+  } catch {
+    return false;
+  }
+}
+
 export function hasBrowserSession(): boolean {
   if (typeof document === "undefined") return false;
   return document.cookie.includes("kumbu_session_present=1");

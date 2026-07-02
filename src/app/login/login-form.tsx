@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { ShieldCheck } from "lucide-react";
 import { KumbuLogo } from "@/components/brand/kumbu-logo";
 import { Button } from "@/components/ui/button";
-import { completeAuthRedirect } from "@/lib/auth/complete-auth";
+import { completeAuthRedirect, resolvePostAuthRedirect } from "@/lib/auth/complete-auth";
 import { sanitizeInternalPath } from "@/lib/auth/safe-redirect";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import {
@@ -91,7 +91,7 @@ export function LoginForm() {
   }, [searchParams, t]);
 
   function finishAuthRedirect() {
-    const target = sanitizeInternalPath(nextPath, "/");
+    const target = resolvePostAuthRedirect(nextPath);
     completeAuthRedirect(target);
   }
 

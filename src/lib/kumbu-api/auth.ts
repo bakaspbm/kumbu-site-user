@@ -47,22 +47,16 @@ function toSession(payload: AuthResponse): KumbuSession {
   };
 }
 
+export async function persistClientSession(session: KumbuSession): Promise<void> {
+  await setSessionTokens(session.accessToken, session.refreshToken);
+  saveSessionUserSnapshot(session.user);
+}
+
 async function persistSession(payload: AuthResponse): Promise<void> {
   if (!payload.accessToken?.trim() || !payload.refreshToken?.trim()) {
     throw new Error("Resposta de autenticação incompleta (tokens em falta).");
   }
-  await setSessionTokens(payload.accessToken, payload.refreshToken);
-  const claims = decodeAccessTokenClaims(payload.accessToken);
-  const userId =
-    payload.userId != null ? String(payload.userId) : (claims?.userId ?? "");
-  if (!userId) {
-    throw new Error("Resposta de autenticação inválida (utilizador em falta).");
-  }
-  saveSessionUserSnapshot({
-    id: userId,
-    email: payload.email ?? claims?.email ?? null,
-    displayName: payload.displayName ?? null,
-  });
+  await persistClientSession(toSession(payload));
 }
 
 export async function loginWithBackend(email: string, password: string): Promise<KumbuSession> {

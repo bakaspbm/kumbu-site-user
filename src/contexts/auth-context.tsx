@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { fetchAccountShellAction } from "@/app/actions/session";
-import { hasClientSession } from "@/lib/auth/complete-auth";
+import { hasClientSession, probeHttpOnlySession } from "@/lib/auth/complete-auth";
 import { countUnreadNotificationsBackend } from "@/lib/kumbu-api/notifications";
 import {
   subscribeNotificationsRealtime,
@@ -230,7 +230,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     const client = getKumbuApiClient();
-    const browserSession = typeof window !== "undefined" && hasClientSession();
+    const cookieSession =
+      typeof window !== "undefined" &&
+      (hasClientSession() || (await probeHttpOnlySession()));
+    const browserSession = cookieSession;
     const existingUserId = activeUserIdRef.current;
 
     if (typeof window !== "undefined" && !browserSession) {
