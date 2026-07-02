@@ -10,7 +10,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { fetchAccountShellAction } from "@/app/actions/session";
 import { hasClientSession, probeHttpOnlySession } from "@/lib/auth/complete-auth";
 import { countUnreadNotificationsBackend } from "@/lib/kumbu-api/notifications";
 import {
@@ -161,28 +160,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (now - profileLoadAtRef.current < 8_000) return;
       profileLoadAtRef.current = now;
 
-      const result = await promiseWithTimeoutFallback(
-        fetchAccountShellAction(),
-        14_000,
-        { ok: false as const },
-      );
+      const profile = await promiseWithTimeoutFallback(getStoreUser(), 14_000, null);
 
       if (activeUserIdRef.current !== userId) return;
 
-      if (result.ok) {
-        setStoreUser(result.profile);
-        setUnreadNotifications(result.unreadNotifications);
-        setUnreadMessages(result.unreadMessages);
+      if (profile) {
+        setStoreUser(profile);
+        const [notifications, messages] = await promiseWithTimeoutFallback(
+          Promise.all([
+            countUnreadNotificationsBackend(),
+            countUnreadMessagesForUser(undefined, userId),
+          ]),
+          10_000,
+          [0, 0] as const,
+        );
+        setUnreadNotifications(notifications);
+        setUnreadMessages(messages);
         saveSessionUserSnapshot({
-          id: result.profile.id,
-          email: result.profile.email,
-          displayName: result.profile.displayName,
+          id: profile.id,
+          email: profile.email,
+          displayName: profile.displayName,
         });
-        await setOfflineStoreUser(userId, result.profile);
-      } else if (!cached) {
-        setStoreUser(null);
-        setUnreadNotifications(0);
-        setUnreadMessages(0);
+        await setOfflineStoreUser(userId, profile);
       }
     },
     [],
@@ -309,8 +308,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user?.id) return;
 
     const keepAlive = window.setInterval(() => {
-      if (!hasClientSession()) return;
-      void refreshBackendToken().catch(() => {});
+      void (async () => {
+        if (!(hasClientSession() || (await probeHttpOnlySession()))) return;
+        void refreshBackendToken().catch(() => {});
+      })();
     }, 4 * 60_000);
 
     const touchPresence = () => {
@@ -321,8 +322,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
-      if (!hasClientSession()) return;
-      void refreshBackendToken().catch(() => {});
+      void (async () => {
+        if (!(hasClientSession() || (await probeHttpOnlySession()))) return;
+        void refreshBackendToken().catch(() => {});
+      })();
       touchPresence();
     };
     document.addEventListener("visibilitychange", onVisible);

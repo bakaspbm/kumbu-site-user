@@ -15,13 +15,14 @@ import { Button } from "@/components/ui/button";
 import { RequireAuth } from "@/components/auth/require-auth";
 import {
   saveProfilePhotoUrlAction,
-  updateProfileAction,
   updateProfilePhotoAction,
 } from "@/app/actions/profile";
+import { isStoreApiUnauthorized } from "@/lib/kumbu-api/store";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { updateStoreUser } from "@/lib/site-data";
 import { uploadAvatarFile } from "@/lib/site-data";
 import { promiseWithTimeout } from "@/lib/promise-timeout";
+import { setOfflineStoreUser } from "@/lib/offline/store";
 import { AngolaProvinceMunicipalityFields } from "@/components/geo/angola-province-municipality-fields";
 import {
   getMissingProfileFieldKeys,
@@ -254,43 +255,33 @@ export function ProfileSettings() {
         },
       } as const;
 
-      let savedProfile = storeUser;
-      const result = await promiseWithTimeout(
-        updateProfileAction(updatePayload),
-        45_000,
-        t("saveTimeout"),
-      );
-
-      if (!result.ok) {
-        if (result.needsLogin) {
+      let savedProfile;
+      try {
+        savedProfile = await promiseWithTimeout(
+          updateStoreUser(updatePayload),
+          45_000,
+          t("saveTimeout"),
+        );
+      } catch (err) {
+        if (isStoreApiUnauthorized(err)) {
           await refresh();
-          const retry = await updateProfileAction(updatePayload);
-          if (!retry.ok) {
-            if (retry.needsLogin) {
-              router.push(`/login?next=/conta/perfil`);
-            }
-            showFeedback(retry.error, null);
-            return;
-          }
-          applyStoreUser(retry.profile);
-          savedProfile = retry.profile;
-          saveSessionUserSnapshot({
-            id: savedProfile.id,
-            email: savedProfile.email,
-            displayName: savedProfile.displayName,
-          });
+          savedProfile = await promiseWithTimeout(
+            updateStoreUser(updatePayload),
+            45_000,
+            t("saveTimeout"),
+          );
         } else {
-          showFeedback(result.error, null);
+          throw err;
         }
-        return;
       }
-      applyStoreUser(result.profile);
-      savedProfile = result.profile;
+
+      applyStoreUser(savedProfile);
       saveSessionUserSnapshot({
         id: savedProfile.id,
         email: savedProfile.email,
         displayName: savedProfile.displayName,
       });
+      await setOfflineStoreUser(savedProfile.id, savedProfile);
 
       if (isProfileComplete(savedProfile)) {
         showFeedback(null, t("profileSavedComplete"));
@@ -306,6 +297,10 @@ export function ProfileSettings() {
         );
       }
     } catch (err) {
+      if (isStoreApiUnauthorized(err)) {
+        router.push(`/login?next=/conta/perfil`);
+        return;
+      }
       showFeedback(formatErrorMessage(err), null);
     } finally {
       setSaving(false);

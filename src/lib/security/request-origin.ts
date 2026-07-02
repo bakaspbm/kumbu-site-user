@@ -41,6 +41,11 @@ export function isAllowedRequestHost(hostname: string): boolean {
 
 /** Bloqueia POST cross-site a rotas que definem cookies de sessão. */
 export function assertSameOriginRequest(request: Request): boolean {
+  const secFetchSite = request.headers.get("sec-fetch-site")?.toLowerCase();
+  if (secFetchSite === "same-origin" || secFetchSite === "same-site") {
+    return true;
+  }
+
   const originHost = hostnameFromHeaderUrl(request.headers.get("origin"));
   if (originHost) return isAllowedRequestHost(originHost);
 

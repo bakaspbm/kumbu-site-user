@@ -30,8 +30,10 @@ export async function POST() {
   });
 
   if (!upstream.ok) {
-    jar.delete(ACCESS_TOKEN_COOKIE);
-    jar.delete(REFRESH_TOKEN_COOKIE);
+    if (upstream.status === 401 || upstream.status === 403) {
+      jar.delete(ACCESS_TOKEN_COOKIE);
+      jar.delete(REFRESH_TOKEN_COOKIE);
+    }
     return NextResponse.json({ error: "Sessão expirada" }, { status: 401 });
   }
 
@@ -50,14 +52,14 @@ export async function POST() {
   jar.set(ACCESS_TOKEN_COOKIE, payload.accessToken, {
     httpOnly: true,
     secure,
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/",
     maxAge,
   });
   jar.set(REFRESH_TOKEN_COOKIE, payload.refreshToken, {
     httpOnly: true,
     secure,
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/",
     maxAge: TOKEN_MAX_AGE_SECONDS,
   });

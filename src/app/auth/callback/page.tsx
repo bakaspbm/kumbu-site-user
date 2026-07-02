@@ -51,9 +51,7 @@ function AuthCallbackInner() {
           session = await oauthLoginBackend("google", parsed.token, profile);
         }
 
-        if (verified.provider === "facebook") {
-          await persistClientSession(session);
-        }
+        await persistClientSession(session);
         completeAuthRedirect(resolvePostAuthRedirect(verified.next));
       } catch (err) {
         setError(formatOAuthError(err));

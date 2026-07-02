@@ -12,7 +12,7 @@ function cookieOptions(maxAge = TOKEN_MAX_AGE_SECONDS) {
   return {
     httpOnly: true as const,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict" as const,
+    sameSite: "lax" as const,
     path: "/",
     maxAge,
   };

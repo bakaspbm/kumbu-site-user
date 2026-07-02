@@ -263,9 +263,13 @@ function toStoreUser(row: UserProfileDto): StoreUser {
   };
 }
 
-function isUnauthorized(error: unknown): boolean {
+export function isStoreApiUnauthorized(error: unknown): boolean {
   const err = error as ApiError | undefined;
   return !!err && typeof err.status === "number" && (err.status === 401 || err.status === 403);
+}
+
+function isUnauthorized(error: unknown): boolean {
+  return isStoreApiUnauthorized(error);
 }
 
 export async function listCatalogCategoriesBackend(): Promise<CatalogCategory[]> {

@@ -48,6 +48,9 @@ function toSession(payload: AuthResponse): KumbuSession {
 }
 
 export async function persistClientSession(session: KumbuSession): Promise<void> {
+  if (!session.accessToken?.trim() || !session.refreshToken?.trim()) {
+    throw new Error("Resposta de autenticação incompleta (tokens em falta).");
+  }
   await setSessionTokens(session.accessToken, session.refreshToken);
   saveSessionUserSnapshot(session.user);
 }
