@@ -22,7 +22,19 @@ export function MyMonetizationPaymentsPanel() {
   const statusLabel = useCallback(
     (status: string) => {
       const key = status.toLowerCase();
-      if (key in { pending: 1, pending_proof: 1, submitted: 1, confirmed: 1, rejected: 1, cancelled: 1 }) {
+      if (
+        key in {
+          pending: 1,
+          pending_proof: 1,
+          submitted: 1,
+          awaiting_confirmation: 1,
+          confirmed: 1,
+          rejected: 1,
+          cancelled: 1,
+          expired: 1,
+          refunded: 1,
+        }
+      ) {
         return t(`status.${key as "pending"}`);
       }
       return status;

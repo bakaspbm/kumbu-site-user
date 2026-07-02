@@ -26,13 +26,26 @@ function clientOrThrow(): KumbuApiClient {
 }
 
 function toReview(row: ReviewDto): ProductReview {
+  const rawMedia = row.media;
+  const media: ProductReviewMedia[] = Array.isArray(rawMedia)
+    ? rawMedia
+        .filter((m): m is ProductReviewMedia => {
+          if (!m || typeof m !== "object") return false;
+          const item = m as ProductReviewMedia;
+          return (item.type === "image" || item.type === "video") && typeof item.url === "string";
+        })
+        .map((m) => ({
+          type: m.type === "video" ? "video" : "image",
+          url: m.url,
+        }))
+    : [];
   return {
     id: String(row.id),
     productId: String(row.productId),
     userId: String(row.userId),
     rating: Number(row.rating) || 0,
     comment: row.comment ?? null,
-    media: Array.isArray(row.media) ? row.media : [],
+    media,
     sellerReply: row.sellerReply ?? null,
     sellerReplyAt: row.sellerReplyAt ?? null,
     createdAt: String(row.createdAt ?? new Date().toISOString()),
@@ -71,7 +84,11 @@ export async function submitProductReviewBackend(
   const client = clientOrThrow();
   await client.request<void>(`/reviews/products/${encodeURIComponent(productId)}`, {
     method: "POST",
-    body: JSON.stringify({ rating, comment: comment ?? null }),
+    body: JSON.stringify({
+      rating,
+      comment: comment ?? null,
+      media: media.map((item) => ({ type: item.type, url: item.url })),
+    }),
   });
 }
 

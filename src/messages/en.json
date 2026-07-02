@@ -1267,9 +1267,12 @@
       "pending": "Pending",
       "pending_proof": "Awaiting proof",
       "submitted": "Proof submitted",
+      "awaiting_confirmation": "Awaiting confirmation",
       "confirmed": "Confirmed",
       "rejected": "Rejected",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "expired": "Expired",
+      "refunded": "Refunded"
     },
     "promoteTitle": "Promote listing",
     "promoteDescription": "Choose a premium plan and submit payment proof.",

@@ -1270,9 +1270,12 @@
       "pending": "Pendente",
       "pending_proof": "Aguarda comprovativo",
       "submitted": "Comprovativo enviado",
+      "awaiting_confirmation": "Aguarda confirmação",
       "confirmed": "Confirmado",
       "rejected": "Rejeitado",
-      "cancelled": "Cancelado"
+      "cancelled": "Cancelado",
+      "expired": "Expirado",
+      "refunded": "Reembolsado"
     },
     "promoteTitle": "Destacar anúncio",
     "promoteDescription": "Escolha um plano premium e envie o comprovativo de pagamento.",

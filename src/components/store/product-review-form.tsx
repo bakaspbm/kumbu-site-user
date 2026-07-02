@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Camera, Star, Video, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { submitProductReviewAction } from "@/app/actions/reviews";
+import { uploadReviewMediaBackend } from "@/lib/kumbu-api/files";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
@@ -80,6 +81,15 @@ export function ProductReviewForm({
     try {
       void user;
       const media: { type: "image" | "video"; url: string }[] = [];
+
+      for (const file of imageFiles) {
+        const url = await uploadReviewMediaBackend(file);
+        media.push({ type: "image", url });
+      }
+      if (videoFile) {
+        const url = await uploadReviewMediaBackend(videoFile);
+        media.push({ type: "video", url });
+      }
 
       const result = await submitProductReviewAction(
         productId,

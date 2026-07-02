@@ -1267,9 +1267,12 @@
       "pending": "En attente",
       "pending_proof": "En attente de justificatif",
       "submitted": "Justificatif envoyé",
+      "awaiting_confirmation": "En attente de confirmation",
       "confirmed": "Confirmé",
       "rejected": "Rejeté",
-      "cancelled": "Annulé"
+      "cancelled": "Annulé",
+      "expired": "Expiré",
+      "refunded": "Remboursé"
     },
     "promoteTitle": "Mettre en avant l'annonce",
     "promoteDescription": "Choisissez un plan premium et envoyez la preuve de paiement.",

@@ -73,9 +73,11 @@ function mapProvider(row: Record<string, unknown>): PaymentProvider {
 }
 
 function mapPayment(row: Record<string, unknown>): MonetizationPayment {
+  const rawStatus = String(row.status ?? "").trim();
+  const status = rawStatus.toLowerCase();
   return {
     id: String(row.id ?? ""),
-    status: String(row.status ?? ""),
+    status,
     productId: (row.product_id ?? row.productId) as string | null | undefined,
     productName: (row.product_name ?? row.productName) as string | null | undefined,
     amount: row.amount as number | null | undefined,
