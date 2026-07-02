@@ -157,7 +157,7 @@ function mapSeller(row: UserProfileDto): SellerSummary {
 
 export async function listCatalogCategoriesBackend(): Promise<CatalogCategory[]> {
   const client = clientOrThrow();
-  const rows = await client.request<CategoryDto[]>("/catalog/categories");
+  const rows = await client.request<CategoryDto[]>("/catalog/categories", { auth: false });
   return (rows ?? []).map(toCategory);
 }
 
@@ -190,6 +190,7 @@ export async function listCatalogProductsBackend(opts: {
 }): Promise<CatalogProduct[]> {
   const client = clientOrThrow();
   const page = await client.request<PageDto<ListingDto>>("/catalog/listings", {
+    auth: false,
     query: buildListingQuery({
       categoryId: opts.categoryId,
       subcategoryId: opts.subcategoryId,
@@ -210,6 +211,7 @@ export async function listMarketplaceProductsBackend(opts?: {
   const client = clientOrThrow();
   const size = Math.max(1, Math.min(opts?.limit ?? 60, 120));
   const page = await client.request<PageDto<ListingDto>>("/catalog/listings", {
+    auth: false,
     query: buildListingQuery({
       categoryId: opts?.categoryId,
       featuredOnly: opts?.featuredOnly,
@@ -228,6 +230,7 @@ export async function listFeedProductsBackend(limit = 28): Promise<CatalogProduc
 export async function getFeaturedProductsBackend(max = 8): Promise<CatalogProduct[]> {
   const client = clientOrThrow();
   const page = await client.request<PageDto<ListingDto>>("/catalog/listings/featured", {
+    auth: false,
     query: { page: 0, size: max },
   });
   return (page.content ?? []).map(toProduct).slice(0, max);

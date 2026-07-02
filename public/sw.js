@@ -1,4 +1,5 @@
-const CACHE = "kumbu-shell-v3";
+const CACHE = "kumbu-shell-v4";
+const NAVIGATE_TIMEOUT_MS = 12_000;
 const PRECACHE = ["/", "/procurar", "/categorias", "/manifest.webmanifest"];
 
 function isLocalDevHost(hostname) {
@@ -57,16 +58,24 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
-        .then((res) => res)
-        .catch(async () => {
-          const cache = await caches.open(CACHE);
+      (async () => {
+        const cache = await caches.open(CACHE);
+        try {
+          const res = await Promise.race([
+            fetch(request),
+            new Promise((_, reject) => {
+              setTimeout(() => reject(new Error("navigate timeout")), NAVIGATE_TIMEOUT_MS);
+            }),
+          ]);
+          return res;
+        } catch {
           return (
             (await cache.match(request)) ||
             (await cache.match("/")) ||
             Response.error()
           );
-        }),
+        }
+      })(),
     );
   }
 });

@@ -16,7 +16,10 @@ import {
   setOfflineBootstrap,
   shouldRevalidate,
 } from "@/lib/offline/store";
+import { promiseWithTimeout } from "@/lib/promise-timeout";
 import type { CatalogCategory, CatalogProduct } from "@/types/store";
+
+const BOOTSTRAP_TIMEOUT_MS = 15_000;
 
 const SESSION_KEY = "kumbu_catalog_bootstrap_v2";
 
@@ -85,7 +88,11 @@ export function useCatalogBootstrap() {
     if (!force && cached && !shouldRevalidate(cached.fetchedAt)) return;
 
     try {
-      const fresh = await fetchBootstrap();
+      const fresh = await promiseWithTimeout(
+        fetchBootstrap(),
+        BOOTSTRAP_TIMEOUT_MS,
+        "Timeout ao carregar catálogo",
+      );
       setData(fresh);
       writeSessionCache(fresh);
       await setOfflineBootstrap(fresh);

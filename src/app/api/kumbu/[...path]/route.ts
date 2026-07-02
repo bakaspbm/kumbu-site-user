@@ -50,12 +50,15 @@ async function proxy(request: NextRequest, path: string) {
     body = await request.arrayBuffer();
   }
 
-  let upstream = await fetch(target, {
+  const upstreamInit = (): RequestInit => ({
     method: request.method,
     headers,
     body,
     cache: "no-store",
+    signal: AbortSignal.timeout(12_000),
   });
+
+  let upstream = await fetch(target, upstreamInit());
 
   if (upstream.status === 401 && refreshToken) {
     const refreshRes = await fetch(new URL("/api/auth/refresh", request.url), {
@@ -66,12 +69,7 @@ async function proxy(request: NextRequest, path: string) {
       const newAccess = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
       if (newAccess) {
         headers.set("Authorization", `Bearer ${newAccess}`);
-        upstream = await fetch(target, {
-          method: request.method,
-          headers,
-          body,
-          cache: "no-store",
-        });
+        upstream = await fetch(target, upstreamInit());
       }
     }
   }

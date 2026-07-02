@@ -89,6 +89,7 @@ export async function getHomeRecommendationsBackend(limit = 12): Promise<HomeRec
     return { forYou: [], trending: [], newNearby: [], nearby: [] };
   }
   const data = await client.request<HomeRecommendationsDto>("/recommendations/home", {
+    auth: false,
     query: { limit },
   });
   return {
