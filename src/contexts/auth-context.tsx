@@ -371,7 +371,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      await refresh();
+      await promiseWithTimeoutFallback(refresh(), 10_000, undefined);
       if (!cancelled) setIsLoading(false);
     })();
     return () => {

@@ -16,10 +16,20 @@ import {
   setOfflineBootstrap,
   shouldRevalidate,
 } from "@/lib/offline/store";
-import { promiseWithTimeout } from "@/lib/promise-timeout";
+import { promiseWithTimeout, promiseWithTimeoutFallback } from "@/lib/promise-timeout";
 import type { CatalogCategory, CatalogProduct } from "@/types/store";
 
-const BOOTSTRAP_TIMEOUT_MS = 15_000;
+const BOOTSTRAP_TIMEOUT_MS = 12_000;
+
+function demoBootstrap(): CatalogBootstrap {
+  return {
+    categories: demoCategories,
+    featured: demoProducts.slice(0, 5),
+    feed: demoProducts,
+    isDemo: true,
+    fetchedAt: Date.now(),
+  };
+}
 
 const SESSION_KEY = "kumbu_catalog_bootstrap_v2";
 
@@ -68,16 +78,20 @@ async function fetchBootstrap(): Promise<CatalogBootstrap> {
 }
 
 async function loadInitial(): Promise<CatalogBootstrap | null> {
-  const session = readSessionCache();
-  if (session) return session;
-  const idb = await getOfflineBootstrap();
-  if (idb) return idb;
-  return null;
+  return promiseWithTimeoutFallback(
+    (async () => {
+      const session = readSessionCache();
+      if (session) return session;
+      return (await getOfflineBootstrap()) ?? null;
+    })(),
+    2_000,
+    null,
+  );
 }
 
 export function useCatalogBootstrap() {
-  const [data, setData] = useState<CatalogBootstrap | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<CatalogBootstrap | null>(demoBootstrap);
+  const [loading, setLoading] = useState(false);
   const dataRef = useRef<CatalogBootstrap | null>(null);
   dataRef.current = data;
 
@@ -97,14 +111,8 @@ export function useCatalogBootstrap() {
       writeSessionCache(fresh);
       await setOfflineBootstrap(fresh);
     } catch {
-      if (!dataRef.current) {
-        setData({
-          categories: demoCategories,
-          featured: demoProducts.slice(0, 5),
-          feed: demoProducts,
-          isDemo: true,
-          fetchedAt: Date.now(),
-        });
+      if (!dataRef.current || dataRef.current.isDemo) {
+        setData(demoBootstrap());
       }
     } finally {
       setLoading(false);
@@ -124,13 +132,7 @@ export function useCatalogBootstrap() {
 
       if (!isBrowserOnline()) {
         if (!initial) {
-          setData({
-            categories: demoCategories,
-            featured: demoProducts.slice(0, 5),
-            feed: demoProducts,
-            isDemo: true,
-            fetchedAt: Date.now(),
-          });
+          setData(demoBootstrap());
         }
         setLoading(false);
         return;
@@ -140,7 +142,9 @@ export function useCatalogBootstrap() {
         return;
       }
 
+      setLoading(true);
       await refresh(true);
+      setLoading(false);
     })();
 
     return () => {
@@ -160,7 +164,7 @@ export function useCatalogBootstrap() {
     featured: data?.featured ?? [],
     feed: data?.feed ?? [],
     isDemo: data?.isDemo ?? false,
-    loading: loading && !data,
+    loading,
     refresh: () => refresh(true),
   };
 }
