@@ -11,6 +11,9 @@ import {
 } from "@/lib/kumbu-api/files";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { probeHttpOnlySession } from "@/lib/auth/complete-auth";
+import { refreshBrowserSessionCookies } from "@/lib/kumbu-api/browser-session";
+import { ApiError } from "@/lib/kumbu-api/client";
 
 export function IdentityUpload() {
   const { isLoggedIn } = useAuth();
@@ -73,10 +76,14 @@ export function IdentityUpload() {
     setMessage(null);
     setBusy(side);
     try {
+      if (!(await ensureLiveSession())) {
+        setError(t("sessionExpiredRelogin"));
+        return;
+      }
       applyStatus(await uploadIdentityDocumentBackend(side, file));
       setMessage(t("identityUploadSuccess"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("identityUploadError"));
+      setError(formatIdentityError(e));
     } finally {
       setBusy(null);
     }
@@ -87,10 +94,14 @@ export function IdentityUpload() {
     setMessage(null);
     setSubmitting(true);
     try {
+      if (!(await ensureLiveSession())) {
+        setError(t("sessionExpiredRelogin"));
+        return;
+      }
       applyStatus(await submitIdentityVerificationBackend());
       setMessage(t("identitySubmitSuccess"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("identitySubmitError"));
+      setError(formatIdentityError(e));
     } finally {
       setSubmitting(false);
     }
@@ -107,6 +118,19 @@ export function IdentityUpload() {
     reviewStatus !== "PENDING" &&
     reviewStatus !== "APPROVED" &&
     !hasRejectedDocs;
+
+  async function ensureLiveSession(): Promise<boolean> {
+    if (await probeHttpOnlySession()) return true;
+    return refreshBrowserSessionCookies();
+  }
+
+  function formatIdentityError(error: unknown): string {
+    if (error instanceof ApiError && error.status === 401) {
+      return t("sessionExpiredRelogin");
+    }
+    if (error instanceof Error && error.message.trim()) return error.message;
+    return t("identityUploadError");
+  }
 
   return (
     <div className="space-y-3">

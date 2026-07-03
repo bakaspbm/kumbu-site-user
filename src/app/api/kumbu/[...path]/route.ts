@@ -3,6 +3,7 @@ import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
   TOKEN_MAX_AGE_SECONDS,
+  isAccessTokenExpiringSoon,
 } from "@/lib/kumbu-api/session-tokens";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -80,8 +81,16 @@ async function refreshAccessTokenInline(refreshToken: string): Promise<string | 
 
 async function proxyUpstream(request: NextRequest, path: string) {
   const jar = await cookies();
-  const accessToken = jar.get(ACCESS_TOKEN_COOKIE)?.value;
-  const refreshToken = jar.get(REFRESH_TOKEN_COOKIE)?.value;
+  let accessToken = jar.get(ACCESS_TOKEN_COOKIE)?.value;
+  let refreshToken = jar.get(REFRESH_TOKEN_COOKIE)?.value;
+
+  if (refreshToken && (!accessToken || isAccessTokenExpiringSoon(accessToken))) {
+    const renewed = await refreshAccessTokenInline(refreshToken);
+    if (renewed) {
+      accessToken = renewed;
+      refreshToken = (await cookies()).get(REFRESH_TOKEN_COOKIE)?.value ?? refreshToken;
+    }
+  }
 
   const target = `${backendBase()}/${path}${request.nextUrl.search}`;
   const headers = new Headers();

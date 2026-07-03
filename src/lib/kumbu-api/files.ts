@@ -17,7 +17,6 @@ async function uploadFile(path: "/files/avatar" | "/files/listing" | "/files/cha
   const row = await client.request<UploadUrlDto>(path, {
     method: "POST",
     body: formData,
-    headers: {},
   });
   const url = row.url?.trim();
   if (!url) throw new Error("Upload concluído sem URL de retorno.");
@@ -70,7 +69,6 @@ export async function uploadIdentityDocumentBackend(
   return client.request<IdentityStatus>(`/verification/identity/${side}`, {
     method: "POST",
     body: formData,
-    headers: {},
   });
 }
 

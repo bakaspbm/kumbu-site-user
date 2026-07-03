@@ -238,6 +238,8 @@ export class KumbuApiClient {
 
     const apiBase = resolveRequestBaseUrl(this.baseUrl, useAuth);
     const url = withQuery(`${apiBase}${path}`, options?.query);
+    const usingBrowserProxy =
+      typeof window !== "undefined" && useAuth && apiBase.startsWith("/");
     const headers: Record<string, string> = {
       Accept: "application/json",
       ...options?.headers,
@@ -247,7 +249,8 @@ export class KumbuApiClient {
     if (hasBody && !headers["Content-Type"]) {
       headers["Content-Type"] = "application/json";
     }
-    if (token) headers.Authorization = `Bearer ${token}`;
+    // No browser + proxy Next, a sessão vai nos cookies HttpOnly — não enviar Bearer stale.
+    if (token && !usingBrowserProxy) headers.Authorization = `Bearer ${token}`;
 
     let response: Response;
     try {

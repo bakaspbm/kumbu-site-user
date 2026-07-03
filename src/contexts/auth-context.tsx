@@ -230,10 +230,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     const client = getKumbuApiClient();
-    const cookieSession =
-      typeof window !== "undefined" &&
-      (hasClientSession() || (await probeHttpOnlySession()));
-    const browserSession = cookieSession;
+    let browserSession = false;
+    if (typeof window !== "undefined") {
+      browserSession = await probeHttpOnlySession();
+      if (!browserSession) {
+        browserSession = await refreshBrowserSessionCookies();
+      }
+    }
     const existingUserId = activeUserIdRef.current;
 
     if (typeof window !== "undefined" && !browserSession) {
@@ -379,8 +382,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      if (typeof window !== "undefined" && (hasClientSession() || (await probeHttpOnlySession()))) {
-        await ensureBrowserAccessToken();
+      if (typeof window !== "undefined") {
+        const live =
+          (await probeHttpOnlySession()) || (await refreshBrowserSessionCookies());
+        if (live) await ensureBrowserAccessToken();
       }
       await promiseWithTimeoutFallback(refresh(), 10_000, undefined);
       if (!cancelled) setIsLoading(false);
