@@ -148,8 +148,12 @@ function getDirectPublicApiBaseUrl(): string | null {
 
 function resolveRequestBaseUrl(clientBaseUrl: string, useAuth: boolean): string {
   if (typeof window !== "undefined") {
+    // Pedidos autenticados no browser passam pelo proxy Next (cookies HttpOnly).
+    if (useAuth && clientBaseUrl.startsWith("/")) {
+      return clientBaseUrl;
+    }
     const direct = getDirectPublicApiBaseUrl();
-    if (direct && (!useAuth || direct !== clientBaseUrl)) {
+    if (direct && !useAuth) {
       return direct;
     }
   }
