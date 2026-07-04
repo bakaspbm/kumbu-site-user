@@ -22,7 +22,11 @@ import {
   getBackendSession,
   refreshBackendToken,
 } from "@/lib/kumbu-api/auth";
-import { ensureBrowserAccessToken, getBrowserAccessToken } from "@/lib/kumbu-api/browser-session";
+import {
+  ensureBrowserAccessToken,
+  getBrowserAccessToken,
+  refreshBrowserSessionCookies,
+} from "@/lib/kumbu-api/browser-session";
 import { getKumbuApiClient } from "@/lib/kumbu-api/client";
 import { touchPresenceBackend } from "@/lib/kumbu-api/presence";
 import {
