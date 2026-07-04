@@ -74,6 +74,7 @@ export function HomeFeed({
             title={t("featured")}
             subtitle={t("featuredSubtitle")}
             href="/procurar"
+            linkLabel={t("seeAll")}
           />
           {highlights.length === 0 ? (
             <p className="mt-6 text-sm text-kumbu-muted">{t("noFeatured")}</p>

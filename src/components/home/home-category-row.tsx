@@ -13,11 +13,14 @@ import {
   UtensilsCrossed,
   Wrench,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { getCategoryExploreHref } from "@/lib/catalog/category-links";
+import { localizeCategoryName } from "@/lib/catalog/localize-catalog";
 import type { CatalogCategory } from "@/types/store";
 
 const iconById: Record<string, typeof LayoutGrid> = {
   eletronicos: Smartphone,
+  telemoveis: Smartphone,
   moda: Shirt,
   eletrodomesticos: UtensilsCrossed,
   beleza: Sparkles,
@@ -27,6 +30,7 @@ const iconById: Record<string, typeof LayoutGrid> = {
   servicos: Wrench,
   imoveis: Home,
   emprego: Briefcase,
+  empregos: Briefcase,
 };
 
 function iconForCategory(id: string, name: string) {
@@ -45,33 +49,35 @@ function iconForCategory(id: string, name: string) {
 }
 
 export function HomeCategoryRow({ categories }: { categories: CatalogCategory[] }) {
+  const t = useTranslations("home");
+  const tCatalog = useTranslations("catalog");
+
   if (categories.length === 0) return null;
 
   return (
     <section className="kumbu-container py-2 md:py-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="kumbu-section-title">Categorias</h2>
+        <h2 className="kumbu-section-title">{t("categories")}</h2>
         <Link href="/categorias" className="kumbu-link-pill">
-          Ver todas
+          {t("seeAllCategories")}
           <ChevronRight className="size-3.5" />
         </Link>
       </div>
       <div className="mt-4 flex gap-2.5 overflow-x-auto pb-1 scrollbar-none md:grid md:grid-cols-5 md:gap-2.5 md:overflow-visible lg:grid-cols-6">
-          {categories.map((c) => {
-            const Icon = iconForCategory(c.id, c.name);
-            const href = getCategoryExploreHref(c);
-            return (
-              <Link key={c.id} href={href} className="kumbu-category-tile shrink-0 md:min-w-0">
-                <span className="kumbu-category-tile-icon">
-                  <Icon className="size-5" strokeWidth={1.75} aria-hidden />
-                </span>
-                <span className="kumbu-category-tile-label text-kumbu-foreground">
-                  {c.name}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
+        {categories.map((c) => {
+          const Icon = iconForCategory(c.id, c.name);
+          const href = getCategoryExploreHref(c);
+          const label = localizeCategoryName(c, tCatalog);
+          return (
+            <Link key={c.id} href={href} className="kumbu-category-tile shrink-0 md:min-w-0">
+              <span className="kumbu-category-tile-icon">
+                <Icon className="size-5" strokeWidth={1.75} aria-hidden />
+              </span>
+              <span className="kumbu-category-tile-label text-kumbu-foreground">{label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </section>
   );
 }

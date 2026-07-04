@@ -9,10 +9,12 @@ import { ListingCard } from "@/components/store/listing-card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCatalogBootstrap } from "@/hooks/use-catalog-bootstrap";
+import { localizeCategoryName } from "@/lib/catalog/localize-catalog";
 
 export function ProcurarClient() {
   const t = useTranslations("search");
   const tCommon = useTranslations("common");
+  const tCatalog = useTranslations("catalog");
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialQ = searchParams.get("q") ?? "";
@@ -104,7 +106,7 @@ export function ProcurarClient() {
                     : "bg-kumbu-surface text-kumbu-muted"
                 }`}
               >
-                {c.name}
+                {localizeCategoryName(c, tCatalog)}
               </button>
             ))}
           </div>

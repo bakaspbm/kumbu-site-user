@@ -1,24 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { BackHeader } from "@/components/layout/back-header";
 import { OfflineBanner } from "@/components/pwa/offline-banner";
 import { ProductCard } from "@/components/store/product-card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { useOfflineCategory } from "@/hooks/use-offline-category";
+import {
+  localizeCategoryName,
+  localizeSubcategoryName,
+} from "@/lib/catalog/localize-catalog";
 import { isJobCategory } from "@/lib/jobs/category";
 import { isPropertyCategory } from "@/lib/property/category";
 import { demoCategories } from "@/lib/store/demo-data";
 import type { SortMode } from "@/types/store";
 import { cn } from "@/lib/utils";
-
-function emptyCategoryMessage(categoryId: string): string {
-  const cat = demoCategories.find((c) => c.id === categoryId);
-  if (cat && isJobCategory(cat)) return "Nenhuma vaga nesta categoria.";
-  if (cat && isPropertyCategory(cat)) return "Nenhum imóvel nesta categoria.";
-  if (categoryId === "servicos") return "Nenhum serviço listado.";
-  return "Nenhum anúncio nesta categoria.";
-}
 
 interface CategoryPageClientProps {
   categoryId: string;
@@ -33,6 +30,8 @@ export function CategoryPageClient({
   subcategoryId,
   sortMode = "default",
 }: CategoryPageClientProps) {
+  const t = useTranslations("catalog");
+  const tCommon = useTranslations("common");
   const { products, subcategories, loading } = useOfflineCategory({
     categoryId,
     subcategoryId,
@@ -40,12 +39,22 @@ export function CategoryPageClient({
   });
 
   const categoryMeta = demoCategories.find((c) => c.id === categoryId);
-  const displayName = categoryMeta?.name ?? categoryName;
+  const categoryForLabel = categoryMeta ?? { id: categoryId, name: categoryName };
+  const displayName = localizeCategoryName(categoryForLabel, t);
   const showSubcategories =
     subcategories.length > 0 &&
     categoryMeta &&
     !isPropertyCategory(categoryMeta) &&
     !isJobCategory(categoryMeta);
+
+  function emptyCategoryMessage(): string {
+    if (isJobCategory(categoryMeta)) return t("emptyJobs");
+    if (categoryId === "empregos" || categoryId === "emprego") return t("emptyJobs");
+    if (isPropertyCategory(categoryMeta)) return t("emptyProperty");
+    if (categoryId === "imoveis") return t("emptyProperty");
+    if (categoryId === "servicos") return t("emptyServices");
+    return t("emptyDefault");
+  }
 
   if (loading) return <PageSkeleton />;
 
@@ -57,7 +66,7 @@ export function CategoryPageClient({
       {showSubcategories && (
         <nav
           className="kumbu-container border-b border-kumbu-border py-3"
-          aria-label="Subcategorias"
+          aria-label={t("subcategoriesAria")}
         >
           <p className="flex gap-2 overflow-x-auto scrollbar-none">
             <Link
@@ -70,7 +79,7 @@ export function CategoryPageClient({
                   : "bg-kumbu-secondary text-kumbu-muted hover:text-kumbu-foreground",
               )}
             >
-              Todos
+              {tCommon("all")}
             </Link>
             {subcategories.map((s) => (
               <Link
@@ -84,7 +93,7 @@ export function CategoryPageClient({
                     : "bg-kumbu-secondary text-kumbu-muted hover:text-kumbu-foreground",
                 )}
               >
-                {s.name}
+                {localizeSubcategoryName(categoryId, s, t)}
               </Link>
             ))}
           </p>
@@ -94,7 +103,7 @@ export function CategoryPageClient({
       <ul className="kumbu-listing-grid kumbu-container mt-6">
         {products.length === 0 ? (
           <li className="col-span-full kumbu-card py-16 text-center text-sm text-kumbu-muted">
-            {emptyCategoryMessage(categoryId)}
+            {emptyCategoryMessage()}
           </li>
         ) : (
           products.map((p) => (

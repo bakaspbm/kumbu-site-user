@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   Briefcase,
@@ -10,11 +12,14 @@ import {
   UtensilsCrossed,
   Wrench,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { getCategoryExploreHref } from "@/lib/catalog/category-links";
+import { localizeCategoryName } from "@/lib/catalog/localize-catalog";
 import type { CatalogCategory } from "@/types/store";
 
 const iconById: Record<string, typeof LayoutGrid> = {
   eletronicos: Smartphone,
+  telemoveis: Smartphone,
   moda: Shirt,
   eletrodomesticos: UtensilsCrossed,
   beleza: Sparkles,
@@ -23,9 +28,12 @@ const iconById: Record<string, typeof LayoutGrid> = {
   servicos: Wrench,
   imoveis: Home,
   emprego: Briefcase,
+  empregos: Briefcase,
 };
 
 export function CategoryChips({ categories }: { categories: CatalogCategory[] }) {
+  const tCatalog = useTranslations("catalog");
+
   if (categories.length === 0) return null;
 
   return (
@@ -43,7 +51,9 @@ export function CategoryChips({ categories }: { categories: CatalogCategory[] })
               <span className="kumbu-category-tile-icon">
                 <Icon className="size-5" strokeWidth={1.75} />
               </span>
-              <span className="kumbu-category-tile-label max-w-none">{c.name}</span>
+              <span className="kumbu-category-tile-label max-w-none">
+                {localizeCategoryName(c, tCatalog)}
+              </span>
             </Link>
           );
         })}

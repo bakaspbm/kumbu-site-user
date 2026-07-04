@@ -38,6 +38,10 @@ import {
   localizeProductMetaEntries,
   localizeSubcategoryFieldLabel,
 } from "@/lib/catalog/localize-product-fields";
+import {
+  localizeCategoryName,
+  localizeSubcategoryName,
+} from "@/lib/catalog/localize-catalog";
 import { listCatalogCategories, listCatalogSubcategories } from "@/lib/site-data";
 import { ListingImagesUpload, type ListingImageItem } from "@/components/listings/listing-images-upload";
 import { publishCatalogProductAction } from "@/app/actions/publish-catalog";
@@ -77,6 +81,7 @@ export function PublishForm({
 }) {
   const t = useTranslations("publish");
   const tCatalogFields = useTranslations("catalogFields");
+  const tCatalog = useTranslations("catalog");
   const tJobs = useTranslations("jobs.publish");
   const tCommon = useTranslations("common");
   const formatErrorMessage = useFormatErrorMessage();
@@ -239,9 +244,13 @@ export function PublishForm({
   const showSubcategoryField =
     !isProperty && !isJob && Boolean(categoryId) && (subcategoriesLoading || subcategories.length > 0);
 
-  const categoryName = categories.find((c) => c.id === categoryId)?.name ?? "—";
-  const subcategoryName =
-    subcategories.find((s) => s.id === subcategoryId)?.name ?? "";
+  const selectedSubcategory = subcategories.find((s) => s.id === subcategoryId);
+  const categoryName = selectedCategory
+    ? localizeCategoryName(selectedCategory, tCatalog)
+    : "—";
+  const subcategoryName = selectedSubcategory
+    ? localizeSubcategoryName(categoryId, selectedSubcategory, tCatalog)
+    : "";
 
   function canAdvance(): boolean {
     if (step === 0) {
@@ -519,7 +528,7 @@ export function PublishForm({
                   </option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
+                      {localizeCategoryName(c, tCatalog)}
                     </option>
                   ))}
                 </select>
@@ -552,7 +561,7 @@ export function PublishForm({
                     </option>
                     {subcategories.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name}
+                        {localizeSubcategoryName(categoryId, s, tCatalog)}
                       </option>
                     ))}
                   </select>

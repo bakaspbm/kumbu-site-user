@@ -16,6 +16,10 @@ import {
   partitionCategoriesForExplore,
 } from "@/lib/catalog/category-links";
 import { localizeCategoryKindLabel } from "@/lib/catalog/localize-product-fields";
+import {
+  categoryMatchesLocalizedSearch,
+  localizeCategoryName,
+} from "@/lib/catalog/localize-catalog";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +35,7 @@ export function CategoriesPage() {
   const t = useTranslations("search");
   const tCommon = useTranslations("common");
   const tCatalogFields = useTranslations("catalogFields");
+  const tCatalog = useTranslations("catalog");
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "products" ? "products" : "categories";
   const initialQ = searchParams.get("q") ?? "";
@@ -54,9 +59,11 @@ export function CategoriesPage() {
     const q = query.trim().toLowerCase();
     if (tab !== "categories") return;
     setShownCategories(
-      q === "" ? categories : categories.filter((c) => c.name.toLowerCase().includes(q)),
+      q === ""
+        ? categories
+        : categories.filter((c) => categoryMatchesLocalizedSearch(c, q, tCatalog)),
     );
-  }, [query, categories, tab]);
+  }, [query, categories, tab, tCatalog]);
 
   useEffect(() => {
     if (tab !== "products") return;
@@ -168,11 +175,11 @@ export function CategoriesPage() {
                           className="kumbu-card-interactive group flex items-center gap-3 p-4"
                         >
                           <span className="flex size-11 items-center justify-center rounded-xl bg-kumbu-primary/10 text-lg font-extrabold text-kumbu-primary">
-                            {c.name.charAt(0).toUpperCase()}
+                            {localizeCategoryName(c, tCatalog).charAt(0).toUpperCase()}
                           </span>
                           <span className="min-w-0 flex-1">
                             <p className="font-bold text-kumbu-foreground group-hover:text-kumbu-primary">
-                              {c.name}
+                              {localizeCategoryName(c, tCatalog)}
                             </p>
                             <p className="text-xs font-medium text-kumbu-muted">
                               {localizeCategoryKindLabel(c, tCatalogFields)}

@@ -14,7 +14,7 @@ export function SectionHeader({
   title,
   subtitle,
   href,
-  linkLabel = "Ver tudo",
+  linkLabel,
   className,
 }: SectionHeaderProps) {
   return (
@@ -23,7 +23,7 @@ export function SectionHeader({
         <h2 className="kumbu-section-title">{title}</h2>
         {subtitle && <p className="kumbu-section-subtitle">{subtitle}</p>}
       </div>
-      {href && (
+      {href && linkLabel && (
         <Link href={href} className="kumbu-link-pill shrink-0">
           {linkLabel}
           <ChevronRight className="size-4" />
