@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from "lucide-react";
+import { ModalOverlay } from "@/components/ui/modal-overlay";
 import { normalizeListingImageUrl } from "@/lib/store/product-images";
 import { cn } from "@/lib/utils";
 
@@ -11,28 +11,21 @@ interface ProductImageLightboxProps {
   images: string[];
   initialIndex: number;
   title: string;
+  open: boolean;
   onClose: () => void;
   onIndexChange?: (index: number) => void;
-}
-
-function useIsClient() {
-  return useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
 }
 
 export function ProductImageLightbox({
   images,
   initialIndex,
   title,
+  open,
   onClose,
   onIndexChange,
 }: ProductImageLightboxProps) {
   const t = useTranslations("product");
   const tCommon = useTranslations("common");
-  const isClient = useIsClient();
   const [index, setIndex] = useState(initialIndex);
   const [zoom, setZoom] = useState(1);
 
@@ -52,41 +45,19 @@ export function ProductImageLightbox({
     [images.length, index, setIndexAndNotify],
   );
 
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, []);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") go(-1);
-      if (e.key === "ArrowRight") go(1);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, go]);
-
   const src = normalizeListingImageUrl(images[index]) ?? images[index];
   const hasMany = images.length > 1;
 
-  if (!isClient) return null;
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[300] flex flex-col bg-black/95 backdrop-blur-md"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("photosTitle", { title })}
-      onClick={onClose}
+  return (
+    <ModalOverlay
+      open={open}
+      onClose={onClose}
+      zIndexClass="z-[300]"
+      overlayClassName="flex flex-col items-stretch justify-start bg-black/95 p-0"
+      panelClassName={null}
+      ariaLabel={t("photosTitle", { title })}
     >
-      <header
-        className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-6"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <header className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <p className="truncate text-sm font-semibold text-white/90">
           {title}
           {hasMany && (
@@ -119,10 +90,7 @@ export function ProductImageLightbox({
         </div>
       </header>
 
-      <div
-        className="relative flex min-h-0 flex-1 items-center justify-center px-2 pb-4 sm:px-12"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative flex min-h-0 flex-1 items-center justify-center px-2 pb-4 sm:px-12">
         {hasMany && (
           <button
             type="button"
@@ -170,10 +138,7 @@ export function ProductImageLightbox({
       </div>
 
       {hasMany && (
-        <div
-          className="flex shrink-0 justify-center gap-2 overflow-x-auto px-4 pb-6 pt-1"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="flex shrink-0 justify-center gap-2 overflow-x-auto px-4 pb-6 pt-1">
           {images.map((thumb, i) => (
             <button
               key={`${i}-${thumb}`}
@@ -199,7 +164,6 @@ export function ProductImageLightbox({
           ))}
         </div>
       )}
-    </div>,
-    document.body,
+    </ModalOverlay>
   );
 }

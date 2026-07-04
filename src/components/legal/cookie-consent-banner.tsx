@@ -33,8 +33,8 @@ export function CookieConsentBanner() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] z-[60] border-t border-kumbu-border bg-kumbu-surface/95 p-4 shadow-lg backdrop-blur-md md:bottom-4 md:left-4 md:right-auto md:z-40 md:max-w-md md:rounded-2xl md:border"
-      role="dialog"
+      className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] z-[60] border-t border-kumbu-border bg-kumbu-surface p-4 shadow-lg md:bottom-4 md:left-4 md:right-auto md:z-40 md:max-w-md md:rounded-2xl md:border"
+      role="region"
       aria-label={t("dialogLabel")}
     >
       <p className="text-sm font-bold text-kumbu-foreground">{t("title")}</p>

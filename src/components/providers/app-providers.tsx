@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { CartProvider } from "@/contexts/cart-context";
 import { LiveSyncProvider } from "@/contexts/live-sync-context";
 import { MessagesProvider } from "@/contexts/messages-context";
+import { ModalRouteGuard } from "@/components/providers/modal-route-guard";
 import { ThemeProvider } from "@/contexts/theme-context";
 import type { ReactNode } from "react";
 
@@ -17,6 +18,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <ThemeProvider>
       <FetchGuard />
       <ServiceWorkerRegister />
+      <ModalRouteGuard />
       <AuthUrlHandler />
       <AuthProvider>
         <SentryUserBridge />

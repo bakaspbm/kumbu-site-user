@@ -117,15 +117,16 @@ export function ProductImageGallery({ product }: ProductImageGalleryProps) {
         </button>
       </div>
 
-      {lightboxOpen && (
+      {lightboxOpen ? (
         <ProductImageLightbox
           images={images}
           initialIndex={active}
           title={product.title}
+          open={lightboxOpen}
           onIndexChange={setActive}
           onClose={() => setLightboxOpen(false)}
         />
-      )}
+      ) : null}
     </>
   );
 }

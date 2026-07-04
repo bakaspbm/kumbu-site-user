@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
+import { ModalOverlay } from "@/components/ui/modal-overlay";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { isKumbuApiEnabled } from "@/lib/kumbu-api/client";
 import {
@@ -120,12 +121,12 @@ export function PromoteListingDialog({ listingId, categoryId, open, onClose }: P
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="kumbu-card-elevated max-h-[90vh] w-full max-w-lg overflow-y-auto p-5"
-      >
+    <ModalOverlay
+      open={open}
+      onClose={onClose}
+      overlayClassName="bg-black/40"
+      panelClassName="kumbu-card-elevated max-h-[90vh] w-full max-w-lg overflow-y-auto p-5"
+    >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-kumbu-ink">{t("promoteTitle")}</h2>
@@ -260,7 +261,6 @@ export function PromoteListingDialog({ listingId, categoryId, open, onClose }: P
         <Button variant="outline" className="mt-4 w-full" onClick={onClose}>
           {tCommon("close")}
         </Button>
-      </div>
-    </div>
+    </ModalOverlay>
   );
 }
