@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CreditCard, MapPin, ShoppingBag, User } from "lucide-react";
+import { MapPin, MessageCircle, ShoppingBag, User } from "lucide-react";
 import { BackHeader } from "@/components/layout/back-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,6 @@ import { ActionSuccessNotice } from "@/components/ui/action-success-notice";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
-import { listPaymentMethods } from "@/lib/site-data";
-import type { AppPaymentMethod } from "@/types/store";
 import { groupCartBySeller } from "@/lib/cart-utils";
 import { cn, parsePriceLabel } from "@/lib/utils";
 import { useResolveUserFacingError } from "@/lib/i18n/use-format-error";
@@ -31,38 +29,15 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { isLoggedIn, storeUser, isLoading: authLoading } = useAuth();
   const { items, count, checkout, totalLabel } = useCart();
-  const [paymentMethods, setPaymentMethods] = useState<AppPaymentMethod[]>([]);
-  const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<{ href: string; actionLabel: string } | null>(
     null,
   );
   const [submitError, setSubmitError] = useState<UserFacingError | null>(null);
-  const [paymentLoadError, setPaymentLoadError] = useState<UserFacingError | null>(null);
 
   const hasAddress = Boolean(
     storeUser?.deliveryAddress?.line1 && storeUser?.deliveryAddress?.city,
   );
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        const methods = await listPaymentMethods();
-        setPaymentMethods(methods);
-        setPaymentLoadError(null);
-        const def = methods.find((m) => m.isDefault) ?? methods[0];
-        if (def) setSelectedPayment(def.id);
-      } catch (err) {
-        setPaymentMethods([]);
-        const m = errorMessagesFromTranslations(tErrors);
-        setPaymentLoadError({
-          title: m.paymentMethodsFailed,
-          message: m.paymentMethodsFailed,
-          action: m.paymentMethodsFailedAction,
-        });
-      }
-    })();
-  }, [tErrors]);
 
   useEffect(() => {
     if (!orderSuccess) return;
@@ -139,7 +114,7 @@ export default function CheckoutPage() {
   const steps = [
     { icon: User, label: t("stepAccount"), done: isLoggedIn },
     { icon: MapPin, label: t("delivery"), done: hasAddress },
-    { icon: CreditCard, label: t("payment"), done: !!selectedPayment || paymentMethods.length === 0 },
+    { icon: MessageCircle, label: t("stepMeetup"), done: isLoggedIn && hasAddress },
   ] as const;
 
   const sellerCount = groupCartBySeller(items).size;
@@ -195,10 +170,6 @@ export default function CheckoutPage() {
 
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           <section className="space-y-4">
-            {paymentLoadError ? (
-              <UserFacingErrorAlert error={paymentLoadError} />
-            ) : null}
-
             <div className="kumbu-card p-5">
               <h2 className="font-bold text-kumbu-foreground">{t("itemsSummary")}</h2>
               <ul className="mt-4 divide-y divide-kumbu-border">
@@ -240,28 +211,10 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {paymentMethods.length > 0 && (
-              <div className="kumbu-card p-5">
-                <h2 className="font-bold text-kumbu-foreground">{t("paymentMethod")}</h2>
-                <ul className="mt-3 flex flex-col gap-2">
-                  {paymentMethods.map((m) => (
-                    <li key={m.id}>
-                      <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-kumbu-border px-4 py-3 has-[:checked]:border-kumbu-primary has-[:checked]:bg-kumbu-primary/5">
-                        <input
-                          type="radio"
-                          name="payment"
-                          value={m.id}
-                          checked={selectedPayment === m.id}
-                          onChange={() => setSelectedPayment(m.id)}
-                          className="accent-kumbu-primary"
-                        />
-                        <span className="text-sm font-semibold">{m.label}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <div className="kumbu-card p-5">
+              <h2 className="font-bold text-kumbu-foreground">{t("meetupTitle")}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-kumbu-muted">{t("meetupDescription")}</p>
+            </div>
           </section>
 
           <aside className="kumbu-card h-fit p-5 lg:sticky lg:top-24">
@@ -302,7 +255,7 @@ export default function CheckoutPage() {
             <div className="mt-6 flex flex-col gap-2">
               {!isLoggedIn && !authLoading ? (
                 <Button href="/login?next=/checkout" fullWidth className="h-12">
-                  {t("loginToPay")}
+                  {t("loginToCheckout")}
                 </Button>
               ) : !hasAddress ? (
                 <Button href="/conta/perfil" fullWidth className="h-12">

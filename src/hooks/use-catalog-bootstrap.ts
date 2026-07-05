@@ -50,10 +50,10 @@ function writeSessionCache(data: CatalogBootstrap) {
 }
 
 async function fetchBootstrap(): Promise<CatalogBootstrap> {
-  const [categories, feed, featured] = await Promise.all([
+  const [categoriesResult, feedResult, featuredResult] = await Promise.allSettled([
     listCatalogCategories(),
     listFeedProducts(28),
-    getHomeRecommendationsBackend(12).then((rec) => {
+    getHomeRecommendationsBackend(12).then(async (rec) => {
       const merged = [...rec.forYou, ...rec.trending, ...rec.newNearby];
       const seen = new Set<string>();
       const unique = merged.filter((p) => {
@@ -61,9 +61,25 @@ async function fetchBootstrap(): Promise<CatalogBootstrap> {
         seen.add(p.id);
         return true;
       });
-      return unique.length > 0 ? unique.slice(0, 8) : getFeaturedProductsBackend(5);
+      if (unique.length > 0) return unique.slice(0, 8);
+      return getFeaturedProductsBackend(5);
     }),
   ]);
+
+  const categories =
+    categoriesResult.status === "fulfilled" ? categoriesResult.value : [];
+  const feed = feedResult.status === "fulfilled" ? feedResult.value : [];
+  let featured =
+    featuredResult.status === "fulfilled" ? featuredResult.value : [];
+
+  if (featured.length === 0 && feed.length > 0) {
+    featured = feed.slice(0, 8);
+  }
+
+  if (categories.length === 0 && feed.length === 0 && featured.length === 0) {
+    throw new Error("Catálogo indisponível");
+  }
+
   return {
     categories,
     featured,
