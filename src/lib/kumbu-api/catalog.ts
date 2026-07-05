@@ -42,6 +42,9 @@ type ListingDto = {
 
 type PageDto<T> = {
   content?: T[] | null;
+  totalPages?: number;
+  totalElements?: number;
+  page?: number;
 };
 
 type UserProfileDto = {
@@ -239,12 +242,41 @@ export async function getFeaturedProductsBackend(max = 8): Promise<CatalogProduc
 export async function getCatalogProductBackend(productId: string): Promise<CatalogProduct | null> {
   const client = clientOrThrow();
   try {
-    const row = await client.request<ListingDto>(`/catalog/listings/${encodeURIComponent(productId)}`);
+    const row = await client.request<ListingDto>(`/catalog/listings/${encodeURIComponent(productId)}`, {
+      auth: false,
+    });
     return toProduct(row, 0);
   } catch (error) {
     if (isUnauthorized(error)) throw error;
     return null;
   }
+}
+
+/** Pagina todos os IDs de anúncios públicos (sitemap / SEO). */
+export async function listListingIdsForSitemapBackend(
+  maxPages = 50,
+): Promise<Array<{ id: string }>> {
+  const client = clientOrThrow();
+  const ids: Array<{ id: string }> = [];
+  const pageSize = 120;
+  let page = 0;
+  let totalPages = 1;
+
+  while (page < totalPages && page < maxPages) {
+    const response = await client.request<PageDto<ListingDto>>("/catalog/listings", {
+      auth: false,
+      query: buildListingQuery({ page, size: pageSize }),
+    });
+    const rows = response.content ?? [];
+    for (const row of rows) {
+      ids.push({ id: String(row.id) });
+    }
+    totalPages = response.totalPages ?? (rows.length < pageSize ? page + 1 : page + 2);
+    if (rows.length === 0) break;
+    page += 1;
+  }
+
+  return ids;
 }
 
 export async function getCatalogProductsByIdsBackend(ids: string[]): Promise<CatalogProduct[]> {

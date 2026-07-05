@@ -4,6 +4,9 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { AppProviders } from "@/components/providers/app-providers";
 import { IntlProvider } from "@/components/providers/intl-provider";
 import { ThemeScript } from "@/components/providers/theme-script";
+import { JsonLd } from "@/lib/seo/json-ld";
+import { buildRootMetadata } from "@/lib/seo/metadata";
+import { buildOrganizationJsonLd, buildWebsiteJsonLd } from "@/lib/seo/structured-data";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -15,12 +18,8 @@ const plusJakarta = Plus_Jakarta_Sans({
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("metadata");
   return {
-    title: {
-      default: t("title"),
-      template: `%s | Kumbú`,
-    },
-    description: t("description"),
-    icons: { icon: "/logo_kumbu.png", apple: "/logo_kumbu.png" },
+    ...buildRootMetadata(t("title"), t("description")),
+    icons: { icon: "/logo_kumbu.svg", apple: "/logo_kumbu.svg" },
     manifest: "/manifest.webmanifest",
     appleWebApp: {
       capable: true,
@@ -51,6 +50,7 @@ export default async function RootLayout({
         <ThemeScript />
       </head>
       <body className="min-h-screen" suppressHydrationWarning>
+        <JsonLd data={[buildOrganizationJsonLd(), buildWebsiteJsonLd()]} />
         <IntlProvider>
           <AppProviders>{children}</AppProviders>
         </IntlProvider>
