@@ -108,7 +108,7 @@ export async function getSimilarProductsBackend(
   if (!client) return [];
   const rows = await client.request<RecommendationItemDto[]>(
     `/recommendations/similar/${encodeURIComponent(productId)}`,
-    { query: { limit } },
+    { auth: false, query: { limit } },
   );
   return mapItems(rows);
 }

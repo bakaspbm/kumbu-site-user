@@ -18,8 +18,6 @@ export async function listProductReviewsAction(
   { ok: true; reviews: ProductReview[] } | { ok: false; error: string }
 > {
   try {
-    const userId = await getServerSessionUserId();
-    if (!userId) return { ok: false, error: await serverLoginRequiredError() };
     const reviews = await listProductReviews(productId);
     return { ok: true, reviews };
   } catch (err) {

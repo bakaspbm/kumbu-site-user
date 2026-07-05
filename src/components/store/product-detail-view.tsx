@@ -73,9 +73,13 @@ function ProductDetailLoaded({
   useEffect(() => {
     if (!isKumbuApiEnabled()) return;
     let cancelled = false;
-    void getSimilarProductsBackend(productId, 8).then((items) => {
-      if (!cancelled) setSimilar(items);
-    });
+    void getSimilarProductsBackend(productId, 8)
+      .then((items) => {
+        if (!cancelled) setSimilar(items);
+      })
+      .catch(() => {
+        if (!cancelled) setSimilar([]);
+      });
     return () => {
       cancelled = true;
     };
