@@ -24,6 +24,7 @@ export function buildProductDescription(product: CatalogProduct): string {
 
 export function buildRootMetadata(title: string, description: string): Metadata {
   const origin = siteOrigin();
+  const fbAppId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID?.trim();
   return {
     metadataBase: new URL(origin),
     title: { default: title, template: `%s | ${SITE_NAME}` },
@@ -42,8 +43,9 @@ export function buildRootMetadata(title: string, description: string): Metadata 
       card: "summary_large_image",
       title,
       description,
-      images: [DEFAULT_OG_IMAGE],
+      images: [{ url: DEFAULT_OG_IMAGE, alt: SITE_NAME }],
     },
+    ...(fbAppId ? { other: { "fb:app_id": fbAppId } } : {}),
     robots: {
       index: true,
       follow: true,
@@ -82,7 +84,7 @@ export function buildPageMetadata(opts: {
       card: "summary_large_image",
       title: opts.title,
       description: opts.description,
-      images: [image],
+      images: [{ url: image, alt: opts.title }],
     },
   };
 }

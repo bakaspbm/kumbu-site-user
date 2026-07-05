@@ -1,8 +1,13 @@
 import type { MetadataRoute } from "next";
-import { buildSitemapEntries } from "@/lib/seo/sitemap-data";
+import { buildSitemapEntries, buildStaticSitemapEntries } from "@/lib/seo/sitemap-data";
 
 export const revalidate = 3600;
+export const maxDuration = 30;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  return buildSitemapEntries();
+  try {
+    return await buildSitemapEntries();
+  } catch {
+    return buildStaticSitemapEntries();
+  }
 }

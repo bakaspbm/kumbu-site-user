@@ -28,6 +28,11 @@ function staticEntries(): MetadataRoute.Sitemap {
   }));
 }
 
+/** Sitemap mínimo — usado se a API falhar (evita 500 no Google Search Console). */
+export function buildStaticSitemapEntries(): MetadataRoute.Sitemap {
+  return staticEntries();
+}
+
 export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = staticEntries();
 
@@ -46,7 +51,7 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
-    const listingIds = await listListingIdsForSitemapBackend();
+    const listingIds = await listListingIdsForSitemapBackend(10);
     for (const { id } of listingIds) {
       entries.push({
         url: absoluteSiteUrl(`/produto/${id}`),
