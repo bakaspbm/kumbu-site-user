@@ -19,7 +19,7 @@ import { ListingRatingBadge } from "@/components/store/listing-rating-badge";
 import { ProductReviewsSection } from "@/components/store/product-reviews-section";
 import { ProductViewTracker } from "@/components/store/product-view-tracker";
 import { ReportContentDialog } from "@/components/legal/report-content-dialog";
-import { ProductCard } from "@/components/store/product-card";
+import { ListingCard } from "@/components/store/listing-card";
 import { PromoteListingDialog } from "@/components/monetization/promote-listing-dialog";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { useUserMonetizationVisible } from "@/hooks/use-user-monetization-visible";
@@ -89,6 +89,9 @@ function ProductDetailLoaded({
   const sellerName = product.seller?.displayName ?? sellerRole;
   const location =
     product.deliveryText?.trim() || product.seller?.city || "Angola";
+  const similarVisible = similar.filter(
+    (p) => p.id !== productId && p.sellerId !== user?.id,
+  );
 
   return (
     <article className="min-h-full">
@@ -198,17 +201,6 @@ function ProductDetailLoaded({
               />
             )}
 
-            {similar.length > 0 && (
-              <section className="mt-8">
-                <h2 className="text-base font-bold text-kumbu-foreground">Semelhantes</h2>
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                  {similar.map((p) => (
-                    <ProductCard key={p.id} product={p} variant="grid" />
-                  ))}
-                </div>
-              </section>
-            )}
-
             <div className="mt-6">
               <ListingContactActions product={product} />
             </div>
@@ -230,6 +222,19 @@ function ProductDetailLoaded({
             </Link>
           </div>
         </div>
+
+        {similarVisible.length > 0 && (
+          <section className="mt-10 border-t border-kumbu-border pt-10 md:mt-14 md:pt-14">
+            <h2 className="text-lg font-bold text-kumbu-foreground md:text-xl">{t("similar")}</h2>
+            <ul className="kumbu-listing-grid kumbu-stagger mt-6">
+              {similarVisible.map((p) => (
+                <li key={p.id}>
+                  <ListingCard product={p} variant="grid" />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </section>
       {monetizationVisible && (
         <PromoteListingDialog

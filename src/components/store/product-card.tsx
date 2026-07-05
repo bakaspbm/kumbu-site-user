@@ -8,6 +8,8 @@ import { ListingRatingBadge } from "@/components/store/listing-rating-badge";
 import { productCoverUrl } from "@/lib/store/product-images";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
+import { isJobListing } from "@/lib/jobs/category";
+import { isPropertyListing } from "@/lib/property/category";
 import { cn, productPlaceholderStyle } from "@/lib/utils";
 import type { CatalogProduct } from "@/types/store";
 
@@ -22,6 +24,11 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
   const isOwn = user?.id === product.sellerId;
   const isGrid = variant === "grid";
   const cover = productCoverUrl(product);
+  const canAddToCart =
+    !isPropertyListing(product) &&
+    !isJobListing(product) &&
+    product.listingKind !== "property" &&
+    product.listingKind !== "job";
 
   return (
     <article
@@ -104,7 +111,7 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
           </p>
         )}
 
-        {!product.isOutOfStock && !isOwn && (
+        {!product.isOutOfStock && !isOwn && canAddToCart && (
           <button
             type="button"
             onClick={() => {

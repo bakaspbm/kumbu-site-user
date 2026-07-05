@@ -95,11 +95,23 @@ export function ListingContactActions({ product }: ListingContactActionsProps) {
     }
   }
 
-  function handleShare() {
-    const text = `${product.title}\n${product.priceLabel} · ${location}\n\n${window.location.href}`;
-    void navigator.clipboard.writeText(text).then(() => {
-      setToast(t("detailsCopied"));
-    });
+  async function handleShare() {
+    const url = window.location.href;
+    const text = `${product.title} — ${product.priceLabel} · ${location}`;
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({ title: product.title, text, url });
+        return;
+      }
+    } catch {
+      /* cancelado ou indisponível */
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setToast(t("linkCopied"));
+    } catch {
+      setToast(url);
+    }
   }
 
   if (isJob) {

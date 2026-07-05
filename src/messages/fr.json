@@ -1233,6 +1233,7 @@
     "messageTimeout": "La requête a pris trop de temps. Vérifiez la connexion et réessayez.",
     "startConversationError": "Erreur lors du démarrage de la conversation.",
     "detailsCopied": "Détails copiés.",
+    "linkCopied": "Lien copié — collez dans le navigateur ou envoyez par message.",
     "shareJob": "Partager l'offre",
     "opening": "Ouverture…",
     "message": "Envoyer un message",

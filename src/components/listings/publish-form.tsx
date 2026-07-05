@@ -520,7 +520,10 @@ export function PublishForm({
                   required
                   disabled={categoriesLoading || categories.length === 0}
                   value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
+                  onChange={(e) => {
+                    setCategoryId(e.target.value);
+                    setPublishError(null);
+                  }}
                   className="kumbu-input font-normal"
                 >
                   <option value="">

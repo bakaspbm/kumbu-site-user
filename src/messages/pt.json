@@ -1233,6 +1233,7 @@
     "messageTimeout": "O pedido demorou demasiado. Verifique a ligação e tente de novo.",
     "startConversationError": "Erro ao iniciar conversa.",
     "detailsCopied": "Detalhes copiados.",
+    "linkCopied": "Link copiado — cole no browser ou envie por mensagem.",
     "shareJob": "Partilhar vaga",
     "opening": "A abrir…",
     "message": "Enviar mensagem",

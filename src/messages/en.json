@@ -1233,6 +1233,7 @@
     "messageTimeout": "Request took too long. Check your connection and try again.",
     "startConversationError": "Failed to start conversation.",
     "detailsCopied": "Details copied.",
+    "linkCopied": "Link copied — paste in the browser or send in a message.",
     "shareJob": "Share job",
     "opening": "Opening…",
     "message": "Send message",
