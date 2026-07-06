@@ -39,6 +39,8 @@ export interface CatalogProduct {
   subcategoryId?: string | null;
   title: string;
   priceLabel: string;
+  oldPriceLabel?: string | null;
+  discountPercent?: number | null;
   rating?: number | null;
   reviewCount?: number;
   viewCount?: number;
@@ -78,11 +80,21 @@ export interface CatalogProductInsert {
 export interface CatalogProductUpdate {
   title?: string;
   priceLabel?: string;
+  oldPriceLabel?: string | null;
+  discountPercent?: number | null;
+  clearPromotion?: boolean;
   description?: string | null;
   imageUrl?: string | null;
   imageUrls?: string[];
   isOutOfStock?: boolean;
   isFeatured?: boolean;
+}
+
+export interface PriceHistoryEntry {
+  priceLabel: string;
+  oldPriceLabel?: string | null;
+  discountPercent?: number | null;
+  changedAt: string;
 }
 
 export interface AppMarketingBlock {

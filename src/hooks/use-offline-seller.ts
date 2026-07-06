@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { onCatalogRefresh } from "@/lib/catalog-refresh";
-import { getPublicSeller, listSellerProducts } from "@/lib/site-data";
+import { getPublicSeller, listMyListings, listSellerProducts } from "@/lib/site-data";
 import {
   getOfflineSeller,
   isBrowserOnline,
@@ -10,18 +10,28 @@ import {
 } from "@/lib/offline/store";
 import type { CatalogProduct, SellerSummary } from "@/types/store";
 
-export function useOfflineSeller(sellerId: string) {
+interface UseOfflineSellerOptions {
+  includeInactive?: boolean;
+}
+
+export function useOfflineSeller(sellerId: string, options: UseOfflineSellerOptions = {}) {
+  const { includeInactive = false } = options;
   const [seller, setSeller] = useState<SellerSummary | null>(null);
   const [listings, setListings] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchListings = useCallback(async () => {
+    if (includeInactive) {
+      const mine = await listMyListings();
+      return mine.filter((p) => p.sellerId === sellerId);
+    }
+    return listSellerProducts(sellerId, 48);
+  }, [includeInactive, sellerId]);
+
   const refetch = useCallback(async () => {
     if (!isBrowserOnline()) return;
     try {
-      const [s, list] = await Promise.all([
-        getPublicSeller(sellerId),
-        listSellerProducts(sellerId, 48),
-      ]);
+      const [s, list] = await Promise.all([getPublicSeller(sellerId), fetchListings()]);
       const resolvedSeller =
         s ??
         list.find((p) => p.seller?.id === sellerId)?.seller ??
@@ -48,7 +58,7 @@ export function useOfflineSeller(sellerId: string) {
     } finally {
       setLoading(false);
     }
-  }, [sellerId]);
+  }, [fetchListings, sellerId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,10 +79,7 @@ export function useOfflineSeller(sellerId: string) {
       }
 
       try {
-        const [s, list] = await Promise.all([
-          getPublicSeller(sellerId),
-          listSellerProducts(sellerId, 48),
-        ]);
+        const [s, list] = await Promise.all([getPublicSeller(sellerId), fetchListings()]);
         if (cancelled) return;
 
         const resolvedSeller =
@@ -106,7 +113,7 @@ export function useOfflineSeller(sellerId: string) {
     return () => {
       cancelled = true;
     };
-  }, [sellerId]);
+  }, [fetchListings, sellerId]);
 
   useEffect(() => {
     return onCatalogRefresh(() => {

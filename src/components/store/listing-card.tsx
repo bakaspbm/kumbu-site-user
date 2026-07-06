@@ -6,6 +6,7 @@ import { ListingImage } from "@/components/ui/listing-image";
 import { FavoriteButton } from "@/components/store/favorite-button";
 import { productCoverUrl } from "@/lib/store/product-images";
 import { cn, productPlaceholderStyle } from "@/lib/utils";
+import { ListingPriceDisplay } from "@/components/store/listing-price-display";
 import type { CatalogProduct } from "@/types/store";
 
 function locationLabel(product: CatalogProduct) {
@@ -53,9 +54,13 @@ export function ListingCard({ product, variant = "grid", className }: ListingCar
             <h3 className="line-clamp-2 text-[13px] font-bold leading-snug text-kumbu-foreground group-hover:text-kumbu-primary">
               {product.title}
             </h3>
-            <p className="mt-2 text-base font-extrabold tracking-tight text-kumbu-primary">
-              {product.priceLabel}
-            </p>
+            <ListingPriceDisplay
+              priceLabel={product.priceLabel}
+              oldPriceLabel={product.oldPriceLabel}
+              discountPercent={product.discountPercent}
+              size="sm"
+              className="mt-2"
+            />
             <p className="mt-1 flex items-center gap-1 text-[11px] text-kumbu-muted">
               <MapPin className="size-3 shrink-0 opacity-60" />
               {locationLabel(product)}
@@ -94,9 +99,13 @@ export function ListingCard({ product, variant = "grid", className }: ListingCar
           <h3 className="line-clamp-2 text-sm font-bold leading-snug text-kumbu-foreground transition-colors group-hover:text-kumbu-primary md:text-base">
             {product.title}
           </h3>
-          <p className="mt-2 text-lg font-extrabold tracking-tight text-kumbu-primary">
-            {product.priceLabel}
-          </p>
+          <ListingPriceDisplay
+            priceLabel={product.priceLabel}
+            oldPriceLabel={product.oldPriceLabel}
+            discountPercent={product.discountPercent}
+            size="md"
+            className="mt-2"
+          />
           <p className="mt-1 flex items-center gap-1 text-xs text-kumbu-muted">
             <MapPin className="size-3 shrink-0 opacity-60" />
             {locationLabel(product)}

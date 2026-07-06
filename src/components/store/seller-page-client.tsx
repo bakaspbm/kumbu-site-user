@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Star, User } from "lucide-react";
 import { BackHeader } from "@/components/layout/back-header";
@@ -12,6 +13,8 @@ import { useOfflineSeller } from "@/hooks/use-offline-seller";
 import { ReportContentDialog } from "@/components/legal/report-content-dialog";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { useAuth } from "@/contexts/auth-context";
+import { cn } from "@/lib/utils";
+import type { CatalogProduct } from "@/types/store";
 
 interface SellerPageClientProps {
   sellerId: string;
@@ -23,10 +26,32 @@ function initials(name: string) {
   return (p[0].charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : "")).toUpperCase();
 }
 
+function isListingInactive(p: CatalogProduct): boolean {
+  return p.isOutOfStock || (p.jobListingStatus != null && p.jobListingStatus !== "active");
+}
+
+type SellerTab = "active" | "inactive";
+
 export function SellerPageClient({ sellerId }: SellerPageClientProps) {
   const t = useTranslations("store.seller");
   const { user } = useAuth();
-  const { seller, listings, loading } = useOfflineSeller(sellerId);
+  const isOwner = user?.id === sellerId;
+  const { seller, listings, loading } = useOfflineSeller(sellerId, { includeInactive: isOwner });
+  const [tab, setTab] = useState<SellerTab>("active");
+
+  const activeListings = useMemo(
+    () => listings.filter((p) => !isListingInactive(p)),
+    [listings],
+  );
+  const inactiveListings = useMemo(
+    () => listings.filter((p) => isListingInactive(p)),
+    [listings],
+  );
+  const visibleListings = isOwner
+    ? tab === "active"
+      ? activeListings
+      : inactiveListings
+    : activeListings;
 
   if (loading) return <PageSkeleton />;
 
@@ -81,12 +106,46 @@ export function SellerPageClient({ sellerId }: SellerPageClientProps) {
               </p>
             )}
             <p className="mt-1 text-xs text-kumbu-muted">
-              {listings.length === 0
-                ? t("noActiveListings")
-                : t("activeListings", { count: listings.length })}
+              {isOwner
+                ? t("ownerListingSummary", {
+                    active: activeListings.length,
+                    inactive: inactiveListings.length,
+                  })
+                : activeListings.length === 0
+                  ? t("noActiveListings")
+                  : t("activeListings", { count: activeListings.length })}
             </p>
           </div>
         </div>
+
+        {isOwner && (
+          <div className="mt-4 inline-flex rounded-xl bg-kumbu-surface-muted p-1">
+            <button
+              type="button"
+              onClick={() => setTab("active")}
+              className={cn(
+                "rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
+                tab === "active"
+                  ? "bg-white text-kumbu-foreground shadow-sm"
+                  : "text-kumbu-muted hover:text-kumbu-foreground",
+              )}
+            >
+              {t("tabActive", { count: activeListings.length })}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("inactive")}
+              className={cn(
+                "rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
+                tab === "inactive"
+                  ? "bg-white text-kumbu-foreground shadow-sm"
+                  : "text-kumbu-muted hover:text-kumbu-foreground",
+              )}
+            >
+              {t("tabInactive", { count: inactiveListings.length })}
+            </button>
+          </div>
+        )}
 
         {user && user.id !== sellerId && (
           <div className="mt-4 flex flex-wrap items-center justify-center gap-6">
@@ -100,14 +159,18 @@ export function SellerPageClient({ sellerId }: SellerPageClientProps) {
         )}
 
         <h2 className="kumbu-section-title mt-8">{t("listingsTitle")}</h2>
-        {listings.length === 0 ? (
+        {visibleListings.length === 0 ? (
           <div className="kumbu-card mt-3 p-6 text-center">
-            <p className="text-sm font-medium text-kumbu-foreground">{t("noListingsTitle")}</p>
-            <p className="mt-1 text-sm text-kumbu-muted">{t("noListingsDesc")}</p>
+            <p className="text-sm font-medium text-kumbu-foreground">
+              {isOwner && tab === "inactive" ? t("noInactiveListings") : t("noListingsTitle")}
+            </p>
+            <p className="mt-1 text-sm text-kumbu-muted">
+              {isOwner && tab === "inactive" ? t("noInactiveListingsDesc") : t("noListingsDesc")}
+            </p>
           </div>
         ) : (
           <ul className="kumbu-listing-grid mt-3">
-            {listings.map((p) => (
+            {visibleListings.map((p) => (
               <li key={p.id}>
                 <ListingCard product={p} variant="grid" />
               </li>

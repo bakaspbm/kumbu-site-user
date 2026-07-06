@@ -25,6 +25,8 @@ type ListingDto = {
   subcategoryId?: string | null;
   title: string;
   priceLabel?: string | null;
+  oldPriceLabel?: string | null;
+  discountPercent?: number | null;
   rating?: number | null;
   reviewCount?: number | null;
   viewCount?: number | null;
@@ -98,6 +100,8 @@ function toProduct(row: ListingDto, index: number): CatalogProduct {
     subcategoryId: row.subcategoryId ?? null,
     title: String(row.title ?? ""),
     priceLabel: row.priceLabel ?? "",
+    oldPriceLabel: row.oldPriceLabel ?? null,
+    discountPercent: row.discountPercent ?? null,
     rating: row.rating ?? null,
     reviewCount: row.reviewCount ?? 0,
     viewCount: row.viewCount ?? 0,
@@ -324,10 +328,30 @@ export async function recordProductViewBackend(
   }
 }
 
-export async function listMyListingsBackend(): Promise<CatalogProduct[]> {
+export async function listMyListingsBackend(status?: "all" | "active" | "inactive"): Promise<CatalogProduct[]> {
   const client = clientOrThrow();
-  const rows = await client.request<ListingDto[]>("/catalog/my-listings");
+  const query = status && status !== "all" ? { status } : undefined;
+  const rows = await client.request<ListingDto[]>("/catalog/my-listings", { query });
   return (rows ?? []).map(toProduct);
+}
+
+export async function getListingPriceHistoryBackend(productId: string) {
+  const client = clientOrThrow();
+  const row = await client.request<{ items?: Array<{
+    priceLabel?: string;
+    oldPriceLabel?: string | null;
+    discountPercent?: number | null;
+    changedAt?: string;
+  }> }>(
+    `/catalog/listings/${encodeURIComponent(productId)}/price-history`,
+    { auth: false },
+  );
+  return (row.items ?? []).map((entry) => ({
+    priceLabel: entry.priceLabel ?? "",
+    oldPriceLabel: entry.oldPriceLabel ?? null,
+    discountPercent: entry.discountPercent ?? null,
+    changedAt: entry.changedAt ?? "",
+  }));
 }
 
 export async function createCatalogProductBackend(
@@ -361,6 +385,9 @@ export async function updateCatalogProductBackend(
   const body: Record<string, unknown> = {};
   if (update.title !== undefined) body.title = update.title;
   if (update.priceLabel !== undefined) body.priceLabel = update.priceLabel;
+  if (update.oldPriceLabel !== undefined) body.oldPriceLabel = update.oldPriceLabel;
+  if (update.discountPercent !== undefined) body.discountPercent = update.discountPercent;
+  if (update.clearPromotion) body.clearPromotion = true;
   if (update.description !== undefined) body.description = update.description;
   if (update.isOutOfStock !== undefined) body.outOfStock = update.isOutOfStock;
   if (update.imageUrls !== undefined) body.imageUrls = update.imageUrls;

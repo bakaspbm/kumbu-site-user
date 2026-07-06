@@ -20,6 +20,8 @@ import { ProductReviewsSection } from "@/components/store/product-reviews-sectio
 import { ProductViewTracker } from "@/components/store/product-view-tracker";
 import { ReportContentDialog } from "@/components/legal/report-content-dialog";
 import { ListingCard } from "@/components/store/listing-card";
+import { ListingPriceDisplay } from "@/components/store/listing-price-display";
+import { ListingPriceHistoryPanel } from "@/components/store/listing-price-history-panel";
 import { PromoteListingDialog } from "@/components/monetization/promote-listing-dialog";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { useUserMonetizationVisible } from "@/hooks/use-user-monetization-visible";
@@ -110,9 +112,14 @@ function ProductDetailLoaded({
           </div>
 
           <div className="flex min-w-0 flex-col">
-            <p className="inline-block rounded-2xl bg-kumbu-primary-soft px-4 py-2 text-3xl font-extrabold tracking-tight text-kumbu-primary md:text-4xl">
-              {product.priceLabel}
-            </p>
+            <div className="inline-block rounded-2xl bg-kumbu-primary-soft px-4 py-2">
+              <ListingPriceDisplay
+                priceLabel={product.priceLabel}
+                oldPriceLabel={product.oldPriceLabel}
+                discountPercent={product.discountPercent}
+                size="lg"
+              />
+            </div>
             <h1 className="mt-2 text-2xl font-extrabold tracking-tight md:text-3xl">
               {product.title}
             </h1>
@@ -193,6 +200,10 @@ function ProductDetailLoaded({
                   {product.description}
                 </p>
               </aside>
+            )}
+
+            {!isJob && isKumbuApiEnabled() && (
+              <ListingPriceHistoryPanel productId={productId} />
             )}
 
             {!isJob && (
