@@ -12,7 +12,7 @@ export function buildOrganizationJsonLd() {
     "@type": "Organization",
     name: "Kumbú",
     url: origin,
-    logo: absoluteSiteUrl("/logo_kumbu.svg"),
+    logo: absoluteSiteUrl("/og-image.png"),
     description: "Marketplace angolano para comprar, vender imóveis, produtos e candidatar-se a vagas.",
     areaServed: { "@type": "Country", name: "Angola" },
   };

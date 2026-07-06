@@ -129,6 +129,8 @@ const nextConfig: NextConfig = {
       { source: "/loja/favoritos", destination: "/categorias", permanent: true },
       { source: "/loja/endereco", destination: "/conta/perfil", permanent: true },
       { source: "/loja/suporte", destination: "/support", permanent: true },
+      { source: "/ajuda", destination: "/support", permanent: true },
+      { source: "/sobre", destination: "/como-funciona", permanent: true },
       {
         source: "/loja/categoria/:id",
         destination: "/store-category/:id",

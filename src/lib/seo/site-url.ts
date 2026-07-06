@@ -27,4 +27,4 @@ export function absoluteAssetUrl(url: string | null | undefined): string | undef
   return trimmed;
 }
 
-export const DEFAULT_OG_IMAGE = "/logo_kumbu.svg";
+export const DEFAULT_OG_IMAGE = "/og-image.png";
