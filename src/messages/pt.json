@@ -1144,7 +1144,9 @@
       "fieldOldPrice": "Preço anterior (promoção)",
       "fieldDiscount": "Desconto (%)",
       "fieldDescription": "Descrição",
-      "promoHint": "Defina o preço anterior ou a percentagem de desconto para mostrar uma promoção. O comprador verá o histórico de preços na página do anúncio."
+      "promoHint": "Defina o preço anterior ou a percentagem de desconto para mostrar uma promoção. O comprador verá o histórico de preços na página do anúncio.",
+      "sessionExpired": "Sessão expirada — inicie sessão novamente para guardar alterações.",
+      "loginAgain": "Entrar"
     },
     "favorites": {
       "title": "Favoritos",

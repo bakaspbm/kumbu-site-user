@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ListingImage } from "@/components/ui/listing-image";
 import {
@@ -41,6 +42,8 @@ import {
   setOfflineMyListings,
 } from "@/lib/offline/store";
 import { useAuth } from "@/contexts/auth-context";
+import { ApiError } from "@/lib/kumbu-api/client";
+import { refreshBrowserSessionCookies } from "@/lib/kumbu-api/browser-session";
 import { cn } from "@/lib/utils";
 import type { CatalogProduct } from "@/types/store";
 
@@ -72,7 +75,8 @@ function MyListingsManagerInner() {
   const t = useTranslations("accountPages.listings");
   const tCommon = useTranslations("common");
   const tProduct = useTranslations("product");
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, refresh: refreshAuth } = useAuth();
   const monetizationVisible = useUserMonetizationVisible();
   const [listings, setListings] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,9 +107,15 @@ function MyListingsManagerInner() {
     try {
       const fresh = await listMyListings();
       setListings(fresh);
+      setError(null);
       if (userId) await setOfflineMyListings(userId, fresh);
-    } catch {
-      if (!hadCache) setListings([]);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        setListings([]);
+        setError(t("sessionExpired"));
+      } else if (!hadCache) {
+        setListings([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -163,25 +173,49 @@ function MyListingsManagerInner() {
     if (!draft) return;
     setBusy(true);
     setError(null);
+
+    const payload = {
+      title: draft.title.trim(),
+      priceLabel: draft.priceLabel.trim(),
+      description: draft.description.trim() || null,
+      oldPriceLabel: draft.oldPriceLabel.trim() || null,
+      discountPercent:
+        draft.discountPercent.trim() && !Number.isNaN(Number(draft.discountPercent))
+          ? Number(draft.discountPercent)
+          : undefined,
+      clearPromotion: !draft.oldPriceLabel.trim() && !draft.discountPercent.trim(),
+    };
+
+    async function performSave() {
+      await updateCatalogProduct(id, payload);
+    }
+
     try {
-      const discountRaw = draft.discountPercent.trim();
-      const discountPercent = discountRaw ? Number(discountRaw) : undefined;
-      await updateCatalogProduct(id, {
-        title: draft.title.trim(),
-        priceLabel: draft.priceLabel.trim(),
-        description: draft.description.trim() || null,
-        oldPriceLabel: draft.oldPriceLabel.trim() || null,
-        discountPercent:
-          discountPercent != null && !Number.isNaN(discountPercent)
-            ? discountPercent
-            : undefined,
-        clearPromotion: !draft.oldPriceLabel.trim() && !discountRaw,
-      });
+      try {
+        await performSave();
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          const refreshed = await refreshBrowserSessionCookies();
+          if (refreshed) {
+            await refreshAuth();
+            await performSave();
+          } else {
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
       closeEdit();
       requestCatalogRefresh();
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("saveError"));
+      if (err instanceof ApiError && err.status === 401) {
+        setError(t("sessionExpired"));
+        router.push(`/login?next=${encodeURIComponent("/conta/anuncios")}`);
+      } else {
+        setError(err instanceof Error ? err.message : t("saveError"));
+      }
     } finally {
       setBusy(false);
     }
@@ -268,7 +302,12 @@ function MyListingsManagerInner() {
           className="mb-4 rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700 ring-1 ring-red-100"
           role="alert"
         >
-          {error}
+          {error}{" "}
+          {error === t("sessionExpired") && (
+            <Link href="/login?next=%2Fconta%2Fanuncios" className="font-semibold underline">
+              {t("loginAgain")}
+            </Link>
+          )}
         </p>
       )}
 
