@@ -327,7 +327,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       void touchPresenceBackend().catch(() => {});
     };
     touchPresence();
-    const presenceInterval = window.setInterval(touchPresence, 60_000);
+    const presenceInterval = window.setInterval(touchPresence, 120_000);
 
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
