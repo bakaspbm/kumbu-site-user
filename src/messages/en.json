@@ -662,6 +662,10 @@
     "promote": "Promote",
     "highlight": "Highlight",
     "views": "views",
+    "priceHistory": {
+      "title": "Price history",
+      "loading": "Loading price history…"
+    },
     "reviewTitle": "Review this listing",
     "ratingAria": "Rating",
     "starsAria": "{count} stars",

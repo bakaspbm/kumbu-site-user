@@ -662,6 +662,10 @@
     "promote": "Promouvoir",
     "highlight": "Mettre en avant",
     "views": "vues",
+    "priceHistory": {
+      "title": "Historique des prix",
+      "loading": "Chargement de l'historique…"
+    },
     "reviewTitle": "Évaluer cette annonce",
     "ratingAria": "Note",
     "starsAria": "{count} étoiles",
