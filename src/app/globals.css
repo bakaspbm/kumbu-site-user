@@ -158,7 +158,7 @@
   }
 
   .kumbu-category-tile {
-    @apply flex min-w-[5rem] flex-col items-center justify-center gap-2 rounded-[var(--radius-kumbu-lg)] border border-kumbu-border bg-kumbu-surface px-2.5 py-3.5 transition-all duration-200;
+    @apply flex min-w-[5.5rem] flex-col items-center justify-center gap-2 rounded-[var(--radius-kumbu-lg)] border border-kumbu-border bg-kumbu-surface px-2 py-3 transition-all duration-200;
     box-shadow: var(--shadow-kumbu-xs);
   }
 
@@ -169,18 +169,18 @@
   }
 
   .kumbu-category-tile-icon {
-    @apply flex size-12 items-center justify-center overflow-hidden rounded-2xl bg-kumbu-primary-soft text-kumbu-primary transition-all;
+    @apply flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-kumbu-primary-soft text-kumbu-primary transition-all;
   }
 
   .kumbu-category-tile-icon--photo {
-    @apply bg-transparent ring-1 ring-kumbu-border/70;
+    @apply bg-transparent ring-1 ring-kumbu-border/60;
     box-shadow: var(--shadow-kumbu-xs);
   }
 
   .kumbu-category-tile:hover .kumbu-category-tile-icon--photo {
-    @apply ring-kumbu-primary/35;
+    @apply ring-kumbu-primary/40;
     box-shadow: var(--shadow-kumbu-float);
-    transform: scale(1.04);
+    transform: scale(1.05);
   }
 
   .kumbu-category-tile:hover .kumbu-category-tile-icon--fallback {
@@ -189,7 +189,7 @@
   }
 
   .kumbu-category-tile-label {
-    @apply max-w-[4.25rem] truncate text-center text-[10px] font-semibold leading-tight text-kumbu-foreground;
+    @apply max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-tight text-kumbu-foreground;
   }
 
   .kumbu-nav-floating {

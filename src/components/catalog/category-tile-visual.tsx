@@ -20,14 +20,14 @@ export function CategoryTileVisual({
   size = "sm",
 }: Props) {
   const src = getCategoryThumbSrc(categoryId, categoryName);
-  const dim = size === "md" ? 56 : 48;
+  const dim = 64;
 
   if (!src) {
     return (
       <span
         className={cn(
           "kumbu-category-tile-icon kumbu-category-tile-icon--fallback",
-          size === "md" && "size-14",
+          size === "md" && "size-16",
           className,
         )}
       >
@@ -40,7 +40,7 @@ export function CategoryTileVisual({
     <span
       className={cn(
         "kumbu-category-tile-icon kumbu-category-tile-icon--photo",
-        size === "md" && "size-14",
+        size === "md" && "size-16",
         className,
       )}
     >
@@ -50,7 +50,8 @@ export function CategoryTileVisual({
         width={dim}
         height={dim}
         className="size-full object-cover"
-        sizes={`${dim}px`}
+        sizes="64px"
+        priority={false}
       />
     </span>
   );

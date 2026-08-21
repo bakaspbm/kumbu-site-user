@@ -1,4 +1,4 @@
-/** Photo thumbs for category tiles (public/categories/{id}.png). */
+/** Photo thumbs for category tiles (public/categories/{id}.webp). */
 
 const THUMB_BY_ID: Record<string, string> = {
   eletronicos: "/categories/eletronicos.webp",
@@ -13,6 +13,7 @@ const THUMB_BY_ID: Record<string, string> = {
   imoveis: "/categories/imoveis.webp",
   emprego: "/categories/emprego.webp",
   empregos: "/categories/empregos.webp",
+  restaurantes: "/categories/restaurantes.webp",
 };
 
 export function getCategoryThumbSrc(id: string, name?: string): string | null {
@@ -40,6 +41,9 @@ export function getCategoryThumbSrc(id: string, name?: string): string | null {
   }
   if (key.includes("empreg") || key.includes("job") || key.includes("vaga")) {
     return THUMB_BY_ID.emprego;
+  }
+  if (key.includes("restaur") || key.includes("comida") || key.includes("food")) {
+    return THUMB_BY_ID.restaurantes;
   }
   return null;
 }
