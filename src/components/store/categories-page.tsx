@@ -20,6 +20,7 @@ import {
   categoryMatchesLocalizedSearch,
   localizeCategoryName,
 } from "@/lib/catalog/localize-catalog";
+import { CategoryTileVisual } from "@/components/catalog/category-tile-visual";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { cn } from "@/lib/utils";
 
@@ -174,9 +175,11 @@ export function CategoriesPage() {
                           href={getCategoryExploreHref(c)}
                           className="kumbu-card-interactive group flex items-center gap-3 p-4"
                         >
-                          <span className="flex size-11 items-center justify-center rounded-xl bg-kumbu-primary/10 text-lg font-extrabold text-kumbu-primary">
-                            {localizeCategoryName(c, tCatalog).charAt(0).toUpperCase()}
-                          </span>
+                          <CategoryTileVisual
+                            categoryId={c.id}
+                            categoryName={c.name}
+                            size="md"
+                          />
                           <span className="min-w-0 flex-1">
                             <p className="font-bold text-kumbu-foreground group-hover:text-kumbu-primary">
                               {localizeCategoryName(c, tCatalog)}
