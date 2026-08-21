@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ProductCard } from "@/components/store/product-card";
@@ -135,20 +135,31 @@ export function CategoriesPage() {
           </button>
         </div>
 
-        <label className="relative mt-4 block">
-          <span className="sr-only">{placeholder}</span>
-          <Search
-            className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-kumbu-muted"
-            aria-hidden
-          />
+        <div className="kumbu-search-field mt-4 h-12 gap-2.5 px-3.5">
+          <Search className="size-5 shrink-0 text-kumbu-primary" aria-hidden />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={placeholder}
-            className="kumbu-input pl-11"
+            aria-label={placeholder}
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-kumbu-foreground outline-none placeholder:font-normal placeholder:text-kumbu-muted"
           />
-        </label>
+          {query.trim() ? (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-kumbu-muted transition-colors hover:bg-kumbu-primary-soft hover:text-kumbu-primary"
+              aria-label={tCommon("close")}
+            >
+              <X className="size-4" />
+            </button>
+          ) : (
+            <span className="hidden shrink-0 rounded-lg bg-kumbu-primary-soft px-2.5 py-1 text-[11px] font-semibold text-kumbu-primary sm:inline">
+              {tCommon("search")}
+            </span>
+          )}
+        </div>
 
         {tab === "categories" ? (
           loading ? (

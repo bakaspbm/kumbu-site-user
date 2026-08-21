@@ -129,10 +129,16 @@
   }
 
   .kumbu-search-field {
-    @apply flex h-10 w-full items-center gap-2 rounded-[var(--radius-kumbu-lg)] bg-kumbu-surface px-3 text-sm;
+    @apply flex h-10 w-full items-center gap-2 rounded-[var(--radius-kumbu-lg)] bg-kumbu-surface px-3 text-sm transition-shadow;
     box-shadow:
       var(--shadow-kumbu-xs),
       inset 0 0 0 1px var(--color-kumbu-border);
+  }
+
+  .kumbu-search-field:focus-within {
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-kumbu-primary) 40%, var(--color-kumbu-border)),
+      0 0 0 3px color-mix(in srgb, var(--color-kumbu-primary) 8%, transparent);
   }
 
   .kumbu-search-bar {
