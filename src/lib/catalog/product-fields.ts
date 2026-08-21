@@ -657,7 +657,6 @@ const DESCRIPTION_BY_CATEGORY: Record<string, string> = {
   moda: "Medidas exactas, defeitos, lavagens, entrega…",
   eletrodomesticos: "Consumo energético, instalação, garantia, entrega…",
   alimentacao: "Data de validade se houver, entrega/recolha, zona de venda…",
-};
   carros: "Inspecção, multas, financiamento, documentação…",
   servicos: "Horário, preço por hora ou pacote, zona coberta…",
   moveis: "Montagem, entrega, dimensões exactas, material…",
