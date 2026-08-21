@@ -1,4 +1,5 @@
 /** Photo thumbs for category tiles (public/categories/{id}.webp). */
+/* alimentacao: food category thumb */
 
 const THUMB_BY_ID: Record<string, string> = {
   eletronicos: "/categories/eletronicos.webp",
