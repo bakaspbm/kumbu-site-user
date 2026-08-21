@@ -9,7 +9,7 @@ type Props = {
   categoryId: string;
   categoryName: string;
   className?: string;
-  /** Larger tile on /categorias list rows */
+  /** Compact square for /categorias list rows */
   size?: "sm" | "md";
 };
 
@@ -20,38 +20,53 @@ export function CategoryTileVisual({
   size = "sm",
 }: Props) {
   const src = getCategoryThumbSrc(categoryId, categoryName);
-  const dim = 64;
+  const isList = size === "md";
+  const dim = isList ? 72 : 160;
 
   if (!src) {
     return (
       <span
         className={cn(
-          "kumbu-category-tile-icon kumbu-category-tile-icon--fallback",
-          size === "md" && "size-16",
+          isList
+            ? "flex size-[4.5rem] shrink-0 items-center justify-center rounded-2xl bg-kumbu-primary-soft text-kumbu-primary"
+            : "kumbu-category-tile-icon kumbu-category-tile-icon--fallback",
           className,
         )}
       >
-        <LayoutGrid className="size-5" strokeWidth={1.75} aria-hidden />
+        <LayoutGrid className="size-6" strokeWidth={1.75} aria-hidden />
+      </span>
+    );
+  }
+
+  if (isList) {
+    return (
+      <span
+        className={cn(
+          "relative block size-[4.5rem] shrink-0 overflow-hidden rounded-2xl",
+          className,
+        )}
+      >
+        <Image
+          src={src}
+          alt=""
+          width={dim}
+          height={dim}
+          className="size-full object-cover"
+          sizes="72px"
+        />
       </span>
     );
   }
 
   return (
-    <span
-      className={cn(
-        "kumbu-category-tile-icon kumbu-category-tile-icon--photo",
-        size === "md" && "size-16",
-        className,
-      )}
-    >
+    <span className={cn("kumbu-category-tile-icon kumbu-category-tile-icon--photo", className)}>
       <Image
         src={src}
         alt=""
         width={dim}
         height={dim}
         className="size-full object-cover"
-        sizes="64px"
-        priority={false}
+        sizes="(max-width: 768px) 116px, 160px"
       />
     </span>
   );

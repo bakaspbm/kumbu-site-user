@@ -158,29 +158,26 @@
   }
 
   .kumbu-category-tile {
-    @apply flex min-w-[5.5rem] flex-col items-center justify-center gap-2 rounded-[var(--radius-kumbu-lg)] border border-kumbu-border bg-kumbu-surface px-2 py-3 transition-all duration-200;
+    @apply flex w-[7.25rem] min-w-[7.25rem] flex-col items-center gap-1.5 rounded-[var(--radius-kumbu-lg)] border border-kumbu-border bg-kumbu-surface p-2 transition-all duration-200 md:w-auto md:min-w-0;
     box-shadow: var(--shadow-kumbu-xs);
   }
 
   .kumbu-category-tile:hover {
-    @apply border-kumbu-primary/20;
+    @apply border-kumbu-primary/25;
     box-shadow: var(--shadow-kumbu-sm);
     transform: translateY(-1px);
   }
 
   .kumbu-category-tile-icon {
-    @apply flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-kumbu-primary-soft text-kumbu-primary transition-all;
+    @apply flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl bg-kumbu-primary-soft text-kumbu-primary transition-all;
   }
 
   .kumbu-category-tile-icon--photo {
-    @apply bg-transparent ring-1 ring-kumbu-border/60;
-    box-shadow: var(--shadow-kumbu-xs);
+    @apply bg-transparent;
   }
 
   .kumbu-category-tile:hover .kumbu-category-tile-icon--photo {
-    @apply ring-kumbu-primary/40;
-    box-shadow: var(--shadow-kumbu-float);
-    transform: scale(1.05);
+    transform: scale(1.03);
   }
 
   .kumbu-category-tile:hover .kumbu-category-tile-icon--fallback {
@@ -189,7 +186,7 @@
   }
 
   .kumbu-category-tile-label {
-    @apply max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-tight text-kumbu-foreground;
+    @apply w-full truncate px-0.5 text-center text-xs font-semibold leading-tight text-kumbu-foreground;
   }
 
   .kumbu-nav-floating {

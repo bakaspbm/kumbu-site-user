@@ -23,7 +23,7 @@ export function HomeCategoryRow({ categories }: { categories: CatalogCategory[] 
           <ChevronRight className="size-3.5" />
         </Link>
       </div>
-      <div className="mt-4 flex gap-2.5 overflow-x-auto pb-1 scrollbar-none md:grid md:grid-cols-5 md:gap-2.5 md:overflow-visible lg:grid-cols-6">
+      <div className="mt-4 flex gap-3 overflow-x-auto pb-1 scrollbar-none md:grid md:grid-cols-5 md:gap-3 md:overflow-visible lg:grid-cols-6">
         {categories.map((c) => {
           const href = getCategoryExploreHref(c);
           const label = localizeCategoryName(c, tCatalog);
