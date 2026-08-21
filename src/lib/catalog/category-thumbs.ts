@@ -14,6 +14,7 @@ const THUMB_BY_ID: Record<string, string> = {
   emprego: "/categories/emprego.webp",
   empregos: "/categories/empregos.webp",
   restaurantes: "/categories/restaurantes.webp",
+  alimentacao: "/categories/alimentacao.webp",
 };
 
 export function getCategoryThumbSrc(id: string, name?: string): string | null {
@@ -42,8 +43,8 @@ export function getCategoryThumbSrc(id: string, name?: string): string | null {
   if (key.includes("empreg") || key.includes("job") || key.includes("vaga")) {
     return THUMB_BY_ID.emprego;
   }
-  if (key.includes("restaur") || key.includes("comida") || key.includes("food")) {
-    return THUMB_BY_ID.restaurantes;
+  if (key.includes("restaur") || key.includes("comida") || key.includes("food") || key.includes("aliment")) {
+    return THUMB_BY_ID.alimentacao;
   }
   return null;
 }

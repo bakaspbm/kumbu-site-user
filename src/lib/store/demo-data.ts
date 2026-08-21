@@ -21,12 +21,13 @@ export const demoCategories: CatalogCategory[] = [
   { id: "moda", name: "Moda", kind: "product", sortOrder: 1 },
   { id: "eletrodomesticos", name: "Eletrodomésticos", kind: "product", sortOrder: 2 },
   { id: "beleza", name: "Beleza", kind: "product", sortOrder: 3 },
-  { id: "moveis", name: "Móveis", kind: "product", sortOrder: 4 },
-  { id: "carros", name: "Carros", kind: "product", sortOrder: 5 },
-  { id: "desporto", name: "Desporto", kind: "product", sortOrder: 6 },
-  { id: "servicos", name: "Serviços", kind: "product", sortOrder: 7 },
-  { id: "imoveis", name: "Imóveis", kind: "stay", sortOrder: 8 },
-  { id: "emprego", name: "Emprego", kind: "job", sortOrder: 9 },
+  { id: "alimentacao", name: "Alimentação", kind: "product", sortOrder: 4 },
+  { id: "moveis", name: "Móveis", kind: "product", sortOrder: 5 },
+  { id: "carros", name: "Carros", kind: "product", sortOrder: 6 },
+  { id: "desporto", name: "Desporto", kind: "product", sortOrder: 7 },
+  { id: "servicos", name: "Serviços", kind: "product", sortOrder: 8 },
+  { id: "imoveis", name: "Imóveis", kind: "stay", sortOrder: 9 },
+  { id: "emprego", name: "Emprego", kind: "job", sortOrder: 10 },
 ];
 
 const demoSeller = {

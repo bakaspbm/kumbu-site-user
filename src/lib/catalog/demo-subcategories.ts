@@ -53,4 +53,17 @@ export const DEMO_SUBCATEGORIES: Record<string, { id: string; name: string }[]> 
     { id: "educacao", name: "Aulas e formação" },
     { id: "outros", name: "Outros serviços" },
   ],
+  alimentacao: [
+    { id: "frutas-legumes", name: "Frutas e legumes" },
+    { id: "carne", name: "Carne" },
+    { id: "peixe-marisco", name: "Peixe e marisco" },
+    { id: "mercearia", name: "Mercearia e secos" },
+    { id: "bebidas", name: "Bebidas" },
+    { id: "padaria", name: "Padaria e pastelaria" },
+    { id: "laticinios", name: "Laticínios e ovos" },
+    { id: "congelados", name: "Congelados" },
+    { id: "refeicoes", name: "Refeições e comida pronta" },
+    { id: "doces-snacks", name: "Doces e snacks" },
+    { id: "outros", name: "Outros" },
+  ],
 };

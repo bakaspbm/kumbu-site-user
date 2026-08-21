@@ -1,4 +1,7 @@
 
+import type { BrandSuggestionKey } from "@/lib/catalog/brands";
+import { getBrandSuggestions } from "@/lib/catalog/brands";
+
 export type ProductFieldType = "text" | "select" | "number";
 
 export interface ProductFieldDef {
@@ -6,6 +9,9 @@ export interface ProductFieldDef {
   label: string;
   type: ProductFieldType;
   options?: { value: string; label: string }[];
+  /** Autocomplete list for free-text brand (and similar) fields. */
+  suggestions?: readonly string[];
+  suggestionsKey?: BrandSuggestionKey;
   required?: boolean;
   placeholder?: string;
 }
@@ -17,11 +23,26 @@ export const CONDITION_OPTIONS = [
   { value: "usado_aceitavel", label: "Usado — aceitável" },
 ] as const;
 
+/** Cosmetics / hygiene: sealed vs opened — not "usado como carro". */
+export const BEAUTY_CONDITION_OPTIONS = [
+  { value: "selado", label: "Novo — selado" },
+  { value: "aberto_completo", label: "Aberto — quase completo" },
+  { value: "aberto_parcial", label: "Aberto — parcial" },
+] as const;
+
 const cond = (): ProductFieldDef => ({
   key: "condition",
   label: "Estado",
   type: "select",
   options: [...CONDITION_OPTIONS],
+  required: true,
+});
+
+const beautyCond = (): ProductFieldDef => ({
+  key: "condition",
+  label: "Estado",
+  type: "select",
+  options: [...BEAUTY_CONDITION_OPTIONS],
   required: true,
 });
 
@@ -50,8 +71,17 @@ function furnitureFields(placeholder: string): ProductFieldDef[] {
   ];
 }
 
+function withBrandSuggestions(field: ProductFieldDef, key: BrandSuggestionKey): ProductFieldDef {
+  return {
+    ...field,
+    suggestionsKey: key,
+    suggestions: getBrandSuggestions(key),
+  };
+}
+
 function vehicleFields(extra: ProductFieldDef[] = []): ProductFieldDef[] {
   return [
+    // Marca/modelo: VehiclesDB offline (ver VehicleBrandModelFields)
     { key: "brand", label: "Marca", type: "text", required: true, placeholder: "Ex.: Toyota, Hyundai" },
     { key: "model", label: "Modelo", type: "text", required: true, placeholder: "Ex.: Corolla, Tucson" },
     { key: "year", label: "Ano", type: "number", required: true, placeholder: "2020" },
@@ -60,17 +90,23 @@ function vehicleFields(extra: ProductFieldDef[] = []): ProductFieldDef[] {
   ];
 }
 
-const brand = (ph = "Ex.: Samsung"): ProductFieldDef => ({
-  key: "brand",
-  label: "Marca",
-  type: "text",
-  required: true,
-  placeholder: ph,
-});
+const brand = (
+  ph = "Ex.: Samsung",
+  suggestionsKey?: BrandSuggestionKey,
+): ProductFieldDef => {
+  const field: ProductFieldDef = {
+    key: "brand",
+    label: "Marca",
+    type: "text",
+    required: true,
+    placeholder: ph,
+  };
+  return suggestionsKey ? withBrandSuggestions(field, suggestionsKey) : field;
+};
 
 const FIELDS: Record<string, ProductFieldDef[]> = {
   "eletronicos:telefones": [
-    brand(),
+    brand("Ex.: Samsung", "phones"),
     { key: "model", label: "Modelo", type: "text", required: true, placeholder: "Ex.: Galaxy A54" },
     {
       key: "storage",
@@ -89,7 +125,7 @@ const FIELDS: Record<string, ProductFieldDef[]> = {
     { key: "color", label: "Cor", type: "text", placeholder: "Opcional" },
   ],
   "eletronicos:computadores": [
-    brand("Ex.: HP, Dell, Apple"),
+    brand("Ex.: HP, Dell, Apple", "computers"),
     { key: "model", label: "Modelo", type: "text", required: true, placeholder: "Ex.: Pavilion 15, MacBook Air" },
     { key: "processor", label: "Processador", type: "text", required: true, placeholder: "Ex.: Intel i5, M1" },
     {
@@ -119,7 +155,7 @@ const FIELDS: Record<string, ProductFieldDef[]> = {
     cond(),
   ],
   "eletronicos:tablets": [
-    brand("Ex.: Apple, Samsung, Lenovo"),
+    brand("Ex.: Apple, Samsung, Lenovo", "tablets"),
     { key: "model", label: "Modelo", type: "text", required: true, placeholder: "Ex.: iPad Air, Tab S9" },
     {
       key: "storage",
@@ -134,7 +170,7 @@ const FIELDS: Record<string, ProductFieldDef[]> = {
     cond(),
   ],
   "eletronicos:tv-audio": [
-    brand("Ex.: Samsung, LG, Sony"),
+    brand("Ex.: Samsung, LG, Sony", "tvAudio"),
     { key: "model", label: "Modelo", type: "text", placeholder: "Ex.: AU8000, OLED C3" },
     {
       key: "screenSize",
@@ -145,7 +181,7 @@ const FIELDS: Record<string, ProductFieldDef[]> = {
     cond(),
   ],
   "eletronicos:gaming": [
-    brand("Ex.: Sony, Microsoft, Nintendo"),
+    brand("Ex.: Sony, Microsoft, Nintendo", "gaming"),
     {
       key: "model",
       label: "Modelo / consola",
@@ -157,7 +193,7 @@ const FIELDS: Record<string, ProductFieldDef[]> = {
   ],
   "eletronicos:acessorios": [
     { key: "productType", label: "Tipo", type: "text", required: true, placeholder: "Ex.: Carregador, auricular" },
-    brand(),
+    brand("Ex.: Samsung", "phones"),
     cond(),
   ],
   "moda:roupas": [
@@ -173,7 +209,7 @@ const FIELDS: Record<string, ProductFieldDef[]> = {
       ],
     },
     { key: "size", label: "Tamanho", type: "text", required: true, placeholder: "Ex.: M, 42, 10 anos" },
-    brand("Ex.: Zara, local"),
+    brand("Ex.: Zara, local", "fashion"),
     { key: "color", label: "Cor", type: "text" },
     cond(),
   ],
@@ -190,54 +226,74 @@ const FIELDS: Record<string, ProductFieldDef[]> = {
       ],
     },
     { key: "size", label: "Número / tamanho", type: "text", required: true, placeholder: "Ex.: 42, 38" },
-    brand(),
+    brand("Ex.: Nike, Adidas", "fashion"),
     cond(),
   ],
   "moda:acessorios": [
     { key: "productType", label: "Tipo", type: "text", required: true, placeholder: "Ex.: Mala, cinto, relógio" },
-    brand(),
+    brand("Ex.: marca ou sem marca", "fashion"),
     cond(),
   ],
   "eletrodomesticos:cozinha": [
     { key: "productType", label: "Tipo", type: "text", required: true, placeholder: "Ex.: Micro-ondas, fogão" },
-    brand(),
+    brand("Ex.: Samsung", "appliances"),
     cond(),
   ],
   "eletrodomesticos:frigorificos": [
-    brand(),
+    brand("Ex.: Samsung, LG", "appliances"),
     { key: "capacity", label: "Capacidade", type: "text", placeholder: "Ex.: 350 L" },
     cond(),
   ],
   "eletrodomesticos:lavagem": [
-    brand(),
+    brand("Ex.: Samsung, LG", "appliances"),
     { key: "capacity", label: "Capacidade de carga", type: "text", placeholder: "Ex.: 8 kg" },
     cond(),
   ],
   "eletrodomesticos:climatizacao": [
-    brand(),
+    brand("Ex.: Samsung, LG, Midea", "appliances"),
     { key: "power", label: "Potência / BTU", type: "text", placeholder: "Ex.: 12000 BTU" },
     cond(),
   ],
-  "eletrodomesticos:outros": [brand(), cond()],
+  "eletrodomesticos:outros": [brand("Ex.: Samsung", "appliances"), cond()],
   "beleza:maquilhagem": [
-    brand("Ex.: MAC, Maybelline"),
-    { key: "productType", label: "Tipo", type: "text", required: true, placeholder: "Ex.: Batom, base" },
-    cond(),
+    {
+      key: "productType",
+      label: "Tipo",
+      type: "text",
+      required: true,
+      placeholder: "Ex.: Batom, base",
+    },
+    brand("Ex.: MAC, Maybelline", "beauty"),
+    { key: "color", label: "Cor / tom", type: "text", placeholder: "Ex.: Nude, 220" },
+    beautyCond(),
   ],
   "beleza:cuidados": [
-    brand(),
+    {
+      key: "productType",
+      label: "Tipo",
+      type: "text",
+      required: true,
+      placeholder: "Ex.: Creme, champô, sérum",
+    },
+    brand("Ex.: Nivea, CeraVe", "beauty"),
     { key: "volume", label: "Volume / quantidade", type: "text", placeholder: "Ex.: 250 ml" },
-    cond(),
+    beautyCond(),
   ],
   "beleza:perfumes": [
-    brand(),
+    brand("Ex.: Dior, Chanel", "beauty"),
     { key: "volume", label: "Volume", type: "text", placeholder: "Ex.: 100 ml" },
-    cond(),
+    beautyCond(),
   ],
   "beleza:outros": [
-    { key: "productType", label: "Tipo", type: "text", required: true, placeholder: "Ex.: Unhas, acessório" },
-    brand(),
-    cond(),
+    {
+      key: "productType",
+      label: "Tipo",
+      type: "text",
+      required: true,
+      placeholder: "Ex.: Unhas, acessório, secador",
+    },
+    brand("Ex.: marca", "beauty"),
+    beautyCond(),
   ],
   "moveis:sala": furnitureFields("Ex.: Sofá, mesa de centro, estante"),
   "moveis:quarto": furnitureFields("Ex.: Cama, roupeiro, criado-mudo"),
@@ -388,7 +444,7 @@ const FIELDS: Record<string, ProductFieldDef[]> = {
 
 const CATEGORY_DEFAULTS: Record<string, ProductFieldDef[]> = {
   eletronicos: [
-    brand(),
+    brand("Ex.: Samsung", "phones"),
     { key: "model", label: "Modelo", type: "text", placeholder: "Ex.: modelo ou referência" },
     cond(),
   ],
@@ -400,7 +456,7 @@ const CATEGORY_DEFAULTS: Record<string, ProductFieldDef[]> = {
       required: true,
       placeholder: "Ex.: Casaco, calças, vestido",
     },
-    brand(),
+    brand("Ex.: Zara, Nike", "fashion"),
     cond(),
   ],
   eletrodomesticos: [
@@ -411,11 +467,10 @@ const CATEGORY_DEFAULTS: Record<string, ProductFieldDef[]> = {
       required: true,
       placeholder: "Ex.: Frigorífico, máquina de lavar",
     },
-    brand(),
+    brand("Ex.: Samsung, LG", "appliances"),
     cond(),
   ],
   beleza: [
-    brand(),
     {
       key: "productType",
       label: "Tipo",
@@ -423,7 +478,8 @@ const CATEGORY_DEFAULTS: Record<string, ProductFieldDef[]> = {
       required: true,
       placeholder: "Ex.: Creme, perfume, maquilhagem",
     },
-    cond(),
+    brand("Ex.: MAC, Nivea", "beauty"),
+    beautyCond(),
   ],
   moveis: furnitureFields("Ex.: Indique o móvel"),
   carros: vehicleFields(),
@@ -447,6 +503,34 @@ const CATEGORY_DEFAULTS: Record<string, ProductFieldDef[]> = {
       placeholder: "Ex.: Descreva o que oferece",
     },
     { key: "coverage", label: "Zona de atendimento", type: "text", placeholder: "Ex.: Luanda, Talatona" },
+  ],
+  alimentacao: [
+    {
+      key: "productType",
+      label: "Produto",
+      type: "text",
+      required: true,
+      placeholder: "Ex.: Tomate, frango, funge",
+    },
+    {
+      key: "quantity",
+      label: "Quantidade / peso",
+      type: "text",
+      placeholder: "Ex.: 2 kg, 12 unidades, 1 L",
+    },
+    {
+      key: "condition",
+      label: "Estado",
+      type: "select",
+      required: true,
+      options: [
+        { value: "fresco", label: "Fresco" },
+        { value: "embalado", label: "Embalado / selado" },
+        { value: "congelado", label: "Congelado" },
+        { value: "seco", label: "Seco / não perecível" },
+        { value: "pronto", label: "Pronto a consumir" },
+      ],
+    },
   ],
 };
 
@@ -474,6 +558,7 @@ export function getSubcategoryFieldLabel(categoryId: string): string {
     carros: "Tipo de veículo",
     desporto: "Modalidade desportiva",
     servicos: "Tipo de serviço",
+    alimentacao: "Tipo de alimento",
   };
   return labels[categoryId] ?? "Subcategoria";
 }
@@ -510,10 +595,10 @@ const TITLE_BY_SUB: Record<string, string> = {
   "eletrodomesticos:lavagem": "Ex.: Máquina lavar 8 kg — poucos anos",
   "eletrodomesticos:climatizacao": "Ex.: Ar condicionado 12000 BTU — com instalação",
   "eletrodomesticos:outros": "Ex.: Ferro a vapor Philips — novo na caixa",
-  "beleza:maquilhagem": "Ex.: Kit maquilhagem MAC — pouco usado",
+  "beleza:maquilhagem": "Ex.: Base MAC tom 220 — selada",
   "beleza:cuidados": "Ex.: Creme hidratante 250 ml — selado",
-  "beleza:perfumes": "Ex.: Perfume importado 100 ml — com caixa",
-  "beleza:outros": "Ex.: Secador de cabelo profissional",
+  "beleza:perfumes": "Ex.: Perfume 100 ml — selado com caixa",
+  "beleza:outros": "Ex.: Secador de cabelo profissional — novo",
   "moveis:sala": "Ex.: Sofá 3 lugares — tecido cinza, bom estado",
   "moveis:quarto": "Ex.: Cama casal + colchão — madeira maciça",
   "moveis:cozinha": "Ex.: Mesa jantar 6 lugares + cadeiras",
@@ -533,6 +618,17 @@ const TITLE_BY_SUB: Record<string, string> = {
   "servicos:transporte": "Ex.: Mudanças e entregas — camião 3,5 t",
   "servicos:educacao": "Ex.: Aulas de inglês — presencial ou online",
   "servicos:outros": "Ex.: Montagem de móveis — orçamento grátis",
+  "alimentacao:frutas-legumes": "Ex.: Tomate fresco — 5 kg",
+  "alimentacao:carne": "Ex.: Frango inteiro — fresco, 1,5 kg",
+  "alimentacao:peixe-marisco": "Ex.: Cacussi fresco — 2 kg",
+  "alimentacao:mercearia": "Ex.: Arroz 25 kg — saco novo",
+  "alimentacao:bebidas": "Ex.: Sumo natural 1 L — gelado",
+  "alimentacao:padaria": "Ex.: Pão de trigo — fornada do dia",
+  "alimentacao:laticinios": "Ex.: Ovos — dúzia fresca",
+  "alimentacao:congelados": "Ex.: Peixe congelado — 1 kg",
+  "alimentacao:refeicoes": "Ex.: Marmita caseira — almoço completo",
+  "alimentacao:doces-snacks": "Ex.: Bolachas caseiras — caixa",
+  "alimentacao:outros": "Ex.: Produto alimentar — descreva bem",
 };
 
 const TITLE_BY_CATEGORY: Record<string, string> = {
@@ -544,6 +640,7 @@ const TITLE_BY_CATEGORY: Record<string, string> = {
   carros: "Ex.: Marca, modelo, ano e quilómetros",
   desporto: "Ex.: Equipamento ou artigo desportivo",
   servicos: "Ex.: Nome claro do serviço e zona de atendimento",
+  alimentacao: "Ex.: Produto, quantidade e se é fresco ou embalado",
 };
 
 const DESCRIPTION_BY_SUB: Record<string, string> = {
@@ -559,6 +656,8 @@ const DESCRIPTION_BY_CATEGORY: Record<string, string> = {
   eletronicos: "Garantia, factura, entrega, troca ou negociação…",
   moda: "Medidas exactas, defeitos, lavagens, entrega…",
   eletrodomesticos: "Consumo energético, instalação, garantia, entrega…",
+  alimentacao: "Data de validade se houver, entrega/recolha, zona de venda…",
+};
   carros: "Inspecção, multas, financiamento, documentação…",
   servicos: "Horário, preço por hora ou pacote, zona coberta…",
   moveis: "Montagem, entrega, dimensões exactas, material…",
@@ -707,7 +806,10 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const VALUE_LABELS: Record<string, Record<string, string>> = {
-  condition: Object.fromEntries(CONDITION_OPTIONS.map((o) => [o.value, o.label])),
+  condition: {
+    ...Object.fromEntries(CONDITION_OPTIONS.map((o) => [o.value, o.label])),
+    ...Object.fromEntries(BEAUTY_CONDITION_OPTIONS.map((o) => [o.value, o.label])),
+  },
   gender: {
     homem: "Homem",
     mulher: "Mulher",
