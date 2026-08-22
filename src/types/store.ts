@@ -50,6 +50,8 @@ export interface CatalogProduct {
   sortOrder: number;
   imageUrl?: string | null;
   imageUrls?: string[];
+  videoUrl?: string | null;
+  videoUrls?: string[];
   description?: string | null;
   deliveryText?: string | null;
   listingKind?: "general" | "property" | "job";
@@ -69,6 +71,8 @@ export interface CatalogProductInsert {
   deliveryText?: string | null;
   imageUrl?: string | null;
   imageUrls?: string[];
+  videoUrl?: string | null;
+  videoUrls?: string[];
   isFeatured?: boolean;
   listingKind?: "general" | "property" | "job";
   propertyMeta?: PropertyMeta | null;
@@ -86,6 +90,10 @@ export interface CatalogProductUpdate {
   description?: string | null;
   imageUrl?: string | null;
   imageUrls?: string[];
+  videoUrl?: string | null;
+  videoUrls?: string[];
+  clearVideoUrl?: boolean;
+  clearVideoUrls?: boolean;
   isOutOfStock?: boolean;
   isFeatured?: boolean;
 }
@@ -105,6 +113,21 @@ export interface AppMarketingBlock {
   gradientFrom?: string | null;
   gradientTo?: string | null;
   sortOrder: number;
+  active?: boolean;
+  badge?: string | null;
+  ctaLabel?: string | null;
+  ctaHref?: string | null;
+  imageUrl?: string | null;
+  categoryId?: string | null;
+  searchQuery?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  showBrandPoints?: boolean;
+  source?: "marketing" | "holiday" | string;
+}
+
+export interface HomeBannerSlide extends AppMarketingBlock {
+  source?: string;
 }
 
 export interface CartItem {
@@ -222,4 +245,23 @@ export interface UserNotification {
   actionUrl?: string | null;
 }
 
-export type SortMode = "default" | "rating_desc" | "price_asc";
+export type SortMode = "default" | "rating_desc" | "price_asc" | "price_desc" | "newest";
+
+export type CatalogSearchFilters = {
+  categoryId?: string;
+  subcategoryId?: string;
+  sortMode?: SortMode;
+  featuredOnly?: boolean;
+  q?: string;
+  sellerId?: string;
+  city?: string;
+  region?: string;
+  priceMin?: number;
+  priceMax?: number;
+  listingKind?: "general" | "property" | "job";
+  listingIntent?: "sale" | "rent";
+  propertyType?: string;
+  condition?: string;
+  page?: number;
+  size?: number;
+};
