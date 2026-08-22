@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { HomeHeader } from "@/components/home/home-header";
 import { HomeCategoryRow } from "@/components/home/home-category-row";
-import { TrustStrip } from "@/components/layout/trust-strip";
+import { HomeHeroBanner } from "@/components/home/home-hero-banner";
 import { ListingCard } from "@/components/store/listing-card";
 import { MarketingHero } from "@/components/store/marketing-hero";
 import { SectionHeader } from "@/components/ui/section-header";
 import type { AppMarketingBlock, CatalogCategory, CatalogProduct } from "@/types/store";
+
 
 function matchesQuery(product: CatalogProduct, q: string) {
   const needle = q.toLowerCase().trim();
@@ -62,9 +63,9 @@ export function HomeFeed({
     <div className="kumbu-page-enter pb-4">
       <HomeHeader searchValue={search} onSearchChange={setSearch} />
 
-      {heroBlock && <MarketingHero block={heroBlock} />}
+      <HomeHeroBanner />
 
-      <TrustStrip />
+      {heroBlock && <MarketingHero block={heroBlock} />}
 
       <HomeCategoryRow categories={categories} />
 
@@ -80,9 +81,9 @@ export function HomeFeed({
             <p className="mt-6 text-sm text-kumbu-muted">{t("noFeatured")}</p>
           ) : (
             <ul className="kumbu-listing-grid kumbu-stagger mt-4">
-              {highlights.map((p) => (
+              {highlights.map((p, index) => (
                 <li key={p.id}>
-                  <ListingCard product={p} variant="grid" />
+                  <ListingCard product={p} variant="grid" priority={index === 0} />
                 </li>
               ))}
             </ul>
