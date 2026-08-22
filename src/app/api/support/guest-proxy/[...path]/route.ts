@@ -1,5 +1,7 @@
 import { GUEST_SUPPORT_TOKEN_COOKIE } from "@/lib/support/guest-session-cookies";
-import { getKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
+import { getServerKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
+import { originAwareFetch } from "@/lib/kumbu-api/origin-fetch";
+import { isCloudflareBlockBody } from "@/lib/kumbu-api/upstream-response";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -16,14 +18,8 @@ const HOP_BY_HOP = new Set([
 ]);
 
 function backendBase(): string {
-  const base = getKumbuApiBaseUrl();
+  const base = getServerKumbuApiBaseUrl();
   if (!base) throw new Error("API URL missing");
-  if (base.startsWith("/")) {
-    return (
-      process.env.NEXT_PUBLIC_KUMBU_API_URL?.replace(/\/+$/, "") ??
-      "http://127.0.0.1:8080/api/v1"
-    );
-  }
   return base.replace(/\/+$/, "");
 }
 
@@ -48,7 +44,7 @@ async function proxy(request: NextRequest, path: string) {
     body = await request.arrayBuffer();
   }
 
-  const upstream = await fetch(target, {
+  const upstream = await originAwareFetch(target, {
     method: request.method,
     headers,
     body,
@@ -62,7 +58,28 @@ async function proxy(request: NextRequest, path: string) {
     }
   });
 
-  return new NextResponse(upstream.body, {
+  if (upstream.status === 204 || upstream.status === 205) {
+    responseHeaders.delete("content-length");
+    responseHeaders.delete("content-encoding");
+    responseHeaders.delete("transfer-encoding");
+    return new NextResponse(null, {
+      status: upstream.status,
+      headers: responseHeaders,
+    });
+  }
+
+  const bodyText = await upstream.text();
+  if (isCloudflareBlockBody(bodyText)) {
+    return NextResponse.json(
+      {
+        code: "UPSTREAM_ERROR",
+        message: "Serviço temporariamente indisponível. Tente novamente.",
+      },
+      { status: 502 },
+    );
+  }
+
+  return new NextResponse(bodyText, {
     status: upstream.status,
     headers: responseHeaders,
   });

@@ -1,4 +1,5 @@
 import { getKumbuApiClient, type KumbuApiClient } from "@/lib/kumbu-api/client";
+import { sanitizeUpstreamErrorText } from "@/lib/kumbu-api/upstream-response";
 
 export type SupportQuickAction = {
   id: string;
@@ -176,6 +177,40 @@ async function guestProxyRequest<T>(path: string, init?: RequestInit): Promise<T
 }
 
 export async function openGuestSupportSessionBackend(name: string, email: string) {
+  if (typeof window !== "undefined") {
+    const response = await fetch("/api/support/guest-open", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+    });
+    const text = await response.text();
+    let payload: unknown = null;
+    if (text) {
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        throw new Error(
+          sanitizeUpstreamErrorText(
+            text,
+            "Não foi possível iniciar o chat de suporte. Tente novamente.",
+          ),
+        );
+      }
+    }
+    if (!response.ok) {
+      const message =
+        payload && typeof payload === "object" && "message" in payload
+          ? String((payload as Record<string, unknown>).message)
+          : `Erro HTTP ${response.status}`;
+      throw new Error(message);
+    }
+    return mapGuestSession(payload as Record<string, unknown>);
+  }
+
   const client = getKumbuApiClient();
   if (!client) throw new Error("API backend não configurada.");
   const row = await client.request<Record<string, unknown>>("/support/guest/session", {

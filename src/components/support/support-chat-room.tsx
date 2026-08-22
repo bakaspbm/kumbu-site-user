@@ -13,7 +13,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { playMessageNotificationSound } from "@/lib/chat/notification-sound";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { subscribeConversationTopic } from "@/lib/kumbu-api/kumbu-realtime";
-import { uploadChatAttachmentAction } from "@/app/actions/chat-upload";
+import { uploadChatAttachmentBackend } from "@/lib/kumbu-api/files";
+import { withBrowserAuthRetry } from "@/lib/kumbu-api/with-browser-auth";
 import {
   getGuestSupportSessionBackend,
   getSupportConversationBackend,
@@ -281,14 +282,8 @@ export function SupportChatRoom() {
     setAttachBusy(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const result = await uploadChatAttachmentAction(formData);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      await handleSend(result.url);
+      const url = await withBrowserAuthRetry(() => uploadChatAttachmentBackend(file));
+      await handleSend(url);
     } catch (err) {
       setError(formatErrorMessage(err));
     } finally {
@@ -374,6 +369,14 @@ export function SupportChatRoom() {
               ) : (
                 <>
                   <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+                    {messages.length === 0 && conversation?.welcomeMessage ? (
+                      <ChatMessageBubble
+                        body={conversation.welcomeMessage}
+                        time=""
+                        mine={false}
+                        system
+                      />
+                    ) : null}
                     {messages.map((msg) => {
                       const isSystem = msg.messageKind === "system";
                       const mine = isGuestMode

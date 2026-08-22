@@ -13,6 +13,7 @@ import {
   refreshSessionTokens,
   setSessionTokens,
 } from "@/lib/kumbu-api/session-tokens";
+import { sanitizeUpstreamErrorText } from "@/lib/kumbu-api/upstream-response";
 
 export interface ApiClientOptions {
   baseUrl?: string;
@@ -91,6 +92,8 @@ export function getServerKumbuApiBaseUrl(): string | null {
   if (isDevMode()) {
     return DEV_SERVER_API_URL;
   }
+  const originBypass = process.env.KUMBU_API_URL?.trim();
+  if (originBypass) return trimTrailingSlash(originBypass);
   const raw = process.env.NEXT_PUBLIC_KUMBU_API_URL?.trim();
   if (!raw) return null;
   return trimTrailingSlash(raw);
@@ -178,7 +181,9 @@ async function parseJsonSafe(response: Response): Promise<unknown> {
   try {
     return JSON.parse(text);
   } catch {
-    return { message: text };
+    return {
+      message: sanitizeUpstreamErrorText(text, "Resposta inválida do servidor."),
+    };
   }
 }
 
@@ -257,6 +262,8 @@ export class KumbuApiClient {
       response = await fetch(url, {
         ...options,
         headers,
+        // Server Actions/RSC: evita cache de GET desactualizado (ex. lista de avaliações vazia).
+        ...(typeof window === "undefined" ? { cache: "no-store" as RequestCache } : {}),
         credentials:
           typeof window !== "undefined"
             ? useAuth
@@ -275,7 +282,7 @@ export class KumbuApiClient {
       throw err;
     }
 
-    if ((response.status === 401 || response.status === 403) && useAuth && !options?._retried) {
+    if (response.status === 401 && useAuth && !options?._retried) {
       if (typeof window !== "undefined") {
         if (await refreshBrowserSessionCookies()) {
           return this.request<T>(path, { ...options, _retried: true });
@@ -288,9 +295,9 @@ export class KumbuApiClient {
       }
     }
 
-  if (response.status === 204 || response.status === 205) {
-    return undefined as T;
-  }
+    if (response.status === 204 || response.status === 205) {
+      return undefined as T;
+    }
 
     const payload = await parseJsonSafe(response);
     if (!response.ok) {
@@ -307,6 +314,9 @@ export class KumbuApiClient {
       }
       const message = extractMessage(payload, `Erro HTTP ${response.status}`);
       throw new ApiError(message, response.status, payload);
+    }
+    if (payload == null) {
+      throw new ApiError("Resposta vazia do servidor. Tente novamente.", response.status);
     }
     return payload as T;
   }

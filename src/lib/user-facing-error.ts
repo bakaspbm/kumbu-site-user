@@ -1,5 +1,6 @@
 import { parseApiValidationError } from "@/lib/api-validation";
 import { ApiError } from "@/lib/kumbu-api/client";
+import { isCloudflareBlockBody } from "@/lib/kumbu-api/upstream-response";
 
 export type UserFacingError = {
   /** O que aconteceu */
@@ -39,11 +40,12 @@ export type ErrorMessages = {
 };
 
 const TECHNICAL_PATTERN =
-  /sql|hibernate|jdbc|flyway|stacktrace|stack trace|nullpointer|null pointer|org\.spring|org\.hibernate|com\.kumbu|java\.|jackson|parseexception|constraintviolation|internal server error|NEXT_PUBLIC|\.env|KUMBU_|facebook-trust|backend não configurad|api backend/i;
+  /sql|hibernate|jdbc|flyway|stacktrace|stack trace|nullpointer|null pointer|org\.spring|org\.hibernate|com\.kumbu|java\.|jackson|parseexception|constraintviolation|internal server error|NEXT_PUBLIC|\.env|KUMBU_|facebook-trust|backend não configurad|api backend|server components render|digest property|omitted in production|cloudflare|just a moment|challenges\.cloudflare|<!doctype|<html/i;
 
 export function isTechnicalErrorMessage(message: string): boolean {
   const trimmed = message.trim();
   if (!trimmed) return true;
+  if (isCloudflareBlockBody(trimmed)) return true;
   if (trimmed.startsWith("{") && trimmed.endsWith("}")) return true;
   if (/^erro http \d{3}$/i.test(trimmed)) return true;
   return TECHNICAL_PATTERN.test(trimmed);
