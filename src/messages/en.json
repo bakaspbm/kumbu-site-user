@@ -412,6 +412,8 @@
       "googleBlocked": "Google login cancelled or blocked.",
       "facebookRedirecting": "Redirecting…",
       "facebookContinue": "Continue with Facebook",
+      "googleContinue": "Continue with Google",
+      "acceptTermsFirst": "Accept the terms above to continue with Google.",
       "callbackUnavailable": "Callback unavailable.",
       "sessionExpired": "Login session expired or invalid response. Try again.",
       "facebookTokenMissing": "Facebook token missing. Try again.",

@@ -286,7 +286,10 @@ export function LoginForm() {
                   {authView === "signup" && (
                     <TermsConsentCheckbox
                       checked={termsAccepted}
-                      onChange={setTermsAccepted}
+                      onChange={(checked) => {
+                        setTermsAccepted(checked);
+                        if (checked) setError(null);
+                      }}
                       id="terms-email"
                     />
                   )}

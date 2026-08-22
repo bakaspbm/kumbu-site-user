@@ -412,6 +412,8 @@
       "googleBlocked": "Connexion Google annulée ou bloquée.",
       "facebookRedirecting": "Redirection…",
       "facebookContinue": "Continuer avec Facebook",
+      "googleContinue": "Continuer avec Google",
+      "acceptTermsFirst": "Acceptez les conditions ci-dessus pour continuer avec Google.",
       "callbackUnavailable": "Callback indisponible.",
       "sessionExpired": "Session de connexion expirée ou réponse invalide. Réessayez.",
       "facebookTokenMissing": "Jeton Facebook manquant. Réessayez.",
