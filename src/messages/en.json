@@ -1719,7 +1719,12 @@
         "usado_aceitavel": "Used — acceptable",
         "selado": "New — sealed",
         "aberto_completo": "Opened — almost full",
-        "aberto_parcial": "Opened — partially used"
+        "aberto_parcial": "Opened — partially used",
+        "fresco": "Fresh",
+        "embalado": "Packaged / sealed",
+        "congelado": "Frozen",
+        "seco": "Dry / non-perishable",
+        "pronto": "Ready to eat"
       }
     },
     "brand": {

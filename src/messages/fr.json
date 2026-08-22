@@ -1719,7 +1719,12 @@
         "usado_aceitavel": "Occasion — acceptable",
         "selado": "Neuf — scellé",
         "aberto_completo": "Ouvert — presque plein",
-        "aberto_parcial": "Ouvert — partiellement utilisé"
+        "aberto_parcial": "Ouvert — partiellement utilisé",
+        "fresco": "Frais",
+        "embalado": "Emballé / scellé",
+        "congelado": "Congelé",
+        "seco": "Sec / non périssable",
+        "pronto": "Prêt à consommer"
       }
     },
     "brand": {

@@ -30,6 +30,25 @@ export const BEAUTY_CONDITION_OPTIONS = [
   { value: "aberto_parcial", label: "Aberto — parcial" },
 ] as const;
 
+/** Food / grocery — freshness packaging, not novo/usado. */
+export const FOOD_CONDITION_OPTIONS = [
+  { value: "fresco", label: "Fresco" },
+  { value: "embalado", label: "Embalado / selado" },
+  { value: "congelado", label: "Congelado" },
+  { value: "seco", label: "Seco / não perecível" },
+  { value: "pronto", label: "Pronto a consumir" },
+] as const;
+
+/** Condition filter options for browse UI (by category). */
+export function getConditionFilterOptions(categoryId?: string | null): readonly {
+  value: string;
+  label: string;
+}[] {
+  if (categoryId === "alimentacao") return FOOD_CONDITION_OPTIONS;
+  if (categoryId === "beleza") return BEAUTY_CONDITION_OPTIONS;
+  return CONDITION_OPTIONS;
+}
+
 const cond = (): ProductFieldDef => ({
   key: "condition",
   label: "Estado",
@@ -523,13 +542,7 @@ const CATEGORY_DEFAULTS: Record<string, ProductFieldDef[]> = {
       label: "Estado",
       type: "select",
       required: true,
-      options: [
-        { value: "fresco", label: "Fresco" },
-        { value: "embalado", label: "Embalado / selado" },
-        { value: "congelado", label: "Congelado" },
-        { value: "seco", label: "Seco / não perecível" },
-        { value: "pronto", label: "Pronto a consumir" },
-      ],
+      options: [...FOOD_CONDITION_OPTIONS],
     },
   ],
 };
@@ -808,6 +821,7 @@ const VALUE_LABELS: Record<string, Record<string, string>> = {
   condition: {
     ...Object.fromEntries(CONDITION_OPTIONS.map((o) => [o.value, o.label])),
     ...Object.fromEntries(BEAUTY_CONDITION_OPTIONS.map((o) => [o.value, o.label])),
+    ...Object.fromEntries(FOOD_CONDITION_OPTIONS.map((o) => [o.value, o.label])),
   },
   gender: {
     homem: "Homem",
