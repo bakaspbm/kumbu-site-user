@@ -1,4 +1,6 @@
 import { getKumbuApiBaseUrl, getServerKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
+import { originAwareFetch } from "@/lib/kumbu-api/origin-fetch";
+import { isCloudflareBlockBody } from "@/lib/kumbu-api/upstream-response";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
@@ -7,6 +9,8 @@ import {
 } from "@/lib/kumbu-api/session-tokens";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = "nodejs";
 
 const HOP_BY_HOP = new Set([
   "connection",
@@ -52,7 +56,7 @@ function cookieOptions(maxAge = TOKEN_MAX_AGE_SECONDS) {
 }
 
 async function refreshAccessTokenInline(refreshToken: string): Promise<string | null> {
-  const upstream = await fetch(`${backendBase()}/auth/refresh`, {
+  const upstream = await originAwareFetch(`${backendBase()}/auth/refresh`, {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -63,12 +67,12 @@ async function refreshAccessTokenInline(refreshToken: string): Promise<string | 
   });
   if (!upstream.ok) return null;
 
-  const payload = (await upstream.json()) as {
+  const payload = (await upstream.json().catch(() => null)) as {
     accessToken?: string;
     refreshToken?: string;
     expiresInSeconds?: number;
-  };
-  if (!payload.accessToken?.trim()) return null;
+  } | null;
+  if (!payload?.accessToken?.trim()) return null;
 
   const jar = await cookies();
   const maxAge = Math.max(payload.expiresInSeconds ?? TOKEN_MAX_AGE_SECONDS, 60);
@@ -105,7 +109,7 @@ async function proxyUpstream(request: NextRequest, path: string) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
-  let body: BodyInit | undefined;
+  let body: ArrayBuffer | undefined;
   if (request.method !== "GET" && request.method !== "HEAD") {
     body = await request.arrayBuffer();
   }
@@ -113,18 +117,17 @@ async function proxyUpstream(request: NextRequest, path: string) {
   const upstreamInit = (): RequestInit => ({
     method: request.method,
     headers,
-    body,
+    body: body ? new Uint8Array(body) : undefined,
     cache: "no-store",
-    signal: AbortSignal.timeout(25_000),
   });
 
-  let upstream = await fetch(target, upstreamInit());
+  let upstream = await originAwareFetch(target, upstreamInit());
 
   if (upstream.status === 401 && refreshToken) {
     const newAccess = await refreshAccessTokenInline(refreshToken);
     if (newAccess) {
       headers.set("Authorization", `Bearer ${newAccess}`);
-      upstream = await fetch(target, upstreamInit());
+      upstream = await originAwareFetch(target, upstreamInit());
     }
   }
 
@@ -137,7 +140,27 @@ async function proxyUpstream(request: NextRequest, path: string) {
     responseHeaders.set(key, value);
   });
 
+  if (upstream.status === 204 || upstream.status === 205) {
+    responseHeaders.delete("content-length");
+    responseHeaders.delete("content-encoding");
+    responseHeaders.delete("transfer-encoding");
+    return new NextResponse(null, {
+      status: upstream.status,
+      headers: responseHeaders,
+    });
+  }
+
   const responseBody = await upstream.arrayBuffer();
+  if (isCloudflareBlockBody(new TextDecoder().decode(responseBody.slice(0, 800)))) {
+    return NextResponse.json(
+      {
+        code: "UPSTREAM_ERROR",
+        message: "Serviço temporariamente indisponível. Tente novamente.",
+      },
+      { status: 502 },
+    );
+  }
+
   return new NextResponse(responseBody, {
     status: upstream.status,
     headers: responseHeaders,

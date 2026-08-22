@@ -143,22 +143,11 @@ export function normalizeBackendAssetUrl(url: string | null | undefined): string
   return trimmed;
 }
 
-function getDirectPublicApiBaseUrl(): string | null {
-  const raw = process.env.NEXT_PUBLIC_KUMBU_API_URL?.trim();
-  if (!raw) return null;
-  return resolveApiBaseUrl(trimTrailingSlash(raw));
-}
-
-function resolveRequestBaseUrl(clientBaseUrl: string, useAuth: boolean): string {
-  if (typeof window !== "undefined") {
-    // Pedidos autenticados no browser passam pelo proxy Next (cookies HttpOnly).
-    if (useAuth && clientBaseUrl.startsWith("/")) {
-      return clientBaseUrl;
-    }
-    const direct = getDirectPublicApiBaseUrl();
-    if (direct && !useAuth) {
-      return direct;
-    }
+function resolveRequestBaseUrl(clientBaseUrl: string, _useAuth: boolean): string {
+  // No browser, todos os pedidos passam pelo proxy Next (/api/kumbu) para evitar
+  // bloqueios Cloudflare em chamadas directas a api.kumbu-market.com.
+  if (typeof window !== "undefined" && clientBaseUrl.startsWith("/")) {
+    return clientBaseUrl;
   }
   return clientBaseUrl;
 }
@@ -295,7 +284,7 @@ export class KumbuApiClient {
       }
     }
 
-    if (response.status === 204 || response.status === 205) {
+    if (response.status === 204 || response.status === 205 || response.status === 304) {
       return undefined as T;
     }
 
@@ -316,6 +305,9 @@ export class KumbuApiClient {
       throw new ApiError(message, response.status, payload);
     }
     if (payload == null) {
+      if (response.ok) {
+        return undefined as T;
+      }
       throw new ApiError("Resposta vazia do servidor. Tente novamente.", response.status);
     }
     return payload as T;
