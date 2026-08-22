@@ -81,9 +81,9 @@ export function HomeFeed({
             <p className="mt-6 text-sm text-kumbu-muted">{t("noFeatured")}</p>
           ) : (
             <ul className="kumbu-listing-grid kumbu-stagger mt-4">
-              {highlights.map((p, index) => (
+              {highlights.map((p) => (
                 <li key={p.id}>
-                  <ListingCard product={p} variant="grid" priority={index === 0} />
+                  <ListingCard product={p} variant="grid" />
                 </li>
               ))}
             </ul>
