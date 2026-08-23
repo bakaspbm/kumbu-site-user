@@ -30,13 +30,14 @@ async function refreshAccessFromCookies(
   const upstreamText = await upstream.text();
   if (!upstreamText.trim()) return null;
 
-  let payload: {
+  type RefreshPayload = {
     accessToken?: string;
     refreshToken?: string;
     expiresInSeconds?: number;
-  } | null = null;
+  };
+  let payload: RefreshPayload | null = null;
   try {
-    payload = JSON.parse(upstreamText) as typeof payload;
+    payload = JSON.parse(upstreamText) as RefreshPayload;
   } catch {
     return null;
   }
