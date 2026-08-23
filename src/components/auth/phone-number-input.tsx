@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import {
   COUNTRY_CALLING_CODES,
   DEFAULT_COUNTRY_ISO,
+  clampNationalDigits,
+  formatNationalDisplay,
   getCountryByIso,
   parsePhoneParts,
 } from "@/lib/phone";
@@ -32,10 +34,12 @@ export function storePhoneCountryIso(iso: string): void {
 type PhoneNumberInputProps = {
   countryIso: string;
   onCountryIsoChange: (iso: string) => void;
+  /** Só dígitos nacionais (sem espaços). */
   nationalNumber: string;
   onNationalNumberChange: (value: string) => void;
   disabled?: boolean;
   id?: string;
+  required?: boolean;
 };
 
 export function PhoneNumberInput({
@@ -45,29 +49,35 @@ export function PhoneNumberInput({
   onNationalNumberChange,
   disabled = false,
   id = "phone-national",
+  required = false,
 }: PhoneNumberInputProps) {
   const country = useMemo(() => getCountryByIso(countryIso), [countryIso]);
+  const displayValue = formatNationalDisplay(nationalNumber, countryIso);
 
   function handleNationalChange(raw: string) {
-    const parsed = parsePhoneParts(raw);
-    if (parsed && raw.trim().startsWith("+")) {
-      onCountryIsoChange(parsed.iso);
-      storePhoneCountryIso(parsed.iso);
-      onNationalNumberChange(parsed.national.replace(/\D/g, "").slice(0, 15));
-      return;
+    const trimmed = raw.trim();
+    if (trimmed.startsWith("+") || (trimmed.replace(/\D/g, "").startsWith("244") && trimmed.replace(/\D/g, "").length > 9)) {
+      const parsed = parsePhoneParts(trimmed.startsWith("+") ? trimmed : `+${trimmed.replace(/\D/g, "")}`);
+      if (parsed) {
+        onCountryIsoChange(parsed.iso);
+        storePhoneCountryIso(parsed.iso);
+        onNationalNumberChange(clampNationalDigits(parsed.national, parsed.iso));
+        return;
+      }
     }
-    const digits = raw.replace(/\D/g, "").slice(0, country.nationalLength + 2);
-    onNationalNumberChange(digits);
+    onNationalNumberChange(clampNationalDigits(raw, countryIso));
   }
 
   function handleCountryChange(iso: string) {
     onCountryIsoChange(iso);
     storePhoneCountryIso(iso);
-    const next = getCountryByIso(iso);
-    onNationalNumberChange(
-      nationalNumber.replace(/\D/g, "").slice(0, next.nationalLength + 2),
-    );
+    onNationalNumberChange(clampNationalDigits(nationalNumber, iso));
   }
+
+  const maxDisplayLen =
+    country.iso === "AO" || country.iso === "PT"
+      ? country.nationalLength + 2 // "923 456 789"
+      : country.nationalLength + Math.floor((country.nationalLength - 1) / 3);
 
   return (
     <div className="flex overflow-hidden rounded-xl border border-kumbu-border bg-kumbu-surface focus-within:ring-2 focus-within:ring-kumbu-primary/30">
@@ -91,13 +101,15 @@ export function PhoneNumberInput({
       <input
         id={id}
         type="tel"
-        value={nationalNumber}
+        value={displayValue}
         onChange={(e) => handleNationalChange(e.target.value)}
-        className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 font-normal outline-none"
-        placeholder={country.iso === "AO" ? "923456789" : "912345678"}
-        inputMode="tel"
+        className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 font-normal tracking-wide outline-none"
+        placeholder={country.iso === "AO" ? "923 456 789" : "Número local"}
+        inputMode="numeric"
         autoComplete="tel-national"
         disabled={disabled}
+        required={required}
+        maxLength={maxDisplayLen}
         aria-describedby={`${id}-hint`}
       />
     </div>
@@ -106,5 +118,8 @@ export function PhoneNumberInput({
 
 export function phoneInputHint(countryIso: string): string {
   const c = getCountryByIso(countryIso);
-  return `Indicativo +${c.dialCode} · ${c.name}. Pode colar o número completo com +.`;
+  if (c.iso === "AO") {
+    return `Angola +244 · 9 dígitos (ex.: 923 456 789). Pode colar +244…`;
+  }
+  return `Indicativo +${c.dialCode} · ${c.name} · ${c.nationalLength} dígitos. Pode colar o número com +.`;
 }
