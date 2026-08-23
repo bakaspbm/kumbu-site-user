@@ -53,6 +53,10 @@ const nextConfig: NextConfig = {
           key: "Content-Security-Policy",
           value: buildContentSecurityPolicy(),
         },
+        {
+          key: "Strict-Transport-Security",
+          value: "max-age=63072000; includeSubDomains; preload",
+        },
       ],
     },
     {
@@ -67,6 +71,11 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react"],
     serverActions: {
       bodySizeLimit: "12mb",
+      allowedOrigins: [
+        "www.kumbu-market.com",
+        "kumbu-market.com",
+        "kumbu-site-user.vercel.app",
+      ],
     },
     staleTimes: {
       dynamic: 30,
@@ -76,6 +85,7 @@ const nextConfig: NextConfig = {
   images: {
     /* Em dev o optimizador dava timeout (500) em JPGs grandes do Storage. */
     unoptimized: process.env.NODE_ENV === "development",
+    formats: ["image/avif", "image/webp"],
     remotePatterns: apiImageRemotePatterns(),
     minimumCacheTTL: 60,
   },
@@ -111,6 +121,7 @@ const nextConfig: NextConfig = {
       { source: "/product/:id", destination: "/produto/:id", permanent: true },
       { source: "/cart", destination: "/carrinho", permanent: true },
       { source: "/profile", destination: "/conta/perfil", permanent: true },
+      { source: "/conta/cvs", destination: "/conta/curriculos", permanent: true },
       { source: "/orders", destination: "/conta/compras", permanent: true },
       { source: "/orders/:id", destination: "/conta/compras/:id", permanent: true },
       { source: "/notifications", destination: "/conta/notificacoes", permanent: true },

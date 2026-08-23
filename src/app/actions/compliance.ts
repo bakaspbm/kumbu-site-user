@@ -43,9 +43,9 @@ export async function recordTermsConsentAction(): Promise<ActionOk | ActionFail>
 }
 
 export async function recordPublishConsentAction(): Promise<ActionOk | ActionFail> {
-  const auth = await requireUserId();
-  if (typeof auth !== "string") return auth;
   try {
+    const auth = await requireUserId();
+    if (typeof auth !== "string") return auth;
     await recordConsentBackend(CONSENT_TYPES.publishRules, await userAgentFromHeaders());
     return { ok: true };
   } catch (err) {

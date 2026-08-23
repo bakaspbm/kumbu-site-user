@@ -49,12 +49,12 @@ import {
   ListingVideosUpload,
   type ListingVideoItem,
 } from "@/components/listings/listing-videos-upload";
-import { recordPublishConsentAction } from "@/app/actions/compliance";
-import { revalidateHomeCatalog } from "@/app/actions/revalidate-catalog";
 import { uploadListingImagesFromBrowser } from "@/lib/listings/upload-images";
 import { uploadListingVideosFromBrowser } from "@/lib/listings/upload-videos";
 import { ensureBrowserAccessToken, refreshBrowserSessionCookies } from "@/lib/kumbu-api/browser-session";
+import { recordConsentBackend } from "@/lib/kumbu-api/compliance";
 import { ApiError } from "@/lib/kumbu-api/client";
+import { CONSENT_TYPES } from "@/lib/legal/content";
 import { requestCatalogRefresh } from "@/lib/catalog-refresh";
 import { PublishRulesConsent } from "@/components/legal/publish-rules-consent";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
@@ -415,8 +415,12 @@ export function PublishForm({
         }
       }
 
-      void recordPublishConsentAction();
-      void revalidateHomeCatalog().catch(() => undefined);
+      // Consentimento no browser (proxy/cookies) — evita Server Action POST /publicar
+      // com cookies HttpOnly stale → ApiError "Unauthorized" no Sentry.
+      void recordConsentBackend(
+        CONSENT_TYPES.publishRules,
+        typeof navigator !== "undefined" ? navigator.userAgent : null,
+      ).catch(() => undefined);
 
       publishDebug("P1_GRAVAR_ANUNCIO", "OK no cliente", { productId: created.id });
 
@@ -497,8 +501,6 @@ export function PublishForm({
           return;
         }
       }
-
-      void revalidateHomeCatalog().catch(() => undefined);
 
       publishDebug("P3_LIGAR_FOTOS", "publicação completa", {
         productId: created.id,
