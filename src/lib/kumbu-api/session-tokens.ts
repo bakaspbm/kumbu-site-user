@@ -177,6 +177,7 @@ export async function setSessionTokens(
       headers: {
         "Content-Type": "application/json",
         Origin: window.location.origin,
+        "X-Kumbu-Client": "web",
       },
       credentials: "include",
       body: JSON.stringify({ accessToken, refreshToken }),
@@ -213,12 +214,29 @@ export async function setSessionTokens(
   }
 }
 
+/** Limpa marcadores locais de imediato (evita hang «A restaurar sessão…»). */
+export function clearClientSessionMarkers(): void {
+  if (typeof window === "undefined") return;
+  clearBrowserAccessToken();
+  writeSessionPresenceCookie(false);
+  clearSessionUserSnapshot();
+}
+
 export async function clearSessionTokens(): Promise<void> {
   if (typeof window !== "undefined") {
-    await fetch("/api/auth/session", { method: "DELETE", credentials: "include" });
-    clearBrowserAccessToken();
-    writeSessionPresenceCookie(false);
-    clearSessionUserSnapshot();
+    clearClientSessionMarkers();
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5_000);
+      await fetch("/api/auth/session", {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "X-Kumbu-Client": "web" },
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timer));
+    } catch {
+      /* marcadores locais já limpos */
+    }
     return;
   }
 

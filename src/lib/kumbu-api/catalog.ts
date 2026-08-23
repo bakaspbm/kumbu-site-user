@@ -3,6 +3,7 @@ import type {
   CatalogProduct,
   CatalogProductInsert,
   CatalogProductUpdate,
+  CatalogSearchFilters,
   CatalogSubcategory,
   SellerSummary,
   SortMode,
@@ -21,6 +22,8 @@ type ListingDto = {
   sellerName?: string | null;
   sellerPhotoUrl?: string | null;
   sellerVerified?: boolean | null;
+  city?: string | null;
+  region?: string | null;
   categoryId?: string | null;
   subcategoryId?: string | null;
   title: string;
@@ -31,6 +34,8 @@ type ListingDto = {
   reviewCount?: number | null;
   viewCount?: number | null;
   imageUrls?: string[] | null;
+  videoUrl?: string | null;
+  videoUrls?: string[] | null;
   description?: string | null;
   deliveryText?: string | null;
   listingKind?: string | null;
@@ -93,6 +98,7 @@ function toProduct(row: ListingDto, index: number): CatalogProduct {
           id: String(row.sellerId),
           displayName: row.sellerName ?? "Utilizador",
           photoUrl: normalizeBackendAssetUrl(row.sellerPhotoUrl),
+          city: row.city ?? null,
           sellerVerified: row.sellerVerified === true,
         }
       : null,
@@ -110,6 +116,15 @@ function toProduct(row: ListingDto, index: number): CatalogProduct {
     sortOrder: index,
     imageUrls,
     imageUrl: imageUrls[0] ?? null,
+    videoUrl: normalizeBackendAssetUrl(row.videoUrl) ?? null,
+    videoUrls: (() => {
+      const fromList = (row.videoUrls ?? [])
+        .map((u) => normalizeBackendAssetUrl(u))
+        .filter((u): u is string => Boolean(u));
+      if (fromList.length > 0) return fromList.slice(0, 3);
+      const single = normalizeBackendAssetUrl(row.videoUrl);
+      return single ? [single] : [];
+    })(),
     description: row.description ?? null,
     deliveryText: row.deliveryText ?? null,
     listingKind:
@@ -129,16 +144,7 @@ export function mapListingDtoToProduct(row: ListingDto, index = 0): CatalogProdu
   return toProduct(row, index);
 }
 
-function buildListingQuery(opts: {
-  categoryId?: string;
-  subcategoryId?: string;
-  sortMode?: SortMode;
-  featuredOnly?: boolean;
-  q?: string;
-  sellerId?: string;
-  page?: number;
-  size?: number;
-}) {
+function buildListingQuery(opts: CatalogSearchFilters) {
   return {
     page: opts.page ?? 0,
     size: opts.size ?? 120,
@@ -148,6 +154,14 @@ function buildListingQuery(opts: {
     q: opts.q?.trim() || undefined,
     featured: opts.featuredOnly || undefined,
     sort: opts.sortMode && opts.sortMode !== "default" ? opts.sortMode : undefined,
+    city: opts.city?.trim() || undefined,
+    region: opts.region?.trim() || undefined,
+    priceMin: opts.priceMin != null && opts.priceMin > 0 ? opts.priceMin : undefined,
+    priceMax: opts.priceMax != null && opts.priceMax > 0 ? opts.priceMax : undefined,
+    listingKind: opts.listingKind || undefined,
+    listingIntent: opts.listingIntent || undefined,
+    propertyType: opts.propertyType || undefined,
+    condition: opts.condition || undefined,
   };
 }
 
@@ -194,6 +208,13 @@ export async function listCatalogProductsBackend(opts: {
   subcategoryId?: string;
   sortMode?: SortMode;
   featuredOnly?: boolean;
+  city?: string;
+  region?: string;
+  priceMin?: number;
+  priceMax?: number;
+  listingIntent?: "sale" | "rent";
+  propertyType?: string;
+  condition?: string;
 }): Promise<CatalogProduct[]> {
   const client = clientOrThrow();
   const page = await client.request<PageDto<ListingDto>>("/catalog/listings", {
@@ -203,11 +224,36 @@ export async function listCatalogProductsBackend(opts: {
       subcategoryId: opts.subcategoryId,
       sortMode: opts.sortMode,
       featuredOnly: opts.featuredOnly,
+      city: opts.city,
+      region: opts.region,
+      priceMin: opts.priceMin,
+      priceMax: opts.priceMax,
+      listingIntent: opts.listingIntent,
+      propertyType: opts.propertyType,
+      condition: opts.condition,
       size: 120,
     }),
   });
 
   return (page.content ?? []).map(toProduct);
+}
+
+export async function searchCatalogListingsBackend(
+  filters: CatalogSearchFilters,
+): Promise<{ items: CatalogProduct[]; total: number }> {
+  const client = clientOrThrow();
+  const page = await client.request<PageDto<ListingDto>>("/catalog/listings", {
+    auth: false,
+    query: buildListingQuery({
+      ...filters,
+      size: Math.min(Math.max(filters.size ?? 48, 1), 120),
+      page: filters.page ?? 0,
+    }),
+  });
+  return {
+    items: (page.content ?? []).map(toProduct),
+    total: page.totalElements ?? page.content?.length ?? 0,
+  };
 }
 
 export async function listMarketplaceProductsBackend(opts?: {
@@ -295,11 +341,8 @@ export async function searchCatalogProductsBackend(
 ): Promise<CatalogProduct[]> {
   const q = query.trim();
   if (!q) return [];
-  const client = clientOrThrow();
-  const page = await client.request<PageDto<ListingDto>>("/catalog/listings", {
-    query: { q, page: 0, size: limit },
-  });
-  return (page.content ?? []).map(toProduct).slice(0, limit);
+  const result = await searchCatalogListingsBackend({ q, size: limit });
+  return result.items.slice(0, limit);
 }
 
 export async function listSellerProductsBackend(
@@ -391,6 +434,10 @@ export async function updateCatalogProductBackend(
   if (update.description !== undefined) body.description = update.description;
   if (update.isOutOfStock !== undefined) body.outOfStock = update.isOutOfStock;
   if (update.imageUrls !== undefined) body.imageUrls = update.imageUrls;
+  if (update.videoUrl !== undefined) body.videoUrl = update.videoUrl;
+  if (update.videoUrls !== undefined) body.videoUrls = update.videoUrls;
+  if (update.clearVideoUrl) body.clearVideoUrl = true;
+  if (update.clearVideoUrls) body.clearVideoUrls = true;
 
   const row = await client.request<ListingDto>(
     `/catalog/listings/${encodeURIComponent(productId)}`,

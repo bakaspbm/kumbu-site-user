@@ -1,6 +1,43 @@
 let memoryAccessToken: string | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
 
+const AUTH_FETCH_TIMEOUT_MS = 8_000;
+const REFRESH_BUFFER_SECONDS = 5 * 60;
+
+function isTokenExpiringSoon(token: string | null | undefined): boolean {
+  if (!token) return true;
+  try {
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return true;
+    const json = JSON.parse(
+      atob(payloadPart.replace(/-/g, "+").replace(/_/g, "/")),
+    ) as Record<string, unknown>;
+    const exp = typeof json.exp === "number" ? json.exp : null;
+    if (exp == null) return true;
+    return exp - Math.floor(Date.now() / 1000) <= REFRESH_BUFFER_SECONDS;
+  } catch {
+    return true;
+  }
+}
+
+async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AUTH_FETCH_TIMEOUT_MS);
+  const headers = new Headers(init.headers ?? {});
+  if (!headers.has("X-Kumbu-Client")) {
+    headers.set("X-Kumbu-Client", "web");
+  }
+  try {
+    return await fetch(input, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function setBrowserAccessToken(token: string | null | undefined): void {
   memoryAccessToken = token?.trim() || null;
 }
@@ -20,7 +57,7 @@ export async function refreshBrowserSessionCookies(): Promise<boolean> {
 
   refreshInFlight = (async () => {
     try {
-      const response = await fetch("/api/auth/refresh", {
+      const response = await authFetch("/api/auth/refresh", {
         method: "POST",
         credentials: "include",
         cache: "no-store",
@@ -43,7 +80,7 @@ export async function bootstrapBrowserAccessToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;
 
   try {
-    const response = await fetch("/api/auth/bootstrap", {
+    const response = await authFetch("/api/auth/bootstrap", {
       method: "GET",
       credentials: "include",
       cache: "no-store",
@@ -53,8 +90,10 @@ export async function bootstrapBrowserAccessToken(): Promise<string | null> {
       if (response.status === 401) clearBrowserAccessToken();
       return null;
     }
-    const payload = (await response.json()) as { accessToken?: string };
-    const token = payload.accessToken?.trim() || null;
+    const payload = (await response.json().catch(() => null)) as {
+      accessToken?: string;
+    } | null;
+    const token = payload?.accessToken?.trim() || null;
     setBrowserAccessToken(token);
     return token;
   } catch {
@@ -62,14 +101,23 @@ export async function bootstrapBrowserAccessToken(): Promise<string | null> {
   }
 }
 
+/** Garante token válido; renova proactivamente se expira em ≤5 min (JWT ~15 min). */
 export async function ensureBrowserAccessToken(): Promise<string | null> {
   const current = getBrowserAccessToken();
-  if (current) return current;
+  if (current && !isTokenExpiringSoon(current)) {
+    return current;
+  }
 
   const bootstrapped = await bootstrapBrowserAccessToken();
-  if (bootstrapped) return bootstrapped;
+  const afterBootstrap = getBrowserAccessToken();
+  if (afterBootstrap && !isTokenExpiringSoon(afterBootstrap)) {
+    return afterBootstrap;
+  }
 
   const refreshed = await refreshBrowserSessionCookies();
-  if (!refreshed) return null;
-  return getBrowserAccessToken();
+  if (refreshed) {
+    return getBrowserAccessToken();
+  }
+
+  return afterBootstrap ?? current;
 }

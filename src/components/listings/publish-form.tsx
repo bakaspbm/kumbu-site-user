@@ -34,6 +34,7 @@ import {
 import { DEMO_SUBCATEGORIES } from "@/lib/catalog/demo-subcategories";
 import { publishFallbackCategories } from "@/lib/catalog/publish-categories";
 import { buildProductMeta } from "@/lib/catalog/product-fields";
+import { formatPriceLabel } from "@/lib/utils";
 import {
   localizeProductMetaEntries,
   localizeSubcategoryFieldLabel,
@@ -42,12 +43,18 @@ import {
   localizeCategoryName,
   localizeSubcategoryName,
 } from "@/lib/catalog/localize-catalog";
-import { listCatalogCategories, listCatalogSubcategories } from "@/lib/site-data";
+import { listCatalogCategories, listCatalogSubcategories, createCatalogProduct, updateCatalogProduct } from "@/lib/site-data";
 import { ListingImagesUpload, type ListingImageItem } from "@/components/listings/listing-images-upload";
-import { publishCatalogProductAction } from "@/app/actions/publish-catalog";
+import {
+  ListingVideosUpload,
+  type ListingVideoItem,
+} from "@/components/listings/listing-videos-upload";
 import { recordPublishConsentAction } from "@/app/actions/compliance";
-import { attachListingImageUrlsToProductAction } from "@/app/actions/publish-listing-images";
+import { revalidateHomeCatalog } from "@/app/actions/revalidate-catalog";
 import { uploadListingImagesFromBrowser } from "@/lib/listings/upload-images";
+import { uploadListingVideosFromBrowser } from "@/lib/listings/upload-videos";
+import { ensureBrowserAccessToken, refreshBrowserSessionCookies } from "@/lib/kumbu-api/browser-session";
+import { ApiError } from "@/lib/kumbu-api/client";
 import { requestCatalogRefresh } from "@/lib/catalog-refresh";
 import { PublishRulesConsent } from "@/components/legal/publish-rules-consent";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
@@ -84,6 +91,7 @@ export function PublishForm({
   const tCatalog = useTranslations("catalog");
   const tJobs = useTranslations("jobs.publish");
   const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
   const formatErrorMessage = useFormatErrorMessage();
   const router = useRouter();
   const monetizationVisible = useUserMonetizationVisible();
@@ -104,6 +112,7 @@ export function PublishForm({
     defaultGeneralProductPublishState,
   );
   const [imageItems, setImageItems] = useState<ListingImageItem[]>([]);
+  const [videoItems, setVideoItems] = useState<ListingVideoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -354,7 +363,7 @@ export function PublishForm({
           ? formatPriceLabelFromState(propertyState)
           : isJob
             ? jobPriceLabelFromMeta(jobMeta!)
-            : generalState.priceLabel,
+            : formatPriceLabel(generalState.priceLabel),
         deliveryText: loc,
         description: isProperty
           ? propertyState.description || null
@@ -373,60 +382,129 @@ export function PublishForm({
         productMeta: !isProperty && !isJob ? buildProductMeta(generalState.attributes) : null,
       };
 
-      const published = await publishCatalogProductAction(payload);
-      if (!published.ok) {
-        setStatus(null);
-        publishDebugFail("P1_GRAVAR_ANUNCIO", published.error, undefined, { productId });
-        setPublishError(published.error);
-        if (published.needsLogin) {
-          router.push("/login?next=/publicar");
+      // Criar no browser (cookies/proxy) — evita server action sem sessão válida.
+      const createOnce = async () => {
+        await ensureBrowserAccessToken();
+        return createCatalogProduct(payload);
+      };
+
+      let created;
+      try {
+        created = await createOnce();
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          const renewed = await refreshBrowserSessionCookies();
+          if (!renewed) {
+            setStatus(null);
+            setPublishError(tErrors("loginRequired"));
+            return;
+          }
+          try {
+            created = await createOnce();
+          } catch (retryErr) {
+            setStatus(null);
+            publishDebugFail("P1_GRAVAR_ANUNCIO", "retry após refresh falhou", retryErr, { productId });
+            setPublishError(formatErrorMessage(retryErr));
+            return;
+          }
+        } else {
+          setStatus(null);
+          publishDebugFail("P1_GRAVAR_ANUNCIO", "erro ao gravar", err, { productId });
+          setPublishError(formatErrorMessage(err));
+          return;
         }
-        return;
       }
 
       void recordPublishConsentAction();
+      void revalidateHomeCatalog().catch(() => undefined);
 
-      publishDebug("P1_GRAVAR_ANUNCIO", "OK no cliente", { productId: published.productId });
+      publishDebug("P1_GRAVAR_ANUNCIO", "OK no cliente", { productId: created.id });
 
       setStatus(t("statusStep2", { count: files.length }));
       const uploaded = await uploadListingImagesFromBrowser(files);
       if (!uploaded.ok) {
         setStatus(null);
         publishDebugFail("P2B_UPLOAD_DIRECTO", uploaded.error, undefined, {
-          productId: published.productId,
+          productId: created.id,
         });
         setPublishError(
           t("step2Error", {
             error: uploaded.error,
-            productId: published.productId,
+            productId: created.id,
           }),
         );
         return;
       }
 
       publishDebug("P2B_UPLOAD_DIRECTO", "OK no cliente", {
-        productId: published.productId,
+        productId: created.id,
         urlCount: uploaded.urls.length,
       });
 
-      setStatus(t("statusStep3"));
-      const attached = await attachListingImageUrlsToProductAction(
-        published.productId,
-        uploaded.urls,
-      );
-      if (!attached.ok) {
-        setStatus(null);
-        publishDebugFail("P3_LIGAR_FOTOS", attached.error, undefined, {
-          productId: published.productId,
-          urls: uploaded.urls,
-        });
-        setPublishError(t("step3Error", { error: attached.error }));
-        return;
+      const videoFiles = videoItems.map((i) => i.file).filter((f): f is File => Boolean(f));
+      let videoUrls: string[] = [];
+      if (videoFiles.length > 0) {
+        setStatus(t("statusStepVideo"));
+        const uploadedVideos = await uploadListingVideosFromBrowser(videoFiles);
+        if (!uploadedVideos.ok) {
+          setStatus(null);
+          setPublishError(
+            t("stepVideoError", {
+              error: uploadedVideos.error,
+            }),
+          );
+          return;
+        }
+        videoUrls = uploadedVideos.urls;
       }
 
+      setStatus(t("statusStep3"));
+      const mediaPatch = {
+        imageUrls: uploaded.urls,
+        ...(videoUrls.length > 0
+          ? { videoUrls, videoUrl: videoUrls[0] }
+          : { clearVideoUrls: true as const }),
+      };
+      try {
+        await ensureBrowserAccessToken();
+        await updateCatalogProduct(created.id, mediaPatch);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          if (await refreshBrowserSessionCookies()) {
+            try {
+              await updateCatalogProduct(created.id, mediaPatch);
+            } catch (retryErr) {
+              setStatus(null);
+              publishDebugFail("P3_LIGAR_FOTOS", "retry falhou", retryErr, {
+                productId: created.id,
+                urls: uploaded.urls,
+              });
+              setPublishError(t("step3Error", { error: formatErrorMessage(retryErr) }));
+              return;
+            }
+          } else {
+            setStatus(null);
+            setPublishError(t("step3Error", { error: formatErrorMessage(err) }));
+            return;
+          }
+        } else {
+          setStatus(null);
+          publishDebugFail("P3_LIGAR_FOTOS", "erro ao ligar fotos", err, {
+            productId: created.id,
+            urls: uploaded.urls,
+          });
+          setPublishError(t("step3Error", { error: formatErrorMessage(err) }));
+          return;
+        }
+      }
+
+      void revalidateHomeCatalog().catch(() => undefined);
+
       publishDebug("P3_LIGAR_FOTOS", "publicação completa", {
-        productId: published.productId,
+        productId: created.id,
+        videoCount: videoUrls.length,
       });
+
       setStatus(null);
       requestCatalogRefresh();
       setPublishSuccess(true);
@@ -522,6 +600,8 @@ export function PublishForm({
                   value={categoryId}
                   onChange={(e) => {
                     setCategoryId(e.target.value);
+                    setSubcategoryId("");
+                    setGeneralState((s) => ({ ...s, attributes: {} }));
                     setPublishError(null);
                   }}
                   className="kumbu-input font-normal"
@@ -598,7 +678,10 @@ export function PublishForm({
           )}
 
           {step === 2 && (
-            <ListingImagesUpload items={imageItems} onChange={setImageItems} />
+            <div className="space-y-6">
+              <ListingImagesUpload items={imageItems} onChange={setImageItems} />
+              <ListingVideosUpload items={videoItems} onChange={setVideoItems} />
+            </div>
           )}
 
           {step === 3 && (
@@ -672,6 +755,10 @@ export function PublishForm({
               <div>
                 <dt className="text-kumbu-muted">{t("reviewPhotos")}</dt>
                 <dd className="font-bold">{t("imagesCount", { count: imageItems.length })}</dd>
+              </div>
+              <div>
+                <dt className="text-kumbu-muted">{t("listingVideoTitle")}</dt>
+                <dd className="font-bold">{t("videosCount", { count: videoItems.length })}</dd>
               </div>
             </dl>
           )}

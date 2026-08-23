@@ -33,6 +33,7 @@ import {
   isAccessTokenExpiringSoon,
   readSessionUserSnapshot,
   saveSessionUserSnapshot,
+  clearClientSessionMarkers,
 } from "@/lib/kumbu-api/session-tokens";
 import { getStoreUser, countUnreadMessagesForUser } from "@/lib/site-data";
 import { playMessageNotificationSound } from "@/lib/chat/notification-sound";
@@ -237,18 +238,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let browserSession = false;
     if (typeof window !== "undefined") {
       browserSession = await probeHttpOnlySession();
-      if (!browserSession) {
+      if (!browserSession && hasClientSession()) {
         browserSession = await refreshBrowserSessionCookies();
+        if (!browserSession) {
+          browserSession = await probeHttpOnlySession();
+        }
       }
     }
     const existingUserId = activeUserIdRef.current;
 
     if (typeof window !== "undefined" && !browserSession) {
+      if (hasClientSession() || existingUserId) {
+        void refreshNotifications();
+        return;
+      }
       applySessionUser(null);
       activeUserIdRef.current = null;
       setStoreUser(null);
       setUnreadNotifications(0);
       setUnreadMessages(0);
+      clearClientSessionMarkers();
       return;
     }
 
@@ -311,6 +320,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStoreUser(null);
     }
   }, [applySessionUser, refreshNotifications, restoreSessionFromStorage]);
+
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
 
   useEffect(() => {
     if (!user?.id || isLoading) return;
@@ -386,18 +398,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      if (typeof window !== "undefined") {
-        const live =
-          (await probeHttpOnlySession()) || (await refreshBrowserSessionCookies());
-        if (live) await ensureBrowserAccessToken();
+      try {
+        if (typeof window !== "undefined") {
+          const live = await promiseWithTimeoutFallback(
+            (async () =>
+              (await probeHttpOnlySession()) ||
+              (await refreshBrowserSessionCookies()))(),
+            8_000,
+            false,
+          );
+          if (live) {
+            await promiseWithTimeoutFallback(
+              ensureBrowserAccessToken(),
+              8_000,
+              null,
+            );
+          }
+        }
+        await promiseWithTimeoutFallback(refreshRef.current(), 10_000, undefined);
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
-      await promiseWithTimeoutFallback(refresh(), 10_000, undefined);
-      if (!cancelled) setIsLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [refresh]);
+    // Bootstrap uma vez — refresh via ref evita reentrada ao hidratar o user.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!user?.id) return;
