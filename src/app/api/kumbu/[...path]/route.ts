@@ -67,11 +67,19 @@ async function refreshAccessTokenInline(refreshToken: string): Promise<string | 
   });
   if (!upstream.ok) return null;
 
-  const payload = (await upstream.json().catch(() => null)) as {
+  const upstreamText = await upstream.text();
+  if (!upstreamText.trim()) return null;
+
+  let payload: {
     accessToken?: string;
     refreshToken?: string;
     expiresInSeconds?: number;
-  } | null;
+  } | null = null;
+  try {
+    payload = JSON.parse(upstreamText) as typeof payload;
+  } catch {
+    return null;
+  }
   if (!payload?.accessToken?.trim()) return null;
 
   const jar = await cookies();

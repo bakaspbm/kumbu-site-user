@@ -26,6 +26,7 @@ function baseOptions(): Partial<BrowserOptions & NodeOptions & EdgeOptions> {
       "ResizeObserver loop limit exceeded",
       "ResizeObserver loop completed with undelivered notifications",
       "Non-Error promise rejection captured",
+      "Unexpected end of JSON input",
     ],
   };
 }

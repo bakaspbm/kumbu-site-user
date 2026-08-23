@@ -1,5 +1,6 @@
 import { assertSameOriginRequest } from "@/lib/security/request-origin";
 import { getServerKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
+import { isApiUnauthorizedResponse, originAwareFetch } from "@/lib/kumbu-api/origin-fetch";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "API não configurada" }, { status: 500 });
   }
 
-  const upstream = await fetch(`${apiBase}/auth/refresh`, {
+  const upstream = await originAwareFetch(`${apiBase}/auth/refresh`, {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -34,24 +35,34 @@ export async function POST(request: Request) {
     cache: "no-store",
   });
 
+  const upstreamText = await upstream.text();
   if (!upstream.ok) {
-    if (upstream.status === 401 || upstream.status === 403) {
+    if (isApiUnauthorizedResponse(upstream.status, upstreamText)) {
       jar.delete(ACCESS_TOKEN_COOKIE);
       jar.delete(REFRESH_TOKEN_COOKIE);
     }
     return NextResponse.json(
       { error: "Sessão expirada" },
-      { status: upstream.status === 403 ? 403 : 401 },
+      { status: isApiUnauthorizedResponse(upstream.status, upstreamText) ? 401 : 502 },
     );
   }
 
-  const payload = (await upstream.json()) as {
+  if (!upstreamText.trim()) {
+    return NextResponse.json({ error: "Resposta inválida" }, { status: 502 });
+  }
+
+  let payload: {
     accessToken?: string;
     refreshToken?: string;
     expiresInSeconds?: number;
   };
+  try {
+    payload = JSON.parse(upstreamText) as typeof payload;
+  } catch {
+    return NextResponse.json({ error: "Resposta inválida" }, { status: 502 });
+  }
 
-  if (!payload.accessToken || !payload.refreshToken) {
+  if (!payload?.accessToken || !payload?.refreshToken) {
     return NextResponse.json({ error: "Resposta inválida" }, { status: 502 });
   }
 

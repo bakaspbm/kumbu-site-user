@@ -6,6 +6,7 @@ import {
   isAccessTokenExpiringSoon,
 } from "@/lib/kumbu-api/session-tokens";
 import { getServerKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
+import { originAwareFetch } from "@/lib/kumbu-api/origin-fetch";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -15,7 +16,7 @@ async function refreshAccessFromCookies(
   const apiBase = getServerKumbuApiBaseUrl();
   if (!apiBase) return null;
 
-  const upstream = await fetch(`${apiBase}/auth/refresh`, {
+  const upstream = await originAwareFetch(`${apiBase}/auth/refresh`, {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -26,12 +27,20 @@ async function refreshAccessFromCookies(
   });
   if (!upstream.ok) return null;
 
-  const payload = (await upstream.json()) as {
+  const upstreamText = await upstream.text();
+  if (!upstreamText.trim()) return null;
+
+  let payload: {
     accessToken?: string;
     refreshToken?: string;
     expiresInSeconds?: number;
-  };
-  if (!payload.accessToken?.trim() || !payload.refreshToken?.trim()) return null;
+  } | null = null;
+  try {
+    payload = JSON.parse(upstreamText) as typeof payload;
+  } catch {
+    return null;
+  }
+  if (!payload?.accessToken?.trim() || !payload?.refreshToken?.trim()) return null;
 
   return {
     accessToken: payload.accessToken.trim(),
@@ -55,28 +64,31 @@ export async function GET(request: Request) {
 
   if (!accessToken || isAccessTokenExpiringSoon(accessToken)) {
     const refreshed = await refreshAccessFromCookies(refreshToken);
-    if (!refreshed) {
-      jar.delete(ACCESS_TOKEN_COOKIE);
-      jar.delete(REFRESH_TOKEN_COOKIE);
-      return NextResponse.json({ authenticated: false }, { status: 401 });
+    if (refreshed) {
+      accessToken = refreshed.accessToken;
+      refreshToken = refreshed.refreshToken;
+      const secure = process.env.NODE_ENV === "production";
+      jar.set(ACCESS_TOKEN_COOKIE, accessToken, {
+        httpOnly: true,
+        secure,
+        sameSite: "lax",
+        path: "/",
+        maxAge: refreshed.maxAge,
+      });
+      jar.set(REFRESH_TOKEN_COOKIE, refreshToken, {
+        httpOnly: true,
+        secure,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+      });
+    } else if (!accessToken) {
+      // Sem access token e refresh falhou (rede/Cloudflare) — não apagar cookies
+      return NextResponse.json(
+        { authenticated: false, error: "refresh_failed" },
+        { status: 503 },
+      );
     }
-    accessToken = refreshed.accessToken;
-    refreshToken = refreshed.refreshToken;
-    const secure = process.env.NODE_ENV === "production";
-    jar.set(ACCESS_TOKEN_COOKIE, accessToken, {
-      httpOnly: true,
-      secure,
-      sameSite: "lax",
-      path: "/",
-      maxAge: refreshed.maxAge,
-    });
-    jar.set(REFRESH_TOKEN_COOKIE, refreshToken, {
-      httpOnly: true,
-      secure,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
   }
 
   const claims = decodeAccessTokenClaims(accessToken);
