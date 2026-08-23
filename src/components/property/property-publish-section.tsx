@@ -139,14 +139,29 @@ export function PropertyPublishSection({ state, onChange }: PropertyPublishSecti
           value={state.propertyType}
           onChange={(e) => {
             const propertyType = e.target.value as PropertyType;
+            // Clear type-specific counts so switching e.g. casa → quarto
+            // does not keep irrelevant "quartos / unidades" values.
+            const cleared: Partial<PropertyPublishState> = {
+              propertyType,
+              bedrooms: "",
+              bathrooms: "",
+              roomsCount: "",
+              areaSqm: "",
+              builtAreaSqm: "",
+              floor: "",
+              condoFeeKz: "",
+              hotelStars: "",
+              zoning: "",
+              constructionStage: "",
+            };
             if (isLandPropertyType(propertyType)) {
               onChange({
-                propertyType,
+                ...cleared,
                 listingIntent: "sale",
                 rentPeriod: "",
               });
             } else {
-              onChange({ propertyType });
+              onChange(cleared);
             }
           }}
           className="kumbu-input font-normal"
@@ -249,6 +264,11 @@ export function PropertyPublishSection({ state, onChange }: PropertyPublishSecti
           className="kumbu-input font-normal"
           placeholder={pricePlaceholder(pt, state.listingIntent, state.rentPeriod)}
         />
+        {state.priceAmount.trim() ? (
+          <span className="text-xs font-semibold text-kumbu-primary">
+            {formatPriceLabelFromState(state)}
+          </span>
+        ) : null}
       </label>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -272,7 +292,7 @@ export function PropertyPublishSection({ state, onChange }: PropertyPublishSecti
         </label>
       </div>
 
-      {(pt === "casa" || pt === "apartamento" || pt === "quarto") && (
+      {(pt === "casa" || pt === "apartamento") && (
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5 text-sm font-semibold">
             {tp("bedrooms")}
@@ -358,7 +378,7 @@ export function PropertyPublishSection({ state, onChange }: PropertyPublishSecti
         </>
       )}
 
-      {(pt === "hospedaria" || pt === "hotel" || pt === "quarto") && (
+      {(pt === "hospedaria" || pt === "hotel") && (
         <label className="flex flex-col gap-1.5 text-sm font-semibold">
           {tp("roomsCount")}
           <input
@@ -441,7 +461,10 @@ export function PropertyPublishSection({ state, onChange }: PropertyPublishSecti
           <>
             <Checkbox label={tp("sharedBathroom")} checked={state.sharedBathroom} onChange={(v) => onChange({ sharedBathroom: v })} />
             {pt === "quarto" && (
-              <Checkbox label={tp("sharedKitchen")} checked={state.sharedKitchen} onChange={(v) => onChange({ sharedKitchen: v })} />
+              <>
+                <Checkbox label={tp("sharedKitchen")} checked={state.sharedKitchen} onChange={(v) => onChange({ sharedKitchen: v })} />
+                <Checkbox label={tp("furnished")} checked={state.furnished} onChange={(v) => onChange({ furnished: v })} />
+              </>
             )}
             {pt === "hospedaria" && (
               <Checkbox label={tp("mealsIncluded")} checked={state.mealsIncluded} onChange={(v) => onChange({ mealsIncluded: v })} />
@@ -503,6 +526,9 @@ export function buildPropertyMetaFromState(
   const num = (s: string) => (s.trim() ? Number(s) : null);
   const land = isLandPropertyType(state.propertyType);
   const intent = land ? "sale" : state.listingIntent;
+  const pt = state.propertyType;
+  const isHome = pt === "casa" || pt === "apartamento";
+  const isHostelOrHotel = pt === "hospedaria" || pt === "hotel";
   return {
     propertyType: state.propertyType,
     listingIntent: intent,
@@ -514,27 +540,37 @@ export function buildPropertyMetaFromState(
     municipality: state.municipality || null,
     bairro: state.bairro || null,
     priceAmount: num(state.priceAmount),
-    bedrooms: num(state.bedrooms),
-    bathrooms: num(state.bathrooms),
-    areaSqm: num(state.areaSqm),
-    builtAreaSqm: num(state.builtAreaSqm),
-    floor: num(state.floor),
-    parking: state.parking,
-    furnished: state.furnished,
-    hasTitleDeed: state.hasTitleDeed,
-    hasUtilities: state.hasUtilities,
-    walledCompound: state.walledCompound,
-    generator: state.generator,
-    condoFeeKz: num(state.condoFeeKz),
-    roomsCount: num(state.roomsCount),
-    sharedBathroom: state.sharedBathroom,
-    sharedKitchen: state.sharedKitchen,
-    mealsIncluded: state.mealsIncluded,
-    hotelStars: num(state.hotelStars),
-    reception24h: state.reception24h,
-    breakfastIncluded: state.breakfastIncluded,
-    zoning: state.zoning || null,
-    constructionStage: state.constructionStage || null,
+    bedrooms: isHome ? num(state.bedrooms) : null,
+    bathrooms: isHome ? num(state.bathrooms) : null,
+    areaSqm:
+      isHome || pt === "terreno_vazio" || pt === "terreno_inacabado"
+        ? num(state.areaSqm)
+        : null,
+    builtAreaSqm: pt === "terreno_inacabado" ? num(state.builtAreaSqm) : null,
+    floor: pt === "apartamento" ? num(state.floor) : null,
+    parking: isHome ? state.parking : false,
+    furnished: isHome || pt === "quarto" ? state.furnished : false,
+    hasTitleDeed:
+      isHome || pt === "terreno_vazio" || pt === "terreno_inacabado"
+        ? state.hasTitleDeed
+        : false,
+    hasUtilities:
+      pt === "terreno_vazio" || pt === "terreno_inacabado"
+        ? state.hasUtilities
+        : false,
+    walledCompound: pt === "casa" ? state.walledCompound : false,
+    generator: pt === "casa" ? state.generator : false,
+    condoFeeKz: pt === "apartamento" ? num(state.condoFeeKz) : null,
+    roomsCount: isHostelOrHotel ? num(state.roomsCount) : null,
+    sharedBathroom: pt === "hospedaria" || pt === "quarto" ? state.sharedBathroom : false,
+    sharedKitchen: pt === "quarto" ? state.sharedKitchen : false,
+    mealsIncluded: pt === "hospedaria" ? state.mealsIncluded : false,
+    hotelStars: pt === "hotel" ? num(state.hotelStars) : null,
+    reception24h: pt === "hotel" ? state.reception24h : false,
+    breakfastIncluded: pt === "hotel" ? state.breakfastIncluded : false,
+    zoning: pt === "terreno_vazio" ? state.zoning || null : null,
+    constructionStage:
+      pt === "terreno_inacabado" ? state.constructionStage || null : null,
     minNights: num(state.minNights) ?? 1,
     depositMonths: num(state.depositMonths),
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn, formatPriceLabel } from "@/lib/utils";
 
 interface ListingPriceDisplayProps {
   priceLabel: string;
@@ -23,24 +23,28 @@ export function ListingPriceDisplay({
   size = "md",
   className,
 }: ListingPriceDisplayProps) {
+  const displayPrice = formatPriceLabel(priceLabel);
+  const displayOld = oldPriceLabel?.trim()
+    ? formatPriceLabel(oldPriceLabel)
+    : null;
   const hasPromo =
-    oldPriceLabel &&
-    oldPriceLabel.trim() &&
-    oldPriceLabel.trim() !== priceLabel.trim();
+    Boolean(displayOld) &&
+    displayOld !== "—" &&
+    displayOld !== displayPrice;
   const styles = sizeClasses[size];
 
   if (!hasPromo) {
     return (
       <p className={cn(styles.current, "text-kumbu-primary", className)}>
-        {priceLabel}
+        {displayPrice}
       </p>
     );
   }
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
-      <p className={cn(styles.current, "text-kumbu-primary")}>{priceLabel}</p>
-      <p className={cn(styles.old, "text-kumbu-muted line-through")}>{oldPriceLabel}</p>
+      <p className={cn(styles.current, "text-kumbu-primary")}>{displayPrice}</p>
+      <p className={cn(styles.old, "text-kumbu-muted line-through")}>{displayOld}</p>
       {discountPercent != null && discountPercent > 0 && (
         <span
           className={cn(

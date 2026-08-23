@@ -712,7 +712,7 @@ export function PublishForm({
                     ? formatPriceLabelFromState(propertyState)
                     : isJob
                       ? jobPriceLabelFromMeta(buildJobMeta(jobState))
-                      : generalState.priceLabel}
+                      : formatPriceLabel(generalState.priceLabel)}
                 </dd>
               </div>
               <div>

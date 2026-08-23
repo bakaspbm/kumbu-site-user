@@ -144,6 +144,11 @@ export function JobPublishSection({ state, onChange }: JobPublishSectionProps) {
           className="kumbu-input font-normal"
           placeholder={t("salaryPlaceholder")}
         />
+        {state.salary.trim() ? (
+          <span className="text-xs font-semibold text-kumbu-primary">
+            {jobPriceLabelFromMeta(buildJobMeta(state))}
+          </span>
+        ) : null}
       </label>
 
       <AngolaProvinceMunicipalityFields
