@@ -95,7 +95,17 @@
       "mismatch": "Passwords do not match."
     },
     "accountChangesNote": "To change your email or request account deletion, contact us.",
-    "contactSupport": "Contact support"
+    "contactSupport": "Contact support",
+    "emailAlerts": "Email alerts",
+    "emailAlertsDesc": "Get emails for messages, notifications, or new listings",
+    "emailOnChat": "Chat messages",
+    "emailOnChatDesc": "Email when someone sends you a message on Kumbú.",
+    "emailOnNotification": "Account notifications",
+    "emailOnNotificationDesc": "Email when you get an in-app notification (applications, support, etc.).",
+    "emailOnNewListings": "New listings",
+    "emailOnNewListingsDesc": "Occasional email when others publish listings (only if admin has enabled it).",
+    "emailPrefsSaved": "Preference saved.",
+    "emailPrefsNote": "We only send email if your address is verified. You can change these options anytime."
   },
   "account": {
     "shortcuts": "Shortcuts",

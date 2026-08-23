@@ -95,7 +95,17 @@
       "mismatch": "As palavras-passe não coincidem."
     },
     "accountChangesNote": "Para alterar o e-mail ou pedir eliminação da conta, fale connosco.",
-    "contactSupport": "Contactar suporte"
+    "contactSupport": "Contactar suporte",
+    "emailAlerts": "Alertas por email",
+    "emailAlertsDesc": "Receber emails quando há mensagens, notificações ou novos anúncios",
+    "emailOnChat": "Mensagens de chat",
+    "emailOnChatDesc": "Email quando alguém lhe envia uma mensagem no Kumbú.",
+    "emailOnNotification": "Notificações da conta",
+    "emailOnNotificationDesc": "Email quando recebe uma notificação na app (candidaturas, suporte, etc.).",
+    "emailOnNewListings": "Novos anúncios",
+    "emailOnNewListingsDesc": "Email ocasional quando outros utilizadores publicam anúncios (só se o admin tiver activado).",
+    "emailPrefsSaved": "Preferência guardada.",
+    "emailPrefsNote": "Só enviamos email se a sua conta tiver o email verificado. Pode alterar estas opções a qualquer momento."
   },
   "account": {
     "shortcuts": "Atalhos",

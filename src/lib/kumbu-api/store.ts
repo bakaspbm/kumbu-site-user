@@ -71,6 +71,9 @@ type UserProfileDto = {
   banned_at?: string | null;
   banned_until?: string | null;
   ban_reason?: string | null;
+  emailOnChat?: boolean | null;
+  emailOnNotification?: boolean | null;
+  emailOnNewListings?: boolean | null;
   cart?: unknown;
 };
 
@@ -266,6 +269,9 @@ function toStoreUser(row: UserProfileDto | null | undefined): StoreUser {
     bannedAt: (row.bannedAt ?? row.banned_at ?? null) as string | null,
     bannedUntil: (row.bannedUntil ?? row.banned_until ?? null) as string | null,
     banReason: (row.banReason ?? row.ban_reason ?? null) as string | null,
+    emailOnChat: row.emailOnChat !== false,
+    emailOnNotification: row.emailOnNotification !== false,
+    emailOnNewListings: row.emailOnNewListings === true,
   };
 }
 
@@ -376,6 +382,9 @@ export async function updateStoreUserBackend(update: StoreUserUpdate): Promise<S
   const gender = genderToApi(update.gender);
   if (gender) body.gender = gender;
   if (update.birthDate != null) body.birthDate = update.birthDate;
+  if (update.emailOnChat != null) body.emailOnChat = update.emailOnChat;
+  if (update.emailOnNotification != null) body.emailOnNotification = update.emailOnNotification;
+  if (update.emailOnNewListings != null) body.emailOnNewListings = update.emailOnNewListings;
   const base = await client.request<UserProfileDto | null>("/users/me", {
     method: "PATCH",
     body: JSON.stringify(body),

@@ -95,7 +95,17 @@
       "mismatch": "Les mots de passe ne correspondent pas."
     },
     "accountChangesNote": "Pour changer l'e-mail ou demander la suppression du compte, contactez-nous.",
-    "contactSupport": "Contacter l'assistance"
+    "contactSupport": "Contacter l'assistance",
+    "emailAlerts": "Alertes par e-mail",
+    "emailAlertsDesc": "Recevoir des e-mails pour les messages, notifications ou nouvelles annonces",
+    "emailOnChat": "Messages de chat",
+    "emailOnChatDesc": "E-mail lorsqu'on vous envoie un message sur Kumbú.",
+    "emailOnNotification": "Notifications du compte",
+    "emailOnNotificationDesc": "E-mail lors d'une notification dans l'app (candidatures, assistance, etc.).",
+    "emailOnNewListings": "Nouvelles annonces",
+    "emailOnNewListingsDesc": "E-mail occasionnel quand d'autres publient des annonces (si l'admin l'a activé).",
+    "emailPrefsSaved": "Préférence enregistrée.",
+    "emailPrefsNote": "Nous n'envoyons un e-mail que si votre adresse est vérifiée. Vous pouvez modifier ces options à tout moment."
   },
   "account": {
     "shortcuts": "Raccourcis",

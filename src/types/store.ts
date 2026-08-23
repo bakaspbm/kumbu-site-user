@@ -172,6 +172,12 @@ export interface StoreUser {
   bannedAt?: string | null;
   bannedUntil?: string | null;
   banReason?: string | null;
+  /** Email ao receber mensagem de chat (default true). */
+  emailOnChat?: boolean;
+  /** Email ao receber notificação in-app (default true). */
+  emailOnNotification?: boolean;
+  /** Email quando há anúncios novos — opt-in (default false). */
+  emailOnNewListings?: boolean;
 }
 
 export interface StoreUserUpdate {
@@ -185,6 +191,9 @@ export interface StoreUserUpdate {
   country?: string;
   gender?: UserGender | null;
   birthDate?: string | null;
+  emailOnChat?: boolean;
+  emailOnNotification?: boolean;
+  emailOnNewListings?: boolean;
 }
 
 export type ConversationDealStatus = "open" | "purchased" | "rejected" | null;

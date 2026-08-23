@@ -6,10 +6,12 @@ import { LanguageSelector } from "@/components/settings/language-selector";
 import { AccountExport } from "@/components/settings/account-export";
 import { ChangePasswordForm } from "@/components/settings/change-password-form";
 import { IdentityUpload } from "@/components/settings/identity-upload";
+import { EmailNotificationPrefs } from "@/components/settings/email-notification-prefs";
 import { LegalLinksRow } from "@/components/legal/legal-links-row";
 import { ProfileSignOut } from "@/components/auth/profile-sign-out";
+import { getStoreUser } from "@/lib/site-data";
 import Link from "next/link";
-import { ChevronRight, KeyRound, Settings, Shield, User } from "lucide-react";
+import { Bell, ChevronRight, KeyRound, Settings, Shield, User } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 function SettingsLinkRow({ href, label }: { href: string; label: string }) {
@@ -26,6 +28,7 @@ function SettingsLinkRow({ href, label }: { href: string; label: string }) {
 
 export default async function ContaDefinicoesPage() {
   const t = await getTranslations("settings");
+  const user = await getStoreUser();
 
   return (
     <RequireAuth>
@@ -49,6 +52,18 @@ export default async function ContaDefinicoesPage() {
         <ContaPanel>
           <ContaSection icon={Settings} title={t("appearance")} description={t("appearanceDesc")}>
             <ThemeSelector />
+          </ContaSection>
+        </ContaPanel>
+
+        <ContaPanel>
+          <ContaSection icon={Bell} title={t("emailAlerts")} description={t("emailAlertsDesc")}>
+            <EmailNotificationPrefs
+              initial={{
+                emailOnChat: user?.emailOnChat !== false,
+                emailOnNotification: user?.emailOnNotification !== false,
+                emailOnNewListings: user?.emailOnNewListings === true,
+              }}
+            />
           </ContaSection>
         </ContaPanel>
 
