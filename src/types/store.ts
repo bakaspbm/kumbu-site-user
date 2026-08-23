@@ -150,7 +150,10 @@ export interface DeliveryAddress {
 export interface StoreUser {
   id: string;
   email: string;
+  /** Nome público / da loja. */
   displayName: string;
+  /** Nome completo do documento — só o próprio e admin. */
+  legalName?: string | null;
   phone?: string | null;
   photoUrl?: string | null;
   cart: CartItem[];
@@ -173,6 +176,7 @@ export interface StoreUser {
 
 export interface StoreUserUpdate {
   displayName?: string;
+  legalName?: string;
   phone?: string;
   photoUrl?: string | null;
   deliveryAddress?: DeliveryAddress;

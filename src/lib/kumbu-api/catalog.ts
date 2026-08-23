@@ -57,6 +57,7 @@ type PageDto<T> = {
 type UserProfileDto = {
   id: string;
   fullName?: string | null;
+  displayName?: string | null;
   profileImageUrl?: string | null;
   phone?: string | null;
   city?: string | null;
@@ -168,7 +169,7 @@ function buildListingQuery(opts: CatalogSearchFilters) {
 function mapSeller(row: UserProfileDto): SellerSummary {
   return {
     id: String(row.id),
-    displayName: row.fullName ?? "Utilizador",
+    displayName: (row.displayName ?? row.fullName ?? "Utilizador").trim() || "Utilizador",
     photoUrl: normalizeBackendAssetUrl(row.profileImageUrl),
     phone: row.phone ?? null,
     city: row.city ?? null,

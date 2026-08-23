@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { refreshBackendToken } from "@/lib/kumbu-api/auth";
 import { hasClientSession } from "@/lib/auth/complete-auth";
 import { Button } from "@/components/ui/button";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { RequireAuth } from "@/components/auth/require-auth";
 import {
   saveProfilePhotoUrlAction,
@@ -32,7 +33,18 @@ import {
 } from "@/lib/profile-completion";
 import { saveSessionUserSnapshot } from "@/lib/kumbu-api/session-tokens";
 import { resizeAvatarFile } from "@/lib/images/resize-avatar";
-import { normalizePhoneE164 } from "@/lib/phone";
+import {
+  DEFAULT_COUNTRY_ISO,
+  clampNationalDigits,
+  parsePhoneParts,
+  validateNationalForCountry,
+} from "@/lib/phone";
+import {
+  PhoneNumberInput,
+  phoneInputHint,
+  readStoredPhoneCountryIso,
+  storePhoneCountryIso,
+} from "@/components/auth/phone-number-input";
 import type { UserGender } from "@/lib/user-profile";
 import {
   USER_GENDER_VALUES,
@@ -60,11 +72,14 @@ const GENDER_LABEL_KEYS = {
 export function ProfileSettings() {
   const t = useTranslations("account");
   const tAuth = useTranslations("auth");
+  const tCommon = useTranslations("common");
   const formatErrorMessage = useFormatErrorMessage();
   const { isLoggedIn, storeUser, user, applyStoreUser, isLoading } = useAuth();
   const feedbackRef = useRef<HTMLDivElement>(null);
   const [displayName, setDisplayName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [legalName, setLegalName] = useState("");
+  const [phoneCountryIso, setPhoneCountryIso] = useState(readStoredPhoneCountryIso);
+  const [phoneNational, setPhoneNational] = useState("");
   const [gender, setGender] = useState<UserGender | "">("");
   const [birthDate, setBirthDate] = useState("");
   const [region, setRegion] = useState("");
@@ -97,7 +112,16 @@ export function ProfileSettings() {
   useEffect(() => {
     if (!storeUser) return;
     setDisplayName(storeUser.displayName);
-    setPhone(storeUser.phone ?? "");
+    setLegalName(storeUser.legalName?.trim() || "");
+    const parts = parsePhoneParts(storeUser.phone ?? "");
+    if (parts) {
+      setPhoneCountryIso(parts.iso);
+      setPhoneNational(clampNationalDigits(parts.national, parts.iso));
+      storePhoneCountryIso(parts.iso);
+    } else {
+      setPhoneCountryIso(DEFAULT_COUNTRY_ISO);
+      setPhoneNational(clampNationalDigits(storeUser.phone ?? "", DEFAULT_COUNTRY_ISO));
+    }
     setGender(storeUser.gender ?? "");
     setBirthDate(birthDateToInputValue(storeUser.birthDate));
     setRegion(storeUser.region ?? "");
@@ -202,13 +226,18 @@ export function ProfileSettings() {
     }
 
     const name = displayName.trim();
-    const phoneNorm = normalizePhoneE164(phone);
+    const documentName = legalName.trim();
+    const phoneChecked = validateNationalForCountry(phoneCountryIso, phoneNational);
 
+    if (documentName.length < 2) {
+      showFeedback(t("legalNameMinLength"), null);
+      return;
+    }
     if (name.length < 2) {
       showFeedback(t("nameMinLength"), null);
       return;
     }
-    if (!phoneNorm || phoneNorm.length < 10) {
+    if (!phoneChecked.ok) {
       showFeedback(t("phoneInvalid"), null);
       return;
     }
@@ -239,7 +268,8 @@ export function ProfileSettings() {
     try {
       const updatePayload = {
         displayName: name,
-        phone: phoneNorm,
+        legalName: documentName,
+        phone: phoneChecked.phone,
         gender,
         birthDate: birthDate.trim(),
         city: address.city.trim(),
@@ -306,11 +336,21 @@ export function ProfileSettings() {
     }
   }
 
-  if (isLoading || (!isLoggedIn && hasClientSession())) {
-    return <p className="mt-8 text-center text-sm text-kumbu-muted">{t("profileLoading")}</p>;
+  if (isLoading) {
+    return (
+      <div className="mt-8 flex justify-center px-4">
+        <LoadingIndicator
+          active
+          label={t("profileLoading")}
+          slowHint={tCommon("loadingSlowHint")}
+          className="max-w-sm"
+          compact
+        />
+      </div>
+    );
   }
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn && !hasClientSession()) {
     return (
       <div className="kumbu-card mt-4 p-6 text-center">
         <p className="text-sm text-kumbu-muted">{t("profileLoginPrompt")}</p>
@@ -382,6 +422,19 @@ export function ProfileSettings() {
               description={t("personalDataDescription")}
             >
               <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-semibold text-kumbu-foreground">{t("legalName")}</span>
+                <input
+                  required
+                  minLength={2}
+                  value={legalName}
+                  onChange={(e) => setLegalName(e.target.value)}
+                  className="kumbu-input font-normal"
+                  placeholder={t("legalNamePlaceholder")}
+                  autoComplete="name"
+                />
+                <span className="text-xs font-normal text-kumbu-muted">{t("legalNameHint")}</span>
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm">
                 <span className="font-semibold text-kumbu-foreground">{t("displayName")}</span>
                 <input
                   required
@@ -389,18 +442,27 @@ export function ProfileSettings() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="kumbu-input font-normal"
+                  placeholder={t("displayNamePlaceholder")}
+                  autoComplete="nickname"
                 />
+                <span className="text-xs font-normal text-kumbu-muted">{t("displayNameHint")}</span>
               </label>
               <label className="flex flex-col gap-1.5 text-sm">
                 <span className="font-semibold text-kumbu-foreground">{t("phone")}</span>
-                <input
+                <PhoneNumberInput
+                  id="profile-phone"
                   required
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="kumbu-input font-normal"
-                  placeholder={t("phonePlaceholder")}
+                  countryIso={phoneCountryIso}
+                  onCountryIsoChange={(iso) => {
+                    setPhoneCountryIso(iso);
+                    storePhoneCountryIso(iso);
+                  }}
+                  nationalNumber={phoneNational}
+                  onNationalNumberChange={setPhoneNational}
                 />
+                <span id="profile-phone-hint" className="text-xs font-normal text-kumbu-muted">
+                  {phoneInputHint(phoneCountryIso)}
+                </span>
               </label>
 
               <div className="grid gap-4 sm:grid-cols-2">

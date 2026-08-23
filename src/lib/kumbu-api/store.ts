@@ -10,9 +10,9 @@ import type {
   StoreUserUpdate,
 } from "@/types/store";
 import {
+  ApiError,
   type KumbuApiClient,
   getKumbuApiClient,
-  type ApiError,
   normalizeBackendAssetUrl,
 } from "@/lib/kumbu-api/client";
 
@@ -47,6 +47,8 @@ type UserProfileDto = {
   id: string;
   email?: string | null;
   fullName?: string | null;
+  displayName?: string | null;
+  legalName?: string | null;
   phone?: string | null;
   profileImageUrl?: string | null;
   favorites?: string[] | null;
@@ -232,16 +234,20 @@ function mapCartItems(raw: unknown): CartItem[] {
     .filter((item) => item.productId);
 }
 
-function toStoreUser(row: UserProfileDto): StoreUser {
+function toStoreUser(row: UserProfileDto | null | undefined): StoreUser {
+  if (!row || typeof row !== "object") {
+    throw new Error("Perfil de utilizador inválido ou vazio.");
+  }
   const delivery =
     row.deliveryAddress && typeof row.deliveryAddress === "object"
       ? (row.deliveryAddress as Record<string, unknown>)
       : null;
   const deliveryAddress = mapBackendDeliveryAddress(delivery);
   return {
-    id: String(row.id),
+    id: String(row.id ?? ""),
     email: row.email ?? "",
-    displayName: row.fullName ?? "",
+    displayName: (row.displayName ?? row.fullName ?? "").trim(),
+    legalName: row.legalName?.trim() || null,
     phone: row.phone ?? null,
     photoUrl: normalizeBackendAssetUrl(row.profileImageUrl),
     cart: mapCartItems(row.cart),
@@ -265,7 +271,13 @@ function toStoreUser(row: UserProfileDto): StoreUser {
 
 export function isStoreApiUnauthorized(error: unknown): boolean {
   const err = error as ApiError | undefined;
-  return !!err && typeof err.status === "number" && (err.status === 401 || err.status === 403);
+  if (!err || typeof err.status !== "number") return false;
+  // 401 = sessão inválida. 403 só se a API JSON confirmar (não HTML Cloudflare Bot Fight).
+  if (err.status === 401) return true;
+  if (err.status !== 403) return false;
+  const payload = err.payload as Record<string, unknown> | null | undefined;
+  const code = typeof payload?.code === "string" ? payload.code : "";
+  return code === "UNAUTHORIZED" || code === "FORBIDDEN";
 }
 
 function isUnauthorized(error: unknown): boolean {
@@ -308,7 +320,8 @@ export async function getCatalogProductBackend(productId: string): Promise<Catal
 export async function getStoreUserBackend(): Promise<StoreUser | null> {
   const client = clientOrThrow();
   try {
-    const row = await client.request<UserProfileDto>("/users/me");
+    const row = await client.request<UserProfileDto | null>("/users/me");
+    if (!row || typeof row !== "object" || row.id == null) return null;
     return toStoreUser(row);
   } catch (error) {
     if (isUnauthorized(error)) return null;
@@ -349,7 +362,12 @@ export async function listPaymentMethodsBackend(): Promise<AppPaymentMethod[]> {
 export async function updateStoreUserBackend(update: StoreUserUpdate): Promise<StoreUser> {
   const client = clientOrThrow();
   const body: Record<string, unknown> = {};
-  if (update.displayName != null) body.fullName = update.displayName.trim();
+  if (update.displayName != null) {
+    const name = update.displayName.trim();
+    body.displayName = name;
+    body.fullName = name;
+  }
+  if (update.legalName != null) body.legalName = update.legalName.trim();
   if (update.phone != null) body.phone = update.phone.trim();
   if (update.photoUrl != null) body.photoUrl = update.photoUrl;
   if (update.city != null) body.city = update.city.trim();
@@ -358,15 +376,18 @@ export async function updateStoreUserBackend(update: StoreUserUpdate): Promise<S
   const gender = genderToApi(update.gender);
   if (gender) body.gender = gender;
   if (update.birthDate != null) body.birthDate = update.birthDate;
-  const base = await client.request<UserProfileDto>("/users/me", {
+  const base = await client.request<UserProfileDto | null>("/users/me", {
     method: "PATCH",
     body: JSON.stringify(body),
   });
+  if (!base || typeof base !== "object") {
+    throw new ApiError("Resposta inválida ao actualizar o perfil.", 502);
+  }
   if (update.deliveryAddress) {
     const addr = update.deliveryAddress;
     const recipientName = (update.displayName ?? base.fullName ?? "").trim();
     const phone = (update.phone ?? base.phone ?? "").trim();
-    const updated = await client.request<UserProfileDto>("/users/me/delivery-address", {
+    const updated = await client.request<UserProfileDto | null>("/users/me/delivery-address", {
       method: "PUT",
       body: JSON.stringify({
         recipientName: recipientName || "Utilizador",
@@ -378,6 +399,9 @@ export async function updateStoreUserBackend(update: StoreUserUpdate): Promise<S
         postalCode: addr.zip?.trim() || undefined,
       }),
     });
+    if (!updated || typeof updated !== "object") {
+      throw new ApiError("Resposta inválida ao actualizar a morada.", 502);
+    }
     return toStoreUser(updated);
   }
   return toStoreUser(base);

@@ -3,6 +3,7 @@ import { isValidGender, validateBirthDate } from "@/lib/user-profile";
 import type { StoreUser } from "@/types/store";
 
 export type ProfileFieldKey =
+  | "legalName"
   | "displayName"
   | "phone"
   | "gender"
@@ -18,6 +19,7 @@ export interface ProfileFieldStatus {
 }
 
 const PROFILE_FIELD_KEYS: ProfileFieldKey[] = [
+  "legalName",
   "displayName",
   "phone",
   "gender",
@@ -29,6 +31,7 @@ const PROFILE_FIELD_KEYS: ProfileFieldKey[] = [
 ];
 
 export type ProfileFieldLabelKey =
+  | "fieldLegalName"
   | "fieldDisplayName"
   | "fieldPhone"
   | "fieldGender"
@@ -41,6 +44,7 @@ export type ProfileFieldLabelKey =
 export type ProfileFieldTranslator = (key: ProfileFieldLabelKey) => string;
 
 const FIELD_LABEL_KEYS: Record<ProfileFieldKey, ProfileFieldLabelKey> = {
+  legalName: "fieldLegalName",
   displayName: "fieldDisplayName",
   phone: "fieldPhone",
   gender: "fieldGender",
@@ -72,6 +76,10 @@ export function getProfileFieldStatuses(
   const country = user.country?.trim() || addr?.country?.trim() || "";
 
   return [
+    {
+      key: "legalName",
+      complete: (user.legalName?.trim().length ?? 0) >= 2,
+    },
     {
       key: "displayName",
       complete: user.displayName.trim().length >= 2,
