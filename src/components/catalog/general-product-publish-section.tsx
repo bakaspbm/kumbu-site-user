@@ -12,6 +12,7 @@ import {
 import { getProductFields, validateProductAttributes } from "@/lib/catalog/product-fields";
 import { formatPriceLabel } from "@/lib/utils";
 import type { GeneralProductPublishState } from "@/types/product";
+import { SmartDatalistInput } from "@/components/catalog/smart-datalist-input";
 
 interface Props {
   categoryId: string;
@@ -98,14 +99,29 @@ export function GeneralProductPublishSection({
               ))}
             </select>
           ) : (
-            <input
-              type={f.type === "number" ? "number" : "text"}
-              value={state.attributes[f.key] ?? ""}
-              onChange={(e) => setAttr(f.key, e.target.value)}
-              className="kumbu-input font-normal"
-              placeholder={f.placeholder}
-              required={f.required}
-            />
+            f.type === "number" ? (
+              <input
+                type="number"
+                value={state.attributes[f.key] ?? ""}
+                onChange={(e) => setAttr(f.key, e.target.value)}
+                className="kumbu-input font-normal"
+                placeholder={f.placeholder}
+                required={f.required}
+              />
+            ) : (
+              <SmartDatalistInput
+                categoryId={categoryId}
+                subcategoryId={subcategoryId}
+                fieldKey={f.key}
+                value={state.attributes[f.key] ?? ""}
+                onChange={(next) => setAttr(f.key, next)}
+                placeholder={f.placeholder}
+                required={f.required}
+                brand={state.attributes.brand}
+                model={state.attributes.model}
+                initialSuggestions={f.suggestions}
+              />
+            )
           )}
         </label>
       ))}
