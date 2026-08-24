@@ -14,10 +14,6 @@ import { hasClientSession } from "@/lib/auth/complete-auth";
 import { Button } from "@/components/ui/button";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { RequireAuth } from "@/components/auth/require-auth";
-import {
-  saveProfilePhotoUrlAction,
-  updateProfilePhotoAction,
-} from "@/app/actions/profile";
 import { isStoreApiUnauthorized } from "@/lib/kumbu-api/store";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { updateStoreUser } from "@/lib/site-data";
@@ -32,6 +28,7 @@ import {
   profileFieldLabel,
 } from "@/lib/profile-completion";
 import { saveSessionUserSnapshot } from "@/lib/kumbu-api/session-tokens";
+import { withBrowserAuthRetry } from "@/lib/kumbu-api/with-browser-auth";
 import { resizeAvatarFile } from "@/lib/images/resize-avatar";
 import {
   DEFAULT_COUNTRY_ISO,
@@ -146,62 +143,24 @@ export function ProfileSettings() {
     if (!file || !user?.id) return;
     setAvatarBusy(true);
     setError(null);
-    let prepared: File | null = null;
 
     try {
-      prepared = await resizeAvatarFile(file);
+      const prepared = await resizeAvatarFile(file);
       const baseUrl = await promiseWithTimeout(
-        uploadAvatarFile(prepared),
+        withBrowserAuthRetry(() => uploadAvatarFile(prepared)),
         45_000,
         t("photoUploadTimeout"),
       );
       const photoUrl = `${baseUrl.replace(/\?.*$/, "")}?v=${Date.now()}`;
-
-      try {
-        const profile = await promiseWithTimeout(
-          updateStoreUser({ photoUrl }),
-          20_000,
-          t("photoSaveTimeout"),
-        );
-        applyStoreUser(profile);
-        showFeedback(null, t("photoUpdated"));
-        return;
-      } catch {
-        const saved = await promiseWithTimeout(
-          saveProfilePhotoUrlAction(photoUrl),
-          25_000,
-          t("photoSaveFailed"),
-        );
-        if (!saved.ok) {
-          showFeedback(saved.error, null);
-          return;
-        }
-        applyStoreUser(saved.profile);
-        showFeedback(null, t("photoUpdated"));
-        return;
-      }
-    } catch (clientErr) {
-      if (!prepared) {
-        showFeedback(formatErrorMessage(clientErr), null);
-        return;
-      }
-      try {
-        const formData = new FormData();
-        formData.set("photo", prepared);
-        const result = await promiseWithTimeout(
-          updateProfilePhotoAction(formData),
-          90_000,
-          t("photoUploadLong"),
-        );
-        if (!result.ok) {
-          showFeedback(result.error, null);
-          return;
-        }
-        applyStoreUser(result.profile);
-        showFeedback(null, t("photoUpdated"));
-      } catch (err) {
-        showFeedback(formatErrorMessage(err), null);
-      }
+      const profile = await promiseWithTimeout(
+        withBrowserAuthRetry(() => updateStoreUser({ photoUrl })),
+        20_000,
+        t("photoSaveTimeout"),
+      );
+      applyStoreUser(profile);
+      showFeedback(null, t("photoUpdated"));
+    } catch (err) {
+      showFeedback(formatErrorMessage(err), null);
     } finally {
       setAvatarBusy(false);
     }
@@ -287,7 +246,7 @@ export function ProfileSettings() {
       let savedProfile;
       try {
         savedProfile = await promiseWithTimeout(
-          updateStoreUser(updatePayload),
+          withBrowserAuthRetry(() => updateStoreUser(updatePayload)),
           45_000,
           t("saveTimeout"),
         );
@@ -295,7 +254,7 @@ export function ProfileSettings() {
         if (isStoreApiUnauthorized(err)) {
           await refreshBackendToken();
           savedProfile = await promiseWithTimeout(
-            updateStoreUser(updatePayload),
+            withBrowserAuthRetry(() => updateStoreUser(updatePayload)),
             45_000,
             t("saveTimeout"),
           );

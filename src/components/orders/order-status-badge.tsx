@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 export function OrderStatusBadge({ status }: { status: string }) {
   const label = useOrderStatusLabel();
-  const s = status.toLowerCase();
+  const s = String(status ?? "processing").toLowerCase();
 
   return (
     <span

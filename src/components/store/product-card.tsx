@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, ShoppingBag } from "lucide-react";
-import { ListingImage } from "@/components/ui/listing-image";
+import { MapPin, Briefcase, ShoppingBag } from "lucide-react";
+import { ListingImage, LISTING_IMAGE_SIZES } from "@/components/ui/listing-image";
 import { FavoriteButton } from "@/components/store/favorite-button";
 import { ListingRatingBadge } from "@/components/store/listing-rating-badge";
 import { productCoverUrl } from "@/lib/store/product-images";
@@ -10,7 +10,7 @@ import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 import { isJobListing } from "@/lib/jobs/category";
 import { isPropertyListing } from "@/lib/property/category";
-import { cn, productPlaceholderStyle } from "@/lib/utils";
+import { cn, formatPriceLabel, productPlaceholderStyle } from "@/lib/utils";
 import type { CatalogProduct } from "@/types/store";
 
 interface ProductCardProps {
@@ -24,9 +24,10 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
   const isOwn = user?.id === product.sellerId;
   const isGrid = variant === "grid";
   const cover = productCoverUrl(product);
+  const isJob = isJobListing(product) || product.listingKind === "job";
   const canAddToCart =
     !isPropertyListing(product) &&
-    !isJobListing(product) &&
+    !isJob &&
     product.listingKind !== "property" &&
     product.listingKind !== "job";
 
@@ -50,6 +51,7 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
             src={cover}
             alt={product.title}
             fill
+            sizes={isGrid ? LISTING_IMAGE_SIZES.gridCard : LISTING_IMAGE_SIZES.rowCard}
             className="transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
@@ -57,10 +59,17 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
             className="flex h-full w-full items-center justify-center"
             style={productPlaceholderStyle(product.imageColor)}
           >
-            <ShoppingBag
-              className={cn("text-white/60", isGrid ? "size-9" : "size-5")}
-              aria-hidden
-            />
+            {isJob ? (
+              <Briefcase
+                className={cn("text-white/60", isGrid ? "size-9" : "size-5")}
+                aria-hidden
+              />
+            ) : (
+              <ShoppingBag
+                className={cn("text-white/60", isGrid ? "size-9" : "size-5")}
+                aria-hidden
+              />
+            )}
           </div>
         )}
         {product.isFeatured && isGrid && (
@@ -95,7 +104,7 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
 
           <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <p className="text-[15px] font-bold tracking-tight text-kumbu-foreground">
-              {product.priceLabel}
+              {formatPriceLabel(product.priceLabel)}
             </p>
             <ListingRatingBadge product={product} />
           </div>

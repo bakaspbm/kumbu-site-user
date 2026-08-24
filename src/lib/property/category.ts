@@ -1,8 +1,4 @@
-import {
-  IMOVEIS_CATEGORY_IDS,
-  isImoveisCategoryName,
-  isSaleOnlyProperty,
-} from "@/lib/property/constants";
+import { isImoveisCategory, isSaleOnlyProperty } from "@/lib/property/constants";
 import type { CatalogCategory, CatalogProduct } from "@/types/store";
 import type { PropertyMeta } from "@/types/property";
 
@@ -10,11 +6,12 @@ export function isPropertyCategory(
   category: CatalogCategory | undefined | null,
 ): boolean {
   if (!category) return false;
-  if (category.kind === "property" || category.kind === "stay") return true;
-  if (IMOVEIS_CATEGORY_IDS.includes(category.id as (typeof IMOVEIS_CATEGORY_IDS)[number])) {
-    return true;
-  }
-  return isImoveisCategoryName(category.name);
+  return isImoveisCategory(category.id, category.kind, category.name);
+}
+
+/** Detecta imóvel mesmo se o objecto categoria ainda não estiver na lista. */
+export function isPropertyCategoryId(categoryId?: string | null): boolean {
+  return isImoveisCategory(categoryId);
 }
 
 export function isPropertyListing(product: CatalogProduct): boolean {

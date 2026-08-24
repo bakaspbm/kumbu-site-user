@@ -12,7 +12,11 @@ import {
 import { getProductFields, validateProductAttributes } from "@/lib/catalog/product-fields";
 import { formatPriceLabel } from "@/lib/utils";
 import type { GeneralProductPublishState } from "@/types/product";
-import { SmartDatalistInput } from "@/components/catalog/smart-datalist-input";
+import {
+  DirectorySuggestField,
+  applyDirectorySpecs,
+} from "@/components/catalog/directory-suggest-field";
+import type { DirectorySuggestItem } from "@/lib/kumbu-api/directory";
 
 interface Props {
   categoryId: string;
@@ -58,6 +62,22 @@ export function GeneralProductPublishSection({
     onChange({
       attributes: { ...state.attributes, [key]: value },
     });
+  }
+
+  function directoryType(key: string): "brand" | "item" | null {
+    if (key === "brand") return "brand";
+    if (key === "model" || key === "productType" || key === "serviceType") return "item";
+    return null;
+  }
+
+  function onPickDirectory(fieldKey: string, item: DirectorySuggestItem) {
+    const patch: Record<string, string> = { ...state.attributes };
+    patch[fieldKey] = item.name;
+    const withSpecs = applyDirectorySpecs(patch, item);
+    if (fieldKey === "model" && item.brandName && !withSpecs.brand?.trim()) {
+      withSpecs.brand = item.brandName;
+    }
+    onChange({ attributes: withSpecs });
   }
 
   return (
@@ -109,18 +129,29 @@ export function GeneralProductPublishSection({
                 required={f.required}
               />
             ) : (
-              <SmartDatalistInput
-                categoryId={categoryId}
-                subcategoryId={subcategoryId}
-                fieldKey={f.key}
-                value={state.attributes[f.key] ?? ""}
-                onChange={(next) => setAttr(f.key, next)}
-                placeholder={f.placeholder}
-                required={f.required}
-                brand={state.attributes.brand}
-                model={state.attributes.model}
-                initialSuggestions={f.suggestions}
-              />
+              directoryType(f.key) ? (
+                <DirectorySuggestField
+                  type={directoryType(f.key)!}
+                  categoryId={categoryId}
+                  subcategoryId={subcategoryId}
+                  brand={f.key === "model" ? state.attributes.brand : undefined}
+                  value={state.attributes[f.key] ?? ""}
+                  onChange={(next) => setAttr(f.key, next)}
+                  onSelectItem={(item) => onPickDirectory(f.key, item)}
+                  placeholder={f.placeholder}
+                  required={f.required}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={state.attributes[f.key] ?? ""}
+                  onChange={(e) => setAttr(f.key, e.target.value)}
+                  className="kumbu-input font-normal"
+                  placeholder={f.placeholder}
+                  required={f.required}
+                  autoComplete="off"
+                />
+              )
             )
           )}
         </label>

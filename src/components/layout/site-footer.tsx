@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { KumbuLogo } from "@/components/brand/kumbu-logo";
+import { getSupportEmail } from "@/lib/config/support";
 
 export async function SiteFooter() {
   const t = await getTranslations("footer");
   const year = new Date().getFullYear();
+  const supportEmail = getSupportEmail();
 
   return (
     <footer className="mt-auto hidden border-t border-kumbu-border/80 bg-kumbu-surface md:block">
@@ -58,6 +60,12 @@ export async function SiteFooter() {
             <Link href="/support" className="transition-colors hover:text-kumbu-primary">
               {t("support")}
             </Link>
+            <a
+              href={`mailto:${supportEmail}`}
+              className="transition-colors hover:text-kumbu-primary"
+            >
+              {supportEmail}
+            </a>
             <Link href="/termos" className="transition-colors hover:text-kumbu-primary">
               {t("terms")}
             </Link>

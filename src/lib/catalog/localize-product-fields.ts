@@ -45,6 +45,7 @@ const LABEL_VARIANT_KEYS: Record<string, string> = {
   Ano: "year.label",
   Armazenamento: "storage.label",
   Cor: "color.label",
+  "Cor / tom": "color.labelShade",
   Processador: "processor.label",
   RAM: "ram.label",
   'Ecrã (")': "screen.label",
@@ -102,7 +103,17 @@ const PLACEHOLDER_KEYS: Record<string, string> = {
   "Ex.: 8 kg": "placeholders.capacityLaundry",
   "Ex.: 12000 BTU": "placeholders.powerBtu",
   "Ex.: MAC, Maybelline": "placeholders.brandBeauty",
+  "Ex.: Nivea, CeraVe": "placeholders.brandBeautyCare",
+  "Ex.: Dior, Chanel": "placeholders.brandPerfume",
+  "Ex.: MAC, Nivea": "placeholders.brandBeautyDefault",
+  "Ex.: marca": "placeholders.brandShort",
+  "Ex.: marca ou sem marca": "placeholders.brandOrNone",
+  "Ex.: Nike, Adidas": "placeholders.brandShoes",
+  "Ex.: Zara, Nike": "placeholders.brandFashionDefault",
   "Ex.: Batom, base": "placeholders.productTypeMakeup",
+  "Ex.: Creme, champô, sérum": "placeholders.productTypeCare",
+  "Ex.: Unhas, acessório, secador": "placeholders.productTypeBeautyOther",
+  "Ex.: Nude, 220": "placeholders.shade",
   "Ex.: 250 ml": "placeholders.volumeCare",
   "Ex.: 100 ml": "placeholders.volumePerfume",
   "Ex.: Unhas, acessório": "placeholders.productTypeBeautyOther",
@@ -186,7 +197,7 @@ export function localizeCategoryKindLabel(
   category: { id: string; kind: string; name?: string },
   t: CatalogFieldsTranslateFn,
 ): string {
-  if (category.id === "emprego" || category.kind === "job") {
+  if (category.id === "emprego" || category.id === "empregos" || category.kind === "job") {
     return tf(t, "categoryKind.job", getCategoryKindLabel(category));
   }
   if (
@@ -253,7 +264,9 @@ export function localizePricePlaceholder(
   if (categoryId === "carros") return tf(t, "priceByCategory.carros", fallback);
   if (categoryId === "servicos") return tf(t, "priceByCategory.servicos", fallback);
   if (categoryId === "imoveis") return tf(t, "priceByCategory.imoveis", fallback);
-  if (categoryId === "emprego") return tf(t, "priceByCategory.emprego", fallback);
+  if (categoryId === "emprego" || categoryId === "empregos") {
+    return tf(t, "priceByCategory.emprego", fallback);
+  }
   if (subcategoryId === "telefones") return tf(t, "priceBySub.telefones", fallback);
   if (subcategoryId === "tv-audio") return tf(t, "priceBySub.tv-audio", fallback);
   if (subcategoryId === "computadores") return tf(t, "priceBySub.computadores", fallback);

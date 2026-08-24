@@ -7,8 +7,8 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   applyToJob,
-  getMyApplicationForJob,
   listMyCvs,
+  listMyJobApplications,
 } from "@/lib/site-data";
 import { useAuth } from "@/contexts/auth-context";
 import type { CatalogProduct } from "@/types/store";
@@ -26,6 +26,7 @@ export function JobApplyPanel({ job }: JobApplyPanelProps) {
   const [cvId, setCvId] = useState("");
   const [message, setMessage] = useState("");
   const [existing, setExisting] = useState<JobApplication | null>(null);
+  const [appliedCvIds, setAppliedCvIds] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -35,13 +36,16 @@ export function JobApplyPanel({ job }: JobApplyPanelProps) {
   useEffect(() => {
     if (!isLoggedIn) return;
     void (async () => {
-      const [list, app] = await Promise.all([
+      const [list, apps] = await Promise.all([
         listMyCvs(),
-        getMyApplicationForJob(job.id),
+        listMyJobApplications(),
       ]);
+      const forJob = apps.filter((app) => app.jobId === job.id);
       setCvs(list);
-      setCvId(list[0]?.id ?? "");
-      setExisting(app);
+      setAppliedCvIds(new Set(forJob.map((app) => app.cvId).filter(Boolean)));
+      setExisting(forJob[0] ?? null);
+      const available = list.find((cv) => !forJob.some((app) => app.cvId === cv.id));
+      setCvId(available?.id ?? list[0]?.id ?? "");
     })();
   }, [isLoggedIn, job.id]);
 
@@ -51,12 +55,18 @@ export function JobApplyPanel({ job }: JobApplyPanelProps) {
       setToast(t("selectCvError"));
       return;
     }
+    if (appliedCvIds.has(cvId)) {
+      setToast(t("alreadyAppliedWithCv"));
+      return;
+    }
     setBusy(true);
     try {
       await applyToJob(job.id, cvId, message);
       setToast(t("success"));
-      const app = await getMyApplicationForJob(job.id);
-      setExisting(app);
+      const apps = await listMyJobApplications();
+      const forJob = apps.filter((app) => app.jobId === job.id);
+      setAppliedCvIds(new Set(forJob.map((app) => app.cvId).filter(Boolean)));
+      setExisting(forJob[0] ?? null);
     } catch (e) {
       setToast(e instanceof Error ? e.message : t("error"));
     } finally {
@@ -84,6 +94,28 @@ export function JobApplyPanel({ job }: JobApplyPanelProps) {
   }
 
   if (existing) {
+    if (existing.status === "invited") {
+      return (
+        <div className="rounded-xl bg-kumbu-primary-soft/40 p-4 text-sm text-kumbu-foreground ring-1 ring-kumbu-primary/20">
+          <p className="font-bold">{t("inviteTitle")}</p>
+          <p className="mt-1 text-kumbu-muted">{t("inviteDescription")}</p>
+          <Button href={`/produto/${job.id}`} className="mt-3 h-10" fullWidth>
+            {t("viewJob")}
+          </Button>
+          {existing.conversationId && (
+            <Button
+              href={`/mensagens/${existing.conversationId}`}
+              variant="secondary"
+              fullWidth
+              className="mt-2 h-10"
+            >
+              {t("openChat")}
+            </Button>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900">
         <p className="font-bold">{t("submitted")}</p>
@@ -94,7 +126,7 @@ export function JobApplyPanel({ job }: JobApplyPanelProps) {
               ? t("statusAccepted")
               : t("statusRejected")}
         </p>
-        {existing.conversationId && (
+        {existing.status === "accepted" && existing.conversationId && (
           <Button
             href={`/mensagens/${existing.conversationId}`}
             className="mt-3 h-10"
@@ -134,7 +166,7 @@ export function JobApplyPanel({ job }: JobApplyPanelProps) {
         <div className="kumbu-card p-4 text-center text-sm">
           <FileText className="mx-auto size-8 text-kumbu-muted" />
           <p className="mt-2 text-kumbu-muted">{t("noCvs")}</p>
-          <Button href="/conta/cvs" className="mt-3 h-10">
+          <Button href="/conta/curriculos" className="mt-3 h-10">
             {t("createCv")}
           </Button>
         </div>
@@ -148,14 +180,15 @@ export function JobApplyPanel({ job }: JobApplyPanelProps) {
               className="kumbu-input font-normal"
             >
               {cvs.map((c) => (
-                <option key={c.id} value={c.id}>
+                <option key={c.id} value={c.id} disabled={appliedCvIds.has(c.id)}>
                   {c.title} — {c.fullName}
+                  {appliedCvIds.has(c.id) ? ` (${t("cvAlreadyUsed")})` : ""}
                 </option>
               ))}
             </select>
           </label>
           <Link
-            href="/conta/cvs"
+            href="/conta/curriculos"
             className="text-xs font-bold text-kumbu-primary hover:underline"
           >
             {t("manageCvs")}
@@ -173,7 +206,7 @@ export function JobApplyPanel({ job }: JobApplyPanelProps) {
             type="button"
             fullWidth
             className="h-12"
-            disabled={busy}
+            disabled={busy || !cvId || appliedCvIds.has(cvId)}
             onClick={() => void submit()}
           >
             <Send className="size-4" />

@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { ProcurarClient } from "./procurar-client";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildPageMetadata({
@@ -8,5 +10,9 @@ export const metadata = buildPageMetadata({
 });
 
 export default function ProcurarPage() {
-  return <ProcurarClient />;
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <ProcurarClient />
+    </Suspense>
+  );
 }

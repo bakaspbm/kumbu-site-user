@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ImageIcon, MapPin } from "lucide-react";
-import { ListingImage } from "@/components/ui/listing-image";
+import { ListingImage, LISTING_IMAGE_SIZES } from "@/components/ui/listing-image";
 import { FavoriteButton } from "@/components/store/favorite-button";
 import { productCoverUrl } from "@/lib/store/product-images";
 import { cn, productPlaceholderStyle } from "@/lib/utils";
@@ -19,9 +19,10 @@ interface ListingCardProps {
   product: CatalogProduct;
   variant?: "list" | "grid";
   className?: string;
+  priority?: boolean;
 }
 
-export function ListingCard({ product, variant = "grid", className }: ListingCardProps) {
+export function ListingCard({ product, variant = "grid", className, priority }: ListingCardProps) {
   const cover = productCoverUrl(product);
 
   if (variant === "grid") {
@@ -34,6 +35,8 @@ export function ListingCard({ product, variant = "grid", className }: ListingCar
                 src={cover}
                 alt=""
                 fill
+                priority={priority}
+                sizes={LISTING_IMAGE_SIZES.gridCard}
                 className="transition-transform duration-500 group-hover:scale-105"
               />
             ) : (
@@ -84,6 +87,7 @@ export function ListingCard({ product, variant = "grid", className }: ListingCar
               src={cover}
               alt=""
               fill
+              sizes={LISTING_IMAGE_SIZES.listThumb}
               className="transition-transform duration-500 group-hover:scale-105"
             />
           ) : (

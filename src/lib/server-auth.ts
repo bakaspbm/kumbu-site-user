@@ -1,4 +1,4 @@
-import { getKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
+import { getServerKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
 import { getStoreUserBackend } from "@/lib/kumbu-api/store";
 import {
   getStoredRefreshToken,
@@ -14,7 +14,7 @@ export async function getServerSessionUserId(): Promise<string | null> {
   }
 
   const refreshToken = await getStoredRefreshToken();
-  const baseUrl = getKumbuApiBaseUrl();
+  const baseUrl = getServerKumbuApiBaseUrl();
   if (refreshToken && baseUrl) {
     const refreshed = await tryRefreshServerSession(baseUrl);
     if (refreshed) {

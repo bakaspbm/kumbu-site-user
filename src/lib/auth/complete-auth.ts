@@ -17,10 +17,14 @@ export function resolvePostAuthRedirect(target: string): string {
 export async function probeHttpOnlySession(): Promise<boolean> {
   if (typeof window === "undefined") return false;
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8_000);
     const response = await fetch("/api/auth/session", {
       credentials: "include",
       cache: "no-store",
-    });
+      headers: { "X-Kumbu-Client": "web" },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
     if (!response.ok) return false;
     const payload = (await response.json()) as { authenticated?: boolean };
     return Boolean(payload.authenticated);

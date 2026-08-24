@@ -121,7 +121,10 @@ export function IdentityUpload() {
 
   async function ensureLiveSession(): Promise<boolean> {
     if (await probeHttpOnlySession()) return true;
-    return refreshBrowserSessionCookies();
+    if (await refreshBrowserSessionCookies()) return true;
+    // Último recurso: bootstrap pode ainda ter access token válido
+    const { ensureBrowserAccessToken } = await import("@/lib/kumbu-api/browser-session");
+    return Boolean(await ensureBrowserAccessToken());
   }
 
   function formatIdentityError(error: unknown): string {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -11,6 +11,16 @@ import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { useAuth } from "@/contexts/auth-context";
 import { clearSensitiveTokenFromUrl } from "@/lib/security/clear-url-token";
 
+function normalizeTokenFromUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  try {
+    return decodeURIComponent(trimmed).trim();
+  } catch {
+    return trimmed;
+  }
+}
+
 export function ConfirmEmailClient({ initialToken = "" }: { initialToken?: string }) {
   const t = useTranslations("auth.confirmEmail");
   const tAuth = useTranslations("auth");
@@ -18,47 +28,39 @@ export function ConfirmEmailClient({ initialToken = "" }: { initialToken?: strin
   const formatErrorMessage = useFormatErrorMessage();
   const router = useRouter();
   const { refresh } = useAuth();
-  const token = initialToken;
-  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
-  const [message, setMessage] = useState<string | null>(null);
+  const token = normalizeTokenFromUrl(initialToken);
+  const verifyStartedRef = useRef(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">(
+    token ? "idle" : "error",
+  );
+  const [message, setMessage] = useState<string | null>(
+    token ? null : t("invalidLink"),
+  );
   const [resendEmail, setResendEmail] = useState("");
   const [resendBusy, setResendBusy] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (token.trim()) {
-      clearSensitiveTokenFromUrl();
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (!token.trim()) {
-      setStatus("error");
-      setMessage(t("invalidLink"));
-      return;
-    }
+  const runVerify = useCallback(async () => {
+    if (!token || verifyStartedRef.current) return;
     if (!isKumbuApiEnabled()) {
       setStatus("error");
       setMessage(t("apiRequired"));
       return;
     }
-    let cancelled = false;
-    (async () => {
-      try {
-        await verifyEmailBackend(token);
-        if (cancelled) return;
-        await refresh();
-        setStatus("ok");
-        setMessage(t("success"));
-      } catch (err) {
-        if (cancelled) return;
-        setStatus("error");
-        setMessage(formatErrorMessage(err));
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    verifyStartedRef.current = true;
+    setStatus("loading");
+    setMessage(null);
+    clearSensitiveTokenFromUrl();
+    try {
+      await verifyEmailBackend(token);
+      await refresh();
+      setStatus("ok");
+      setMessage(t("success"));
+    } catch (err) {
+      verifyStartedRef.current = false;
+      setStatus("error");
+      setMessage(formatErrorMessage(err));
+    }
   }, [token, refresh, t, formatErrorMessage]);
 
   async function handleResend(e: React.FormEvent) {
@@ -80,7 +82,14 @@ export function ConfirmEmailClient({ initialToken = "" }: { initialToken?: strin
   return (
     <div className="mx-auto mt-10 max-w-md">
       <div className="kumbu-card-elevated p-6 text-center">
-        {status === "loading" ? (
+        {status === "idle" ? (
+          <>
+            <p className="text-sm text-kumbu-muted">{t("intro")}</p>
+            <Button className="mt-6" onClick={() => void runVerify()} fullWidth>
+              {t("confirmButton")}
+            </Button>
+          </>
+        ) : status === "loading" ? (
           <p className="text-sm text-kumbu-muted">{t("confirming")}</p>
         ) : (
           <>
@@ -96,9 +105,14 @@ export function ConfirmEmailClient({ initialToken = "" }: { initialToken?: strin
                   {t("continue")}
                 </Button>
               ) : (
-                <Button href="/login" fullWidth>
-                  {t("goToLogin")}
-                </Button>
+                <>
+                  <Button onClick={() => void runVerify()} fullWidth variant="secondary">
+                    {t("retry")}
+                  </Button>
+                  <Button href="/login" fullWidth>
+                    {t("goToLogin")}
+                  </Button>
+                </>
               )}
             </div>
           </>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { ListingImage } from "@/components/ui/listing-image";
+import { ListingImage, LISTING_IMAGE_SIZES } from "@/components/ui/listing-image";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { enrichConversationsWithUnread } from "@/lib/chat/unread-tracker";
@@ -134,7 +134,7 @@ export function ConversationList() {
               >
                 <div className="relative size-14 shrink-0 overflow-hidden rounded-2xl bg-kumbu-surface-muted ring-1 ring-kumbu-border/60">
                   {c.productImageUrl ? (
-                    <ListingImage src={c.productImageUrl} alt="" fill />
+                    <ListingImage src={c.productImageUrl} alt="" fill sizes={LISTING_IMAGE_SIZES.chatThumb} />
                   ) : (
                     <span className="flex h-full items-center justify-center text-lg font-bold text-kumbu-primary">
                       {name.charAt(0)}

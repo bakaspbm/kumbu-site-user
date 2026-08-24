@@ -16,10 +16,14 @@ export default async function FavoritesPage() {
 
   let products: Awaited<ReturnType<typeof getCatalogProductsByIds>> = [];
   if (auth.status === "logged_in") {
-    const storeUser = await getStoreUser();
-    const ids = storeUser?.favorites ?? [];
-    if (ids.length > 0) {
-      products = await getCatalogProductsByIds(ids).catch(() => []);
+    try {
+      const storeUser = await getStoreUser();
+      const ids = storeUser?.favorites ?? [];
+      if (ids.length > 0) {
+        products = await getCatalogProductsByIds(ids).catch(() => []);
+      }
+    } catch {
+      products = [];
     }
   }
 

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ListingImage } from "@/components/ui/listing-image";
+import { ListingImage, LISTING_IMAGE_SIZES } from "@/components/ui/listing-image";
 import { ChatComposer } from "@/components/messages/chat-composer";
 import { ChatDealActions } from "@/components/messages/chat-deal-actions";
 import { ChatMessageBubble } from "@/components/messages/chat-message-bubble";
@@ -12,20 +12,27 @@ import { ReportContentDialog } from "@/components/legal/report-content-dialog";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
-import { uploadChatAttachmentAction } from "@/app/actions/chat-upload";
-import {
-  loadChatRoomAction,
-  listConversationMessagesAction,
-  sendChatMessageAction,
-} from "@/app/actions/chat";
 import { formatUserPresence, isUserOnline } from "@/lib/chat/presence";
 import {
   confirmSentMessage,
   mergeConversationMessages,
 } from "@/lib/chat/merge-messages";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
-import { getConversationBackend } from "@/lib/kumbu-api/chat";
+import {
+  ensureBrowserAccessToken,
+  refreshBrowserSessionCookies,
+} from "@/lib/kumbu-api/browser-session";
+import { ApiError } from "@/lib/kumbu-api/client";
+import {
+  getConversationBackend,
+  listConversationMessagesBackend,
+  markConversationReadBackend,
+  sendConversationMessageBackend,
+} from "@/lib/kumbu-api/chat";
+import { uploadChatAttachmentBackend } from "@/lib/kumbu-api/files";
 import { subscribeConversationTopic } from "@/lib/kumbu-api/kumbu-realtime";
+import { isStoreApiUnauthorized } from "@/lib/kumbu-api/store";
+import { withBrowserAuthRetry } from "@/lib/kumbu-api/with-browser-auth";
 import { markConversationSeen } from "@/lib/chat/unread-tracker";
 import { promiseWithTimeout } from "@/lib/promise-timeout";
 import { useAuth } from "@/contexts/auth-context";
@@ -124,8 +131,9 @@ export function ChatRoom({
     if (!user) return;
     setMessagesLoading(true);
     try {
+      await ensureBrowserAccessToken();
       const msgs = await promiseWithTimeout(
-        listConversationMessagesAction(conversationId),
+        listConversationMessagesBackend(conversationId),
         20_000,
         t("loadMessagesFailed"),
       );
@@ -180,7 +188,7 @@ export function ChatRoom({
 
     const pollMs = realtimeStatus === "live" ? 60_000 : 5_000;
     const poll = () => {
-      void listConversationMessagesAction(conversationId)
+      void listConversationMessagesBackend(conversationId)
         .then((msgs) => {
           if (msgs.length === 0) return;
           setMessages((prev) => mergeConversationMessages(prev, msgs));
@@ -256,22 +264,41 @@ export function ChatRoom({
     void (async () => {
       setLoading(true);
       try {
-        const result = await promiseWithTimeout(
-          loadChatRoomAction(conversationId),
-          20_000,
-          t("chatLoadTimeout"),
-        );
-        if (cancelled) return;
-        if (!result.ok) {
-          if (result.needsLogin) {
-            router.replace(`/login?next=/mensagens/${conversationId}`);
-            return;
+        const loadOnce = async () => {
+          await ensureBrowserAccessToken();
+          const [conversation, messages] = await Promise.all([
+            getConversationBackend(conversationId),
+            listConversationMessagesBackend(conversationId),
+          ]);
+          return { conversation, messages };
+        };
+
+        let data: Awaited<ReturnType<typeof loadOnce>>;
+        try {
+          data = await promiseWithTimeout(loadOnce(), 20_000, t("chatLoadTimeout"));
+        } catch (err) {
+          if (isStoreApiUnauthorized(err) || (err instanceof ApiError && err.status === 401)) {
+            const renewed = await refreshBrowserSessionCookies();
+            if (!renewed) {
+              if (!cancelled) {
+                router.replace(`/login?next=/mensagens/${conversationId}`);
+              }
+              return;
+            }
+            data = await promiseWithTimeout(loadOnce(), 20_000, t("chatLoadTimeout"));
+          } else {
+            throw err;
           }
-          setError(result.error);
+        }
+
+        if (cancelled) return;
+        if (!data.conversation) {
+          setError(t("conversationUnavailable"));
           return;
         }
-        setConv(result.conversation);
-        setMessages(result.messages);
+        setConv(data.conversation);
+        setMessages(data.messages);
+        void markConversationReadBackend(conversationId).catch(() => undefined);
         void markRead(conversationId);
       } catch (e) {
         if (!cancelled) {
@@ -311,22 +338,29 @@ export function ChatRoom({
     setError(null);
 
     try {
-      const result = await promiseWithTimeout(
-        sendChatMessageAction(conversationId, body, attachmentUrl),
-        60_000,
-        t("sendTimeout"),
-      );
-      if (!result.ok) {
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
-        setText(body);
-        if (result.needsLogin) {
-          router.replace(`/login?next=/mensagens/${conversationId}`);
-          return;
+      const sendOnce = async () => {
+        await ensureBrowserAccessToken();
+        return sendConversationMessageBackend(conversationId, body, attachmentUrl);
+      };
+
+      let message: ConversationMessage;
+      try {
+        message = await promiseWithTimeout(sendOnce(), 60_000, t("sendTimeout"));
+      } catch (err) {
+        if (isStoreApiUnauthorized(err) || (err instanceof ApiError && err.status === 401)) {
+          const renewed = await refreshBrowserSessionCookies();
+          if (!renewed) {
+            setMessages((prev) => prev.filter((m) => m.id !== tempId));
+            setText(body);
+            router.replace(`/login?next=/mensagens/${conversationId}`);
+            return;
+          }
+          message = await promiseWithTimeout(sendOnce(), 60_000, t("sendTimeout"));
+        } else {
+          throw err;
         }
-        setError(result.error);
-        return;
       }
-      setMessages((prev) => confirmSentMessage(prev, tempId, result.message));
+      setMessages((prev) => confirmSentMessage(prev, tempId, message));
       void refreshUnread();
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
@@ -343,14 +377,8 @@ export function ChatRoom({
     setAttachBusy(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const result = await uploadChatAttachmentAction(formData);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      await handleSend(result.url);
+      const url = await withBrowserAuthRetry(() => uploadChatAttachmentBackend(file));
+      await handleSend(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : formatErrorMessage(err));
     } finally {
@@ -396,7 +424,7 @@ export function ChatRoom({
         <div className="mx-auto flex max-w-2xl items-center gap-3">
           <div className="relative size-11 shrink-0 overflow-hidden rounded-full bg-kumbu-primary-soft ring-2 ring-kumbu-surface">
             {photo ? (
-              <ListingImage src={photo} alt="" fill />
+              <ListingImage src={photo} alt="" fill sizes={LISTING_IMAGE_SIZES.smallAvatar} />
             ) : (
               <span className="flex h-full items-center justify-center text-lg font-bold text-kumbu-primary">
                 {otherName.charAt(0).toUpperCase()}

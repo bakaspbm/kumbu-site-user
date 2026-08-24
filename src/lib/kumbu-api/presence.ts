@@ -9,5 +9,9 @@ function clientOrThrow(): KumbuApiClient {
 /** Actualiza last_seen_at do utilizador actual (heartbeat). */
 export async function touchPresenceBackend(): Promise<void> {
   const client = clientOrThrow();
-  await client.request<void>("/users/me/presence", { method: "POST" });
+  await client.request<void>("/users/me/presence", {
+    method: "POST",
+    headers: { "X-Kumbu-Client": "web" },
+    body: JSON.stringify({ source: "web" }),
+  });
 }

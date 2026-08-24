@@ -13,7 +13,9 @@ const TAB_ROUTES = [
   "/conta/anuncios",
   "/conta/favoritos",
   "/emprego",
-  "/conta/cvs",
+  "/conta/curriculos",
+  "/conta/procurar-candidatos",
+  "/conta/vagas-candidaturas",
 ];
 
 const ACCOUNT_LIGHT_ROUTES = ["/", "/mensagens", "/procurar"];

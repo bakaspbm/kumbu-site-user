@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { CategoryPageClient } from "@/components/store/category-page-client";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { isJobCategoryId } from "@/lib/jobs/category";
 import { buildCategoryMetadata } from "@/lib/seo/metadata";
 import { demoCategories } from "@/lib/store/demo-data";
 import { listCatalogCategories } from "@/lib/site-data";
-import type { SortMode } from "@/types/store";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -29,19 +32,22 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 
 export default async function CategoryPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  if (isJobCategoryId(id)) {
+    redirect("/emprego");
+  }
   const sp = await searchParams;
   const name = sp.name ?? "Categoria";
-  const sortMode = (sp.sort as SortMode) ?? "default";
   const subId = sp.sub;
   const categoryName =
     demoCategories.find((c) => c.id === id)?.name ?? decodeURIComponent(name);
 
   return (
-    <CategoryPageClient
-      categoryId={id}
-      categoryName={categoryName}
-      subcategoryId={subId}
-      sortMode={sortMode}
-    />
+    <Suspense fallback={<PageSkeleton />}>
+      <CategoryPageClient
+        categoryId={id}
+        categoryName={categoryName}
+        subcategoryId={subId}
+      />
+    </Suspense>
   );
 }

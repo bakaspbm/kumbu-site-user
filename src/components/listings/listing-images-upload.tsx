@@ -3,6 +3,11 @@
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { ImagePlus, X } from "lucide-react";
+import {
+  LISTING_IMAGE_ACCEPT,
+  MAX_LISTING_IMAGE_BYTES,
+  isAllowedListingImage,
+} from "@/lib/listings/media-accept";
 import { MAX_LISTING_IMAGES } from "@/lib/store/product-images";
 import { cn } from "@/lib/utils";
 
@@ -16,17 +21,20 @@ export type ListingImageItem = {
 interface ListingImagesUploadProps {
   items: ListingImageItem[];
   onChange: (items: ListingImageItem[]) => void;
+  /** Vagas: foto não obrigatória. */
+  optional?: boolean;
+  hint?: string;
 }
 
 function newId() {
   return `img_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-const MAX_FILE_BYTES = 20 * 1024 * 1024;
-
 export function ListingImagesUpload({
   items,
   onChange,
+  optional = false,
+  hint,
 }: ListingImagesUploadProps) {
   const t = useTranslations("publish");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,8 +45,8 @@ export function ListingImagesUpload({
     const next: ListingImageItem[] = [...items];
     for (const file of Array.from(files)) {
       if (next.length >= MAX_LISTING_IMAGES) break;
-      if (!file.type.startsWith("image/")) continue;
-      if (file.size > MAX_FILE_BYTES) continue;
+      if (!isAllowedListingImage(file)) continue;
+      if (file.size > MAX_LISTING_IMAGE_BYTES) continue;
       next.push({
         id: newId(),
         file,
@@ -57,7 +65,14 @@ export function ListingImagesUpload({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-kumbu-foreground">{t("listingPhotosTitle")}</p>
+        <p className="text-sm font-semibold text-kumbu-foreground">
+          {t("listingPhotosTitle")}
+          {optional ? (
+            <span className="ml-1.5 text-[11px] font-medium text-kumbu-muted">
+              · {t("optionalLabel")}
+            </span>
+          ) : null}
+        </p>
         <span className="text-[11px] font-medium text-kumbu-muted">
           {items.length}/{MAX_LISTING_IMAGES}
         </span>
@@ -109,7 +124,7 @@ export function ListingImagesUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept={LISTING_IMAGE_ACCEPT}
         multiple
         className="hidden"
         onChange={(e) => {
@@ -131,7 +146,7 @@ export function ListingImagesUpload({
 
       {items.length === 0 && (
         <p className="rounded-xl bg-kumbu-primary-soft/60 px-3 py-2 text-xs text-kumbu-muted">
-          {t("photoTip")}
+          {hint ?? t("photoTip")}
         </p>
       )}
     </div>

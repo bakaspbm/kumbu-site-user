@@ -28,13 +28,14 @@ import type {
   Order,
   SellerSummary,
   SortMode,
+  CatalogSearchFilters,
   AppPaymentMethod,
   StoreUser,
   StoreUserUpdate,
   UserNotification,
 } from "@/types/store";
 import type { ProductReview, ProductReviewMedia } from "@/types/review";
-import type { ApplicationListFilters, JobApplication, JobListFilters, UserCv, UserCvInsert } from "@/types/job";
+import type { ApplicationListFilters, CandidateMatch, CandidateSearchFilters, JobApplication, JobListFilters, JobMatch, UserCv, UserCvInsert } from "@/types/job";
 import type { PropertyMeta, PropertyRentalRequest } from "@/types/property";
 export function isApiMode(): boolean {
   return true;
@@ -54,6 +55,13 @@ export async function listCatalogProducts(clientOrOpts: unknown, maybeOpts?: {
     subcategoryId?: string;
     sortMode?: SortMode;
     featuredOnly?: boolean;
+    city?: string;
+    region?: string;
+    priceMin?: number;
+    priceMax?: number;
+    listingIntent?: "sale" | "rent";
+    propertyType?: string;
+    condition?: string;
   },
 ): Promise<CatalogProduct[]> {
   const opts = (maybeOpts ?? clientOrOpts) as {
@@ -61,8 +69,21 @@ export async function listCatalogProducts(clientOrOpts: unknown, maybeOpts?: {
     subcategoryId?: string;
     sortMode?: SortMode;
     featuredOnly?: boolean;
+    city?: string;
+    region?: string;
+    priceMin?: number;
+    priceMax?: number;
+    listingIntent?: "sale" | "rent";
+    propertyType?: string;
+    condition?: string;
   };
   return catalogApi.listCatalogProductsBackend(opts);
+}
+
+export async function searchCatalogListings(
+  filters: CatalogSearchFilters,
+): Promise<{ items: CatalogProduct[]; total: number }> {
+  return catalogApi.searchCatalogListingsBackend(filters);
 }
 
 export async function listFeedProducts(clientOrLimit?: unknown, maybeLimit?: number): Promise<CatalogProduct[]> {
@@ -440,6 +461,22 @@ export async function updateCv(clientOrCvId: unknown, cvIdOrInput: string | Part
 export async function deleteCv(clientOrCvId: unknown, maybeCvId?: string, _userId?: string): Promise<void> {
   const cvId = String(maybeCvId ?? clientOrCvId);
   return backendJobsApi.deleteCvBackend(cvId);
+}
+
+export async function searchCandidates(filters: CandidateSearchFilters = {}): Promise<CandidateMatch[]> {
+  return backendJobsApi.searchCandidatesBackend(filters);
+}
+
+export async function matchJobsForCv(cvId: string): Promise<JobMatch[]> {
+  return backendJobsApi.matchJobsForCvBackend(cvId);
+}
+
+export async function contactJobCandidate(
+  jobId: string,
+  cvId: string,
+  message?: string,
+): Promise<JobApplication> {
+  return backendJobsApi.contactCandidateBackend(jobId, cvId, message);
 }
 
 export async function listOccupiedDateRanges(clientOrProductId: unknown, maybeProductId?: string): Promise<{ checkIn: string; checkOut: string }[]> {

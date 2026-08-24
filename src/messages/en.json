@@ -103,7 +103,7 @@
     "emailOnNotification": "Account notifications",
     "emailOnNotificationDesc": "Email when you get an in-app notification (applications, support, etc.).",
     "emailOnNewListings": "New listings",
-    "emailOnNewListingsDesc": "Occasional email when others publish listings (only if admin has enabled it).",
+    "emailOnNewListingsDesc": "Occasional email when others publish listings.",
     "emailPrefsSaved": "Preference saved.",
     "emailPrefsNote": "We only send email if your address is verified. You can change these options anytime."
   },
@@ -759,7 +759,7 @@
     "saving": "Publishing…",
     "successTitle": "Listing published!",
     "success": "Listing published successfully.",
-    "intro": "Four steps — category, details, photos, review. Takes just a few minutes.",
+    "intro": "Choose a category and fill in the listing details. Takes just a few minutes.",
     "steps": {
       "category": "Category",
       "details": "Details",
@@ -814,6 +814,7 @@
     "addPhotoBtn": "Add",
     "choosePhotosBtn": "Choose photos ({remaining} remaining)",
     "photoTip": "Good photos sell faster. Use natural light and show the item from different angles.",
+    "photoTipJob": "Photo optional — the job still publishes without an image.",
     "optionalLabel": "Optional",
     "listingVideoTitle": "Listing videos",
     "listingVideoHint": "Optional · up to 3 videos · any video format · max 1 minute and 40 MB each.",
@@ -1900,6 +1901,13 @@
       "description": "Description (optional)",
       "typePrefix": "Type:",
       "select": "Select…"
+    },
+    "directory": {
+      "loading": "Searching…",
+      "empty": "Type to see suggestions.",
+      "notFound": "Can't find what you need?",
+      "addManual": "Add manually",
+      "saving": "Saving…"
     },
     "vehicles": {
       "brandHint": "Type or pick a brand from the list.",

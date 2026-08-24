@@ -12,10 +12,17 @@ import { JobApplyPanel } from "@/components/jobs/job-apply-panel";
 import { isJobListing } from "@/lib/jobs/category";
 import { AddToCartButton } from "@/components/store/add-to-cart-button";
 import { FavoriteButton } from "@/components/store/favorite-button";
+import { ListingShareDialog } from "@/components/store/listing-share-dialog";
 import { isPropertyListing } from "@/lib/property/category";
 import { isSaleOnlyProperty } from "@/lib/property/constants";
 import { Button } from "@/components/ui/button";
-import { startConversationAction } from "@/app/actions/start-conversation";
+import {
+  ensureBrowserAccessToken,
+  refreshBrowserSessionCookies,
+} from "@/lib/kumbu-api/browser-session";
+import { ApiError } from "@/lib/kumbu-api/client";
+import { startConversationBackend } from "@/lib/kumbu-api/chat";
+import { isStoreApiUnauthorized } from "@/lib/kumbu-api/store";
 import { promiseWithTimeout } from "@/lib/promise-timeout";
 import { useAuth } from "@/contexts/auth-context";
 import type { CatalogProduct } from "@/types/store";
@@ -30,6 +37,7 @@ export function ListingContactActions({ product }: ListingContactActionsProps) {
   const { isLoggedIn, user } = useAuth();
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const isOwn = isLoggedIn && user?.id === product.sellerId;
   const location = product.deliveryText?.trim() || product.seller?.city || "Angola";
@@ -37,6 +45,71 @@ export function ListingContactActions({ product }: ListingContactActionsProps) {
   const isProperty = isPropertyListing(product) && meta;
   const saleOnlyLand = meta ? isSaleOnlyProperty(meta) : false;
   const isJob = isJobListing(product);
+
+  const shareListing = {
+    title: product.title,
+    priceLabel: product.priceLabel,
+    location,
+    path: `/produto/${product.id}`,
+  };
+
+  const shareButton = (
+    <Button
+      type="button"
+      variant="ghost"
+      fullWidth
+      className="h-11 gap-2 border border-kumbu-border"
+      onClick={() => setShareOpen(true)}
+    >
+      <Share2 className="size-4" />
+      {isJob ? t("shareJob") : t("share")}
+    </Button>
+  );
+
+  async function handleMessage() {
+    setToast(null);
+    if (!isLoggedIn || !user) {
+      router.push(`/login?next=/produto/${product.id}`);
+      return;
+    }
+    const sellerId = product.sellerId?.trim();
+    if (!sellerId) {
+      setToast(t("sellerUnavailable"));
+      return;
+    }
+
+    setBusy(true);
+    try {
+      // Browser + cookies/proxy — evita server action sem sessão válida (falso logout).
+      const startOnce = async () => {
+        await ensureBrowserAccessToken();
+        return startConversationBackend(product.id);
+      };
+
+      let conversationId: string;
+      try {
+        conversationId = await promiseWithTimeout(startOnce(), 15_000, t("messageTimeout"));
+      } catch (err) {
+        if (isStoreApiUnauthorized(err) || (err instanceof ApiError && err.status === 401)) {
+          const renewed = await refreshBrowserSessionCookies();
+          if (!renewed) {
+            router.push(`/login?next=/produto/${product.id}`);
+            return;
+          }
+          conversationId = await promiseWithTimeout(startOnce(), 15_000, t("messageTimeout"));
+        } else {
+          throw err;
+        }
+      }
+
+      router.push(`/mensagens/${conversationId}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : t("startConversationError");
+      setToast(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (isOwn) {
     return (
@@ -53,81 +126,26 @@ export function ListingContactActions({ product }: ListingContactActionsProps) {
             {t("myListings")}
           </Button>
         )}
+        {shareButton}
+        <ListingShareDialog
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          listing={shareListing}
+        />
       </div>
     );
-  }
-
-  async function handleMessage() {
-    setToast(null);
-    if (!isLoggedIn || !user) {
-      router.push(`/login?next=/produto/${product.id}`);
-      return;
-    }
-    const sellerId = product.sellerId?.trim();
-    if (!sellerId) {
-      setToast(t("sellerUnavailable"));
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const result = await promiseWithTimeout(
-        startConversationAction(product.id, sellerId),
-        15_000,
-        t("messageTimeout"),
-      );
-
-      if (!result.ok) {
-        if (result.needsLogin) {
-          router.push(`/login?next=/produto/${product.id}`);
-          return;
-        }
-        setToast(result.error);
-        return;
-      }
-
-      router.push(`/mensagens/${result.conversationId}`);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : t("startConversationError");
-      setToast(msg);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleShare() {
-    const url = window.location.href;
-    const text = `${product.title} — ${product.priceLabel} · ${location}`;
-    try {
-      if (typeof navigator.share === "function") {
-        await navigator.share({ title: product.title, text, url });
-        return;
-      }
-    } catch {
-      /* cancelado ou indisponível */
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setToast(t("linkCopied"));
-    } catch {
-      setToast(url);
-    }
   }
 
   if (isJob) {
     return (
       <div className="space-y-4">
         <JobApplyPanel job={product} />
-        <Button
-          type="button"
-          variant="ghost"
-          fullWidth
-          className="h-11 gap-2 border border-kumbu-border"
-          onClick={handleShare}
-        >
-          <Share2 className="size-4" />
-          {t("shareJob")}
-        </Button>
+        {shareButton}
+        <ListingShareDialog
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          listing={shareListing}
+        />
       </div>
     );
   }
@@ -150,7 +168,13 @@ export function ListingContactActions({ product }: ListingContactActionsProps) {
           </Button>
           <FavoriteButton productId={product.id} className="h-11 w-full justify-center" />
         </div>
+        {shareButton}
         <ContactToast message={toast} />
+        <ListingShareDialog
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          listing={shareListing}
+        />
       </div>
     );
   }
@@ -171,7 +195,13 @@ export function ListingContactActions({ product }: ListingContactActionsProps) {
           {busy ? t("openingChat") : t("message")}
         </Button>
         <FavoriteButton productId={product.id} />
+        {shareButton}
         <ContactToast message={toast} />
+        <ListingShareDialog
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          listing={shareListing}
+        />
       </div>
     );
   }
@@ -194,7 +224,7 @@ export function ListingContactActions({ product }: ListingContactActionsProps) {
           type="button"
           variant="ghost"
           className="h-11 flex-1 gap-2 border border-kumbu-border"
-          onClick={handleShare}
+          onClick={() => setShareOpen(true)}
         >
           <Share2 className="size-4" />
           {t("share")}
@@ -210,6 +240,11 @@ export function ListingContactActions({ product }: ListingContactActionsProps) {
       </div>
 
       <ContactToast message={toast} />
+      <ListingShareDialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        listing={shareListing}
+      />
     </div>
   );
 }

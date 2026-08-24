@@ -8,7 +8,7 @@ export function useOrderStatusLabel() {
 
   return useCallback(
     (status: string) => {
-      const key = status.toLowerCase();
+      const key = String(status ?? "").toLowerCase();
       if (key === "completed") return t("delivered");
       if (key in { processing: 1, shipping: 1, delivered: 1, cancelled: 1 }) {
         return t(key as "processing" | "shipping" | "delivered" | "cancelled");

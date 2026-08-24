@@ -3,8 +3,8 @@
 import { useTranslations } from "next-intl";
 import { AngolaProvinceMunicipalityFields } from "@/components/geo/angola-province-municipality-fields";
 import { getConditionFilterOptions } from "@/lib/catalog/product-fields";
-import { isJobCategory } from "@/lib/jobs/category";
-import { isPropertyCategory } from "@/lib/property/category";
+import { isJobCategory, isJobCategoryId } from "@/lib/jobs/category";
+import { isPropertyCategory, isPropertyCategoryId } from "@/lib/property/category";
 import type { CatalogCategory, SortMode } from "@/types/store";
 import type { PropertyListingIntent, PropertyType } from "@/types/property";
 
@@ -66,15 +66,11 @@ export function CatalogFiltersPanel({
   const t = useTranslations("search");
   const tFields = useTranslations("catalogFields");
   const isJobs =
-    category != null &&
-    (isJobCategory(category) ||
-      category.kind === "job" ||
-      category.id === "empregos" ||
-      category.id === "emprego");
+    category != null && (isJobCategory(category) || isJobCategoryId(category.id));
   const showProperty =
     category != null &&
     !isJobs &&
-    (isPropertyCategory(category) || category.id === "imoveis" || category.kind === "property");
+    (isPropertyCategory(category) || isPropertyCategoryId(category.id));
   const showCondition =
     category != null && !showProperty && !isJobs;
   const conditionOptions = getConditionFilterOptions(category?.id);

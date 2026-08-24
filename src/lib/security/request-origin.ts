@@ -39,8 +39,17 @@ export function isAllowedRequestHost(hostname: string): boolean {
   return false;
 }
 
-/** Bloqueia POST cross-site a rotas que definem cookies de sessão. */
+/**
+ * Bloqueia POST cross-site a rotas que definem cookies de sessão.
+ * Aceita também pedidos do nosso JS (`X-Kumbu-Client`) — necessário em
+ * WebViews (ex.: Instagram) que omitem Origin / Sec-Fetch-Site.
+ */
 export function assertSameOriginRequest(request: Request): boolean {
+  const clientHeader = request.headers.get("x-kumbu-client")?.trim().toLowerCase();
+  if (clientHeader === "web" || clientHeader === "app") {
+    return true;
+  }
+
   const secFetchSite = request.headers.get("sec-fetch-site")?.toLowerCase();
   if (secFetchSite === "same-origin" || secFetchSite === "same-site") {
     return true;

@@ -190,7 +190,7 @@ const patches = {
     },
     auth: {
       registerIntro: "Crie conta grátis para publicar, comprar e candidatar-se a vagas.",
-      loginIntro: "Entre na sua conta Kumbú — a mesma na app e no site.",
+      loginIntro: "Inicie sessão na sua conta Kumbú para continuar.",
     },
     errors: {
       emptyCart: "O carrinho está vazio.",

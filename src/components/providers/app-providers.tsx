@@ -10,6 +10,8 @@ import { CartProvider } from "@/contexts/cart-context";
 import { LiveSyncProvider } from "@/contexts/live-sync-context";
 import { MessagesProvider } from "@/contexts/messages-context";
 import { ModalRouteGuard } from "@/components/providers/modal-route-guard";
+import { NavigationHistoryTracker } from "@/components/providers/navigation-history-tracker";
+import { PageViewBeacon } from "@/components/analytics/page-view-beacon";
 import { ThemeProvider } from "@/contexts/theme-context";
 import type { ReactNode } from "react";
 
@@ -17,6 +19,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
       <FetchGuard />
+      <NavigationHistoryTracker />
+      <PageViewBeacon />
       <ServiceWorkerRegister />
       <ModalRouteGuard />
       <AuthUrlHandler />

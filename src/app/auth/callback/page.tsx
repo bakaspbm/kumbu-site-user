@@ -12,8 +12,37 @@ import {
 } from "@/lib/auth/oauth-providers";
 import { completeFacebookOAuthFromCode } from "@/app/actions/facebook-oauth";
 import { fetchOAuthPublicConfig } from "@/lib/kumbu-api/oauth-config";
-import { oauthLoginBackend, persistClientSession } from "@/lib/kumbu-api/auth";
+import {
+  oauthLoginBackend,
+  oauthLoginFacebookCodeBackend,
+  persistClientSession,
+  type KumbuSession,
+} from "@/lib/kumbu-api/auth";
+import { ApiError } from "@/lib/kumbu-api/client";
 import { useFormatOAuthError, useOAuthCallbackError } from "@/lib/i18n/use-oauth-errors";
+
+function isFacebookGraphConnectivityError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /facebook|graph\.facebook|rede\/firewall|não consegue contactar|nao consegue contactar|validar login facebook|falha ao validar login facebook/i.test(
+    msg,
+  );
+}
+
+async function completeFacebookLogin(
+  code: string,
+  redirectUri: string,
+): Promise<KumbuSession> {
+  try {
+    // Preferir API (secret no VPS) via proxy Next com originAwareFetch.
+    return await oauthLoginFacebookCodeBackend(code, redirectUri);
+  } catch (err) {
+    // Fallback: trocar code no Vercel e enviar token (+ perfil) à API.
+    if (err instanceof ApiError && err.status >= 400 && err.status < 500 && !isFacebookGraphConnectivityError(err)) {
+      throw err;
+    }
+    return completeFacebookOAuthFromCode(code, redirectUri);
+  }
+}
 
 function AuthCallbackInner() {
   const t = useTranslations("auth");
@@ -22,9 +51,9 @@ function AuthCallbackInner() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const parsed = parseOAuthCallbackFromWindow();
     clearOAuthCallbackUrl();
 
-    const parsed = parseOAuthCallbackFromWindow();
     if (!parsed.ok) {
       setError(formatOAuthError(mapCallbackError(parsed.error)));
       return;
@@ -43,9 +72,9 @@ function AuthCallbackInner() {
         }
 
         const oauthConfig = await fetchOAuthPublicConfig();
-        let session;
+        let session: KumbuSession;
         if (verified.provider === "facebook") {
-          session = await completeFacebookOAuthFromCode(parsed.token, verified.redirectUri);
+          session = await completeFacebookLogin(parsed.token, verified.redirectUri);
         } else {
           const profile = decodeGoogleIdToken(parsed.token, oauthConfig.googleClientId);
           session = await oauthLoginBackend("google", parsed.token, profile);

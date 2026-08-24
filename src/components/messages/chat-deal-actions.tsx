@@ -3,9 +3,15 @@
 import { useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { setConversationDealAction } from "@/app/actions/chat-deal";
+import {
+  getConversationBackend,
+  listConversationMessagesBackend,
+  setConversationDealBackend,
+} from "@/lib/kumbu-api/chat";
+import { withBrowserAuthRetry } from "@/lib/kumbu-api/with-browser-auth";
 import { useDealStatusLabel } from "@/lib/chat/deal-labels";
 import { ProductReviewForm } from "@/components/store/product-review-form";
+import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import type { ConversationSummary } from "@/types/store";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +29,7 @@ export function ChatDealActions({
   onReviewSubmitted,
 }: ChatDealActionsProps) {
   const t = useTranslations("chat");
+  const formatErrorMessage = useFormatErrorMessage();
   const dealStatusLabel = useDealStatusLabel();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,13 +44,26 @@ export function ChatDealActions({
   async function apply(status: "purchased" | "rejected") {
     setBusy(true);
     setError(null);
-    const result = await setConversationDealAction(conversation.id, status);
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      await withBrowserAuthRetry(async () => {
+        await setConversationDealBackend(conversation.id, status);
+      });
+      const [nextConv, messages] = await withBrowserAuthRetry(async () =>
+        Promise.all([
+          getConversationBackend(conversation.id),
+          listConversationMessagesBackend(conversation.id),
+        ]),
+      );
+      if (!nextConv) {
+        setError(t("conversationUnavailable"));
+        return;
+      }
+      onUpdated(nextConv, messages);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : formatErrorMessage(err));
+    } finally {
+      setBusy(false);
     }
-    onUpdated(result.conversation, result.messages);
   }
 
   if (closed) {

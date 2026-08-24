@@ -1,5 +1,5 @@
 import { getKumbuApiClient, type KumbuApiClient } from "@/lib/kumbu-api/client";
-import type { AppMarketingBlock } from "@/types/store";
+import type { AppMarketingBlock, HomeBannerSlide } from "@/types/store";
 
 function clientOrThrow(): KumbuApiClient {
   const client = getKumbuApiClient();
@@ -18,7 +18,49 @@ type MarketingBlockDto = {
   gradientTo?: string | null;
   sort_order?: number | null;
   sortOrder?: number | null;
+  active?: boolean | null;
+  badge?: string | null;
+  cta_label?: string | null;
+  ctaLabel?: string | null;
+  cta_href?: string | null;
+  ctaHref?: string | null;
+  image_url?: string | null;
+  imageUrl?: string | null;
+  category_id?: string | null;
+  categoryId?: string | null;
+  search_query?: string | null;
+  searchQuery?: string | null;
+  starts_at?: string | null;
+  startsAt?: string | null;
+  ends_at?: string | null;
+  endsAt?: string | null;
+  show_brand_points?: boolean | null;
+  showBrandPoints?: boolean | null;
+  source?: string | null;
 };
+
+function mapMarketingBlock(row: MarketingBlockDto, index = 0): AppMarketingBlock {
+  return {
+    id: String(row.id),
+    kind: String(row.kind ?? "banner"),
+    title: row.title ?? null,
+    subtitle: row.subtitle ?? null,
+    gradientFrom: row.gradientFrom ?? row.gradient_from ?? null,
+    gradientTo: row.gradientTo ?? row.gradient_to ?? null,
+    sortOrder: Number(row.sortOrder ?? row.sort_order ?? index),
+    active: row.active !== false,
+    badge: row.badge ?? null,
+    ctaLabel: row.ctaLabel ?? row.cta_label ?? null,
+    ctaHref: row.ctaHref ?? row.cta_href ?? null,
+    imageUrl: row.imageUrl ?? row.image_url ?? null,
+    categoryId: row.categoryId ?? row.category_id ?? null,
+    searchQuery: row.searchQuery ?? row.search_query ?? null,
+    startsAt: row.startsAt ?? row.starts_at ?? null,
+    endsAt: row.endsAt ?? row.ends_at ?? null,
+    showBrandPoints: row.showBrandPoints ?? row.show_brand_points ?? true,
+    source: row.source ?? undefined,
+  };
+}
 
 export async function fetchMarketingBlocksBackend(): Promise<AppMarketingBlock[]> {
   const client = getKumbuApiClient();
@@ -27,15 +69,21 @@ export async function fetchMarketingBlocksBackend(): Promise<AppMarketingBlock[]
     const rows = await client.request<MarketingBlockDto[]>("/platform/marketing-blocks", {
       auth: false,
     });
-    return (rows ?? []).map((row, index) => ({
-      id: String(row.id),
-      kind: String(row.kind ?? "banner"),
-      title: row.title ?? null,
-      subtitle: row.subtitle ?? null,
-      gradientFrom: row.gradientFrom ?? row.gradient_from ?? null,
-      gradientTo: row.gradientTo ?? row.gradient_to ?? null,
-      sortOrder: Number(row.sortOrder ?? row.sort_order ?? index),
-    }));
+    return (rows ?? []).map(mapMarketingBlock);
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchHomeBannersBackend(): Promise<HomeBannerSlide[]> {
+  const client = getKumbuApiClient();
+  if (!client) return [];
+  try {
+    const row = await client.request<{ banners?: MarketingBlockDto[] }>(
+      "/platform/home-banners",
+      { auth: false },
+    );
+    return (row?.banners ?? []).map(mapMarketingBlock);
   } catch {
     return [];
   }

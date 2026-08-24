@@ -6,6 +6,11 @@ export function isJobCategory(category: CatalogCategory | undefined | null): boo
   return isEmpregoCategory(category.id, category.kind, category.name);
 }
 
+/** Detecta vaga mesmo se o objecto categoria ainda não estiver na lista. */
+export function isJobCategoryId(categoryId?: string | null): boolean {
+  return isEmpregoCategory(categoryId);
+}
+
 export function isJobListing(product: CatalogProduct): boolean {
   return product.listingKind === "job" || Boolean(product.jobMeta);
 }

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Star, User } from "lucide-react";
 import { BackHeader } from "@/components/layout/back-header";
-import { ListingImage } from "@/components/ui/listing-image";
+import { ListingImage, LISTING_IMAGE_SIZES } from "@/components/ui/listing-image";
 import { OfflineBanner } from "@/components/pwa/offline-banner";
 import { ListingCard } from "@/components/store/listing-card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
@@ -80,7 +80,7 @@ export function SellerPageClient({ sellerId }: SellerPageClientProps) {
         <div className="kumbu-card flex items-center gap-4 p-5">
           <div className="relative size-16 shrink-0 overflow-hidden rounded-full bg-kumbu-primary text-white">
             {seller.photoUrl ? (
-              <ListingImage src={seller.photoUrl} alt="" fill />
+              <ListingImage src={seller.photoUrl} alt="" fill sizes={LISTING_IMAGE_SIZES.avatar} />
             ) : (
               <span className="flex h-full items-center justify-center text-xl font-extrabold">
                 {initials(seller.displayName)}

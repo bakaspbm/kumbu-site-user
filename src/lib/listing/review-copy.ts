@@ -1,3 +1,6 @@
+import { isEmpregoCategory } from "@/lib/jobs/constants";
+import { isImoveisCategory } from "@/lib/property/constants";
+
 export type ListingKindForReview = "general" | "property" | "job";
 
 export type ReviewCopyTranslator = (
@@ -11,8 +14,8 @@ export function resolveListingKind(
   listingKind?: string | null,
   categoryId?: string,
 ): ListingKindForReview {
-  if (listingKind === "property" || categoryId === "imoveis") return "property";
-  if (listingKind === "job" || categoryId === "emprego") return "job";
+  if (listingKind === "property" || isImoveisCategory(categoryId)) return "property";
+  if (listingKind === "job" || isEmpregoCategory(categoryId)) return "job";
   return "general";
 }
 

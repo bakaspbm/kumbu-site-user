@@ -48,12 +48,10 @@ export function ListingPriceHistoryPanel({ productId }: ListingPriceHistoryPanel
   }, [productId]);
 
   if (loading) {
-    return (
-      <p className="text-sm text-kumbu-muted">{t("loading")}</p>
-    );
+    return <p className="text-sm text-kumbu-muted">{t("loading")}</p>;
   }
 
-  if (entries.length === 0) {
+  if (entries.length <= 1) {
     return null;
   }
 
@@ -64,30 +62,38 @@ export function ListingPriceHistoryPanel({ productId }: ListingPriceHistoryPanel
         <h2 className="text-sm font-bold text-kumbu-foreground">{t("title")}</h2>
       </div>
       <ul className="mt-3 space-y-2">
-        {entries.map((entry, index) => (
-          <li
-            key={`${entry.changedAt}-${index}`}
-            className="flex items-center justify-between gap-3 rounded-xl bg-kumbu-surface-muted px-3 py-2.5 text-sm"
-          >
-            <div className="min-w-0">
-              <p className="font-semibold text-kumbu-foreground">{entry.priceLabel}</p>
-              {entry.oldPriceLabel && (
-                <p className="text-xs text-kumbu-muted line-through">{entry.oldPriceLabel}</p>
-              )}
-            </div>
-            <div className="shrink-0 text-right">
-              {entry.discountPercent != null && entry.discountPercent > 0 && (
-                <p className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-700">
-                  <TrendingDown className="size-3" />
-                  -{entry.discountPercent}%
+        {entries.map((entry, index) => {
+          const hasReduction =
+            entry.oldPriceLabel &&
+            entry.oldPriceLabel.trim() &&
+            entry.oldPriceLabel.trim() !== entry.priceLabel.trim();
+
+          return (
+            <li
+              key={`${entry.changedAt}-${index}`}
+              className="flex items-center justify-between gap-3 rounded-xl bg-kumbu-surface-muted px-3 py-2.5 text-sm"
+            >
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-kumbu-muted">
+                  {hasReduction ? t("reduced") : t("updated")}
                 </p>
-              )}
-              <p className="text-[11px] text-kumbu-muted">
-                {formatChangedAt(entry.changedAt)}
-              </p>
-            </div>
-          </li>
-        ))}
+                <p className="font-semibold text-kumbu-foreground">{entry.priceLabel}</p>
+                {hasReduction && (
+                  <p className="text-xs text-kumbu-muted line-through">{entry.oldPriceLabel}</p>
+                )}
+              </div>
+              <div className="shrink-0 text-right">
+                {entry.discountPercent != null && entry.discountPercent > 0 && (
+                  <p className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-700">
+                    <TrendingDown className="size-3" />
+                    -{entry.discountPercent}%
+                  </p>
+                )}
+                <p className="text-[11px] text-kumbu-muted">{formatChangedAt(entry.changedAt)}</p>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

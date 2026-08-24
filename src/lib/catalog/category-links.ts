@@ -1,10 +1,14 @@
-import { isJobCategory } from "@/lib/jobs/category";
+import { isEmpregoCategory } from "@/lib/jobs/constants";
 import { isPropertyCategory } from "@/lib/property/category";
 import type { CatalogCategory } from "@/types/store";
 
 /** URL para explorar uma categoria (produtos, imóveis ou emprego). */
-export function getCategoryExploreHref(category: Pick<CatalogCategory, "id" | "name">): string {
-  if (category.id === "emprego") return "/emprego";
+export function getCategoryExploreHref(
+  category: Pick<CatalogCategory, "id" | "name"> & { kind?: string },
+): string {
+  if (isEmpregoCategory(category.id, category.kind, category.name)) {
+    return "/emprego";
+  }
   return `/store-category/${category.id}?name=${encodeURIComponent(category.name)}`;
 }
 
@@ -23,7 +27,7 @@ export function partitionCategoriesForExplore(
   const jobs: CatalogCategory[] = [];
 
   for (const c of categories) {
-    if (isJobCategory(c)) jobs.push(c);
+    if (isEmpregoCategory(c.id, c.kind, c.name)) jobs.push(c);
     else if (isPropertyCategory(c)) stays.push(c);
     else products.push(c);
   }

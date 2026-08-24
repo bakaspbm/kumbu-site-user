@@ -86,16 +86,18 @@ function genderFromApi(code: string | null | undefined): StoreUser["gender"] {
     masculino: "masculino",
     feminino: "feminino",
     outro: "outro",
+    prefer_not_to_say: "outro",
+    prefere_nao_dizer: "outro",
   };
-  return map[code.toLowerCase()] ?? null;
+  return map[code.toLowerCase().trim()] ?? null;
 }
 
 function genderToApi(gender: StoreUserUpdate["gender"]): string | undefined {
   if (!gender) return undefined;
   const map: Record<NonNullable<StoreUserUpdate["gender"]>, string> = {
-    masculino: "masculino",
-    feminino: "feminino",
-    outro: "outro",
+    masculino: "male",
+    feminino: "female",
+    outro: "other",
   };
   return map[gender];
 }
@@ -271,7 +273,7 @@ function toStoreUser(row: UserProfileDto | null | undefined): StoreUser {
     banReason: (row.banReason ?? row.ban_reason ?? null) as string | null,
     emailOnChat: row.emailOnChat !== false,
     emailOnNotification: row.emailOnNotification !== false,
-    emailOnNewListings: row.emailOnNewListings === true,
+    emailOnNewListings: row.emailOnNewListings !== false,
   };
 }
 

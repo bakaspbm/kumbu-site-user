@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { CatalogProduct } from "@/types/store";
+import { isJobCategoryId } from "@/lib/jobs/category";
 import { productCoverUrl } from "@/lib/store/product-images";
 import { absoluteAssetUrl, absoluteSiteUrl, DEFAULT_OG_IMAGE, siteOrigin } from "@/lib/seo/site-url";
 
@@ -102,10 +103,9 @@ export function buildProductMetadata(product: CatalogProduct): Metadata {
 }
 
 export function buildCategoryMetadata(categoryName: string, categoryId: string): Metadata {
-  const path =
-    categoryId === "emprego"
-      ? "/emprego"
-      : `/store-category/${categoryId}?name=${encodeURIComponent(categoryName)}`;
+  const path = isJobCategoryId(categoryId)
+    ? "/emprego"
+    : `/store-category/${categoryId}?name=${encodeURIComponent(categoryName)}`;
   return buildPageMetadata({
     title: categoryName,
     description: `Anúncios de ${categoryName} em Angola — explore e contacte vendedores directamente no Kumbú.`,

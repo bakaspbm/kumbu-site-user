@@ -19,6 +19,7 @@ import {
   markJobAsFilled,
   recordJobApplicationCvView,
   respondJobApplication,
+  contactJobCandidate,
 } from "@/lib/site-data";
 import { useAuth } from "@/contexts/auth-context";
 import { CvDetailModal } from "@/components/jobs/cv-detail-modal";
@@ -30,6 +31,7 @@ import type { JobApplication, JobApplicationStatus } from "@/types/job";
 export function EmployerApplicationsManager() {
   const t = useTranslations("jobs.applications");
   const tJobs = useTranslations("jobs");
+  const tContact = useTranslations("jobs.candidateSearch");
   const tCommon = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -44,6 +46,10 @@ export function EmployerApplicationsManager() {
   const [appsLoading, setAppsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [contactApp, setContactApp] = useState<JobApplication | null>(null);
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactBusy, setContactBusy] = useState(false);
+  const [contactToast, setContactToast] = useState<string | null>(null);
   const [province, setProvince] = useState("");
   const [status, setStatus] = useState<JobApplicationStatus | "">("");
   const [q, setQ] = useState("");
@@ -147,6 +153,25 @@ export function EmployerApplicationsManager() {
     await loadAll();
   }
 
+  async function sendContact(app: JobApplication) {
+    setContactBusy(true);
+    setContactToast(null);
+    try {
+      const updated = await contactJobCandidate(app.jobId, app.cvId, contactMessage);
+      setApps((prev) => prev.map((a) => (a.id === app.id ? updated : a)));
+      setContactApp(null);
+      setContactMessage("");
+      setContactToast(tContact("contactSuccess"));
+      if (updated.conversationId) {
+        router.push(`/mensagens/${updated.conversationId}`);
+      }
+    } catch (e) {
+      setContactToast(e instanceof Error ? e.message : tCommon("error"));
+    } finally {
+      setContactBusy(false);
+    }
+  }
+
   const showSpinner = loading || appsLoading;
 
   return (
@@ -195,6 +220,7 @@ export function EmployerApplicationsManager() {
             <option value="pending">{t("statusPending")}</option>
             <option value="accepted">{t("statusAccepted")}</option>
             <option value="rejected">{t("statusRejected")}</option>
+            <option value="invited">{t("statusInvited")}</option>
           </select>
         </div>
         <input
@@ -323,7 +349,25 @@ export function EmployerApplicationsManager() {
                   </Button>
                 </div>
               )}
-              {a.conversationId && (
+              {a.status === "rejected" && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs text-kumbu-muted">{t("contactRejectedHint")}</p>
+                  <Button
+                    type="button"
+                    fullWidth
+                    className="h-10 gap-2"
+                    onClick={() => {
+                      setContactApp(a);
+                      setContactMessage("");
+                      setContactToast(null);
+                    }}
+                  >
+                    <MessageCircle className="size-4" />
+                    {tContact("contactCandidate")}
+                  </Button>
+                </div>
+              )}
+              {((a.status === "accepted" || a.status === "invited") && a.conversationId) && (
                 <Button
                   href={`/mensagens/${a.conversationId}`}
                   variant="secondary"
@@ -337,6 +381,44 @@ export function EmployerApplicationsManager() {
             </li>
           ))}
         </ul>
+      )}
+
+      {contactApp && (
+        <div className="kumbu-card space-y-3 p-4">
+          <h3 className="font-bold">{tContact("contactTitle")}</h3>
+          <p className="text-sm text-kumbu-muted">
+            {tContact("contactDescription")} ({contactApp.cvSnapshot?.fullName ?? t("applicant")})
+          </p>
+          <textarea
+            value={contactMessage}
+            onChange={(e) => setContactMessage(e.target.value)}
+            placeholder={tContact("contactMessagePlaceholder")}
+            className="kumbu-input min-h-[88px] text-sm"
+          />
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => setContactApp(null)}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              className="flex-1 gap-2"
+              disabled={contactBusy}
+              onClick={() => void sendContact(contactApp)}
+            >
+              <MessageCircle className="size-4" />
+              {contactBusy ? tContact("contacting") : tContact("sendContact")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {contactToast && (
+        <p className="rounded-xl bg-kumbu-secondary px-3 py-2 text-sm text-kumbu-muted">{contactToast}</p>
       )}
 
       {detailApp && (

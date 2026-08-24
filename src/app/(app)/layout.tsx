@@ -6,15 +6,19 @@ import { OfflineBootstrapSync } from "@/components/pwa/offline-bootstrap-sync";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
 import { AccountSuspendedBanner } from "@/components/account/account-suspended-banner";
+import { VisitorPresenceBeacon } from "@/components/analytics/visitor-presence-beacon";
+import { InAppBrowserBanner } from "@/components/shell/in-app-browser-banner";
 
 export default function AppShellLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="kumbu-page-bg flex min-h-screen">
+      <VisitorPresenceBeacon />
       <OfflineBootstrapSync />
       <RoutePrefetch />
       <OnboardingRedirect />
       <DesktopNav />
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <InAppBrowserBanner />
         <AccountSuspendedBanner />
         <div className="kumbu-page-enter flex-1 pb-[4.75rem] md:pb-0">{children}</div>
         <SiteFooter />

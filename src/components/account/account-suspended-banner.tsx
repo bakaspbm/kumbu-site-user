@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ShieldAlert } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { getSupportEmail } from "@/lib/config/support";
 import { getUserBanMessage, isUserCurrentlyBanned } from "@/lib/user-ban";
 import type { StoreUser } from "@/types/store";
 
@@ -18,6 +19,7 @@ function banFieldsFromStore(user: StoreUser) {
 export function AccountSuspendedBanner() {
   const t = useTranslations("accountSuspension");
   const { storeUser, isLoggedIn } = useAuth();
+  const supportEmail = getSupportEmail();
 
   if (!isLoggedIn || !storeUser) return null;
 
@@ -41,7 +43,15 @@ export function AccountSuspendedBanner() {
           ) : (
             <p className="text-sm leading-relaxed text-kumbu-muted">{t("body")}</p>
           )}
-          <p className="text-xs leading-relaxed text-kumbu-muted">{t("supportHint")}</p>
+          <p className="text-xs leading-relaxed text-kumbu-muted">
+            {t("supportHint")}{" "}
+            <a
+              href={`mailto:${supportEmail}`}
+              className="font-semibold text-kumbu-primary hover:underline"
+            >
+              {supportEmail}
+            </a>
+          </p>
           <Link
             href="/support/chat"
             className="inline-flex h-10 items-center justify-center rounded-xl bg-kumbu-primary px-4 text-sm font-bold text-white transition hover:opacity-95"

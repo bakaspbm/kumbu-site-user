@@ -97,16 +97,25 @@ export async function checkoutOrdersBackend(items: CartItem[]): Promise<{
   };
 }
 
+function asOrderRows(payload: unknown): OrderDto[] {
+  if (Array.isArray(payload)) return payload;
+  if (payload && typeof payload === "object") {
+    const content = (payload as { content?: unknown }).content;
+    if (Array.isArray(content)) return content;
+  }
+  return [];
+}
+
 export async function listPurchaseOrdersBackend(): Promise<Order[]> {
   const client = clientOrThrow();
-  const rows = await client.request<OrderDto[]>("/orders/purchases");
-  return (rows ?? []).map(toOrder);
+  const rows = await client.request<unknown>("/orders/purchases");
+  return asOrderRows(rows).map(toOrder);
 }
 
 export async function listSalesOrdersBackend(): Promise<Order[]> {
   const client = clientOrThrow();
-  const rows = await client.request<OrderDto[]>("/orders/sales");
-  return (rows ?? []).map(toOrder);
+  const rows = await client.request<unknown>("/orders/sales");
+  return asOrderRows(rows).map(toOrder);
 }
 
 export async function listOrdersBackend(): Promise<Order[]> {

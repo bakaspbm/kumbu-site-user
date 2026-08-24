@@ -20,6 +20,36 @@ export function withAssetCacheBust(url: string): string {
   return url;
 }
 
+export function listingFilesOrigin(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_KUMBU_API_URL?.trim().replace(/\/$/, "") ??
+    "https://api.kumbu-market.com/api/v1";
+  try {
+    const parsed = new URL(raw);
+    return `${parsed.protocol}//${parsed.hostname}`;
+  } catch {
+    return "https://api.kumbu-market.com";
+  }
+}
+
+/** URL absoluta para o optimizador next/image (WebP/AVIF + redimensionamento). */
+export function resolveListingImageForOptimizer(raw: string): string | null {
+  const normalized = normalizeListingImageUrl(raw);
+  if (!normalized) return null;
+
+  if (normalized.startsWith("/backend-files/")) {
+    return withAssetCacheBust(
+      `${listingFilesOrigin()}/files${normalized.slice("/backend-files".length)}`,
+    );
+  }
+
+  if (normalized.startsWith("/") && !normalized.startsWith("//")) {
+    return normalized;
+  }
+
+  return withAssetCacheBust(normalized);
+}
+
 export function normalizeListingImageUrl(raw: string): string | null {
   let s = raw.trim();
   if (!s) return null;

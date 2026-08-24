@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { updateProfileAction } from "@/app/actions/profile";
+import { getStoreUser, updateStoreUser } from "@/lib/site-data";
+import { withBrowserAuthRetry } from "@/lib/kumbu-api/with-browser-auth";
+import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { cn } from "@/lib/utils";
 
 export type EmailPrefs = {
@@ -13,12 +15,47 @@ export type EmailPrefs = {
 
 type PrefKey = keyof EmailPrefs;
 
-export function EmailNotificationPrefs({ initial }: { initial: EmailPrefs }) {
+const DEFAULT_PREFS: EmailPrefs = {
+  emailOnChat: true,
+  emailOnNotification: true,
+  emailOnNewListings: true,
+};
+
+function prefsFromUser(user: {
+  emailOnChat?: boolean;
+  emailOnNotification?: boolean;
+  emailOnNewListings?: boolean;
+} | null): EmailPrefs {
+  if (!user) return DEFAULT_PREFS;
+  return {
+    emailOnChat: user.emailOnChat !== false,
+    emailOnNotification: user.emailOnNotification !== false,
+    emailOnNewListings: user.emailOnNewListings !== false,
+  };
+}
+
+export function EmailNotificationPrefs({ initial }: { initial?: EmailPrefs }) {
   const t = useTranslations("settings");
-  const [prefs, setPrefs] = useState(initial);
+  const formatErrorMessage = useFormatErrorMessage();
+  const [prefs, setPrefs] = useState(initial ?? DEFAULT_PREFS);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<PrefKey | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const user = await withBrowserAuthRetry(() => getStoreUser());
+        if (!cancelled) setPrefs(prefsFromUser(user));
+      } catch {
+        /* keep initial / defaults */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function toggle(key: PrefKey) {
     const next = !prefs[key];
@@ -27,18 +64,16 @@ export function EmailNotificationPrefs({ initial }: { initial: EmailPrefs }) {
     setError(null);
     setSavedKey(null);
     startTransition(async () => {
-      const result = await updateProfileAction({ [key]: next });
-      if (!result.ok) {
+      try {
+        const profile = await withBrowserAuthRetry(() =>
+          updateStoreUser({ [key]: next }),
+        );
+        setPrefs(prefsFromUser(profile));
+        setSavedKey(key);
+      } catch (err) {
         setPrefs(previous);
-        setError(result.error);
-        return;
+        setError(formatErrorMessage(err));
       }
-      setPrefs({
-        emailOnChat: result.profile.emailOnChat ?? next,
-        emailOnNotification: result.profile.emailOnNotification ?? next,
-        emailOnNewListings: result.profile.emailOnNewListings ?? next,
-      });
-      setSavedKey(key);
     });
   }
 

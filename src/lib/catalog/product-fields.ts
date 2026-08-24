@@ -1,6 +1,8 @@
 
 import type { BrandSuggestionKey } from "@/lib/catalog/brands";
 import { getBrandSuggestions } from "@/lib/catalog/brands";
+import { isEmpregoCategory } from "@/lib/jobs/constants";
+import { isImoveisCategory } from "@/lib/property/constants";
 
 export type ProductFieldType = "text" | "select" | "number";
 
@@ -551,6 +553,7 @@ export function getProductFields(
   categoryId: string,
   subcategoryId?: string | null,
 ): ProductFieldDef[] {
+  if (isEmpregoCategory(categoryId) || isImoveisCategory(categoryId)) return [];
   if (subcategoryId) {
     const key = `${categoryId}:${subcategoryId}`;
     if (FIELDS[key]) return FIELDS[key];
@@ -737,7 +740,7 @@ export function getPricePlaceholder(
   if (categoryId === "carros") return "Ex.: 2 500 000 Kz";
   if (categoryId === "servicos") return "Ex.: 5 000 Kz/hora ou preço fixo";
   if (categoryId === "imoveis") return "Use o formulário de imóvel";
-  if (categoryId === "emprego") return "Use o formulário de vaga";
+  if (categoryId === "emprego" || categoryId === "empregos") return "Use o formulário de vaga";
   if (subcategoryId === "telefones") return "Ex.: 85 000 Kz";
   if (subcategoryId === "tv-audio") return "Ex.: 180 000 Kz";
   if (subcategoryId === "computadores") return "Ex.: 350 000 Kz";
@@ -750,7 +753,7 @@ export function getCategoryKindLabel(category: {
   kind: string;
   name?: string;
 }): string {
-  if (category.id === "emprego" || category.kind === "job") return "Emprego e vagas";
+  if (category.id === "emprego" || category.id === "empregos" || category.kind === "job") return "Emprego e vagas";
   if (
     category.id === "imoveis" ||
     category.kind === "stay" ||

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { CvJobMatches } from "@/components/jobs/cv-job-matches";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ListingCard } from "@/components/store/listing-card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -121,9 +122,11 @@ export default function EmpregoPage() {
           </label>
         </div>
 
+        <CvJobMatches />
+
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
-            href="/conta/cvs"
+            href="/conta/curriculos"
             className="rounded-full bg-kumbu-secondary px-4 py-2 text-xs font-bold text-kumbu-primary"
           >
             {tAccount("myCvs")}

@@ -1,7 +1,10 @@
 import type {
   ApplicationListFilters,
+  CandidateMatch,
+  CandidateSearchFilters,
   JobApplication,
   JobListFilters,
+  JobMatch,
   UserCv,
   UserCvInsert,
 } from "@/types/job";
@@ -45,6 +48,7 @@ type ApplicationDto = {
   jobTitle?: string | null;
   applicantName?: string | null;
   cvViewedAt?: string | null;
+  initiatedBy?: "candidate" | "employer" | null;
 };
 
 function clientOrThrow(): KumbuApiClient {
@@ -96,6 +100,7 @@ function toApplication(row: ApplicationDto): JobApplication {
     jobTitle: row.jobTitle ?? null,
     applicantName: row.applicantName ?? null,
     cvViewedAt: row.cvViewedAt ?? null,
+    initiatedBy: row.initiatedBy === "employer" ? "employer" : "candidate",
   };
 }
 
@@ -148,6 +153,7 @@ export async function updateCvBackend(
     summary: input.summary ?? existing.summary ?? undefined,
     skills: input.skills ?? existing.skills ?? [],
     languages: input.languages ?? existing.languages ?? [],
+    experience: input.experience ?? existing.experience ?? [],
   };
   const row = await client.request<CvDto>(`/jobs/cvs/${encodeURIComponent(cvId)}`, {
     method: "PATCH",
@@ -237,4 +243,71 @@ export async function getMyApplicationForJobBackend(
 ): Promise<JobApplication | null> {
   const rows = await listMyJobApplicationsBackend();
   return rows.find((item) => item.jobId === jobId) ?? null;
+}
+
+type CandidateMatchDto = {
+  cv: CvDto;
+  matchScore: number;
+  matchReasons?: string[] | null;
+  alreadyApplied?: boolean;
+  applicationStatus?: JobApplication["status"] | null;
+  canContact?: boolean;
+};
+
+type JobMatchDto = {
+  job: ListingDto;
+  matchScore: number;
+  matchReasons?: string[] | null;
+  alreadyApplied?: boolean;
+};
+
+export async function searchCandidatesBackend(
+  filters: CandidateSearchFilters = {},
+): Promise<CandidateMatch[]> {
+  const client = clientOrThrow();
+  const rows = await client.request<CandidateMatchDto[]>("/jobs/search/candidates", {
+    query: {
+      q: filters.q?.trim() || undefined,
+      profession: filters.profession || undefined,
+      province: filters.province || undefined,
+      jobId: filters.jobId || undefined,
+    },
+  });
+  return (rows ?? []).map((row) => ({
+    cv: toCv(row.cv),
+    matchScore: row.matchScore ?? 0,
+    matchReasons: row.matchReasons ?? [],
+    alreadyApplied: row.alreadyApplied ?? false,
+    applicationStatus: row.applicationStatus ?? null,
+    canContact: row.canContact ?? false,
+  }));
+}
+
+export async function contactCandidateBackend(
+  jobId: string,
+  cvId: string,
+  message?: string,
+): Promise<JobApplication> {
+  const client = clientOrThrow();
+  const row = await client.request<ApplicationDto>(
+    `/jobs/${encodeURIComponent(jobId)}/contact-candidate`,
+    {
+      method: "POST",
+      body: JSON.stringify({ cvId, message: message?.trim() || null }),
+    },
+  );
+  return toApplication(row);
+}
+
+export async function matchJobsForCvBackend(cvId: string): Promise<JobMatch[]> {
+  const client = clientOrThrow();
+  const rows = await client.request<JobMatchDto[]>(
+    `/jobs/search/by-cv/${encodeURIComponent(cvId)}`,
+  );
+  return (rows ?? []).map((row, index) => ({
+    job: mapListingDtoToProduct(row.job, index),
+    matchScore: row.matchScore ?? 0,
+    matchReasons: row.matchReasons ?? [],
+    alreadyApplied: row.alreadyApplied ?? false,
+  }));
 }

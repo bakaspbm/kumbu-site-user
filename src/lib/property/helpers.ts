@@ -15,8 +15,20 @@ export function occupiedNightSet(ranges: { checkIn: string; checkOut: string }[]
 export function propertyMetaSummary(meta: PropertyMeta | null | undefined): string[] {
   if (!meta) return [];
   const out: string[] = [];
-  if (meta.bedrooms) out.push(`${meta.bedrooms} quartos`);
-  if (meta.bathrooms) out.push(`${meta.bathrooms} WC`);
+  const pt = meta.propertyType;
+  // Single room listings should not show "X quartos".
+  if ((pt === "casa" || pt === "apartamento") && meta.bedrooms) {
+    out.push(`${meta.bedrooms} quartos`);
+  }
+  if ((pt === "casa" || pt === "apartamento") && meta.bathrooms) {
+    out.push(`${meta.bathrooms} WC`);
+  }
+  if ((pt === "hospedaria" || pt === "hotel") && meta.roomsCount) {
+    out.push(`${meta.roomsCount} unidades`);
+  }
+  if (pt === "quarto" && meta.furnished) out.push("Mobilado");
+  if (pt === "quarto" && meta.sharedBathroom) out.push("WC partilhada");
+  if (pt === "quarto" && meta.sharedKitchen) out.push("Cozinha partilhada");
   if (meta.parking) out.push("Estacionamento");
   if (meta.areaSqm) out.push(`${meta.areaSqm} m2`);
   return out;

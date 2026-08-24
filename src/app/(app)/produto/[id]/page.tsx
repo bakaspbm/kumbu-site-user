@@ -21,10 +21,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ProdutoPage({ params }: PageProps) {
   const { id } = await params;
   const product = await getCachedProduct(id);
+  const listingJsonLd = product ? buildListingJsonLd(product) : null;
 
   return (
     <>
-      {product ? <JsonLd data={buildListingJsonLd(product)} /> : null}
+      {listingJsonLd ? <JsonLd data={listingJsonLd} /> : null}
       <ProductDetailView productId={id} />
     </>
   );

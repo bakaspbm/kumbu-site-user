@@ -34,25 +34,36 @@ function mustClient(): KumbuApiClient {
   return client;
 }
 
-function toSession(payload: AuthResponse): KumbuSession {
-  const claims = decodeAccessTokenClaims(payload.accessToken);
-  const userId = payload.userId != null ? String(payload.userId) : (claims?.userId ?? "");
+function requireAuthPayload(payload: AuthResponse | null | undefined): AuthResponse {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("Resposta de autenticação incompleta (tokens em falta).");
+  }
+  if (!payload.accessToken?.trim() || !payload.refreshToken?.trim()) {
+    throw new Error("Resposta de autenticação incompleta (tokens em falta).");
+  }
+  return payload;
+}
+
+function toSession(payload: AuthResponse | null | undefined): KumbuSession {
+  const auth = requireAuthPayload(payload);
+  const claims = decodeAccessTokenClaims(auth.accessToken);
+  const userId = auth.userId != null ? String(auth.userId) : (claims?.userId ?? "");
   if (!userId) {
     throw new Error("Resposta de login inválida (sem utilizador).");
   }
   return {
     user: {
       id: userId,
-      email: payload.email ?? claims?.email ?? null,
-      displayName: payload.displayName ?? null,
+      email: auth.email ?? claims?.email ?? null,
+      displayName: auth.displayName ?? null,
     },
-    accessToken: payload.accessToken,
-    refreshToken: payload.refreshToken,
+    accessToken: auth.accessToken,
+    refreshToken: auth.refreshToken,
   };
 }
 
-export async function persistClientSession(session: KumbuSession): Promise<void> {
-  if (!session.accessToken?.trim() || !session.refreshToken?.trim()) {
+export async function persistClientSession(session: KumbuSession | null | undefined): Promise<void> {
+  if (!session?.accessToken?.trim() || !session?.refreshToken?.trim()) {
     throw new Error("Resposta de autenticação incompleta (tokens em falta).");
   }
   await setSessionTokens(session.accessToken, session.refreshToken);
@@ -60,10 +71,7 @@ export async function persistClientSession(session: KumbuSession): Promise<void>
   saveSessionUserSnapshot(session.user);
 }
 
-async function persistSession(payload: AuthResponse): Promise<void> {
-  if (!payload.accessToken?.trim() || !payload.refreshToken?.trim()) {
-    throw new Error("Resposta de autenticação incompleta (tokens em falta).");
-  }
+async function persistSession(payload: AuthResponse | null | undefined): Promise<void> {
   await persistClientSession(toSession(payload));
 }
 
@@ -71,9 +79,11 @@ export async function loginWithBackend(email: string, password: string): Promise
   const client = mustClient();
   const payload = await client.request<AuthResponse>("/auth/login", {
     method: "POST",
+    headers: { "X-Kumbu-Client": "web" },
     body: JSON.stringify({
       email: email.trim(),
       password,
+      source: "web",
     }),
     auth: false,
   });

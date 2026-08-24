@@ -12,16 +12,28 @@ import {
 } from "@/lib/offline/store";
 import type { CatalogProduct, SortMode } from "@/types/store";
 
+export type CategoryListFilters = {
+  city?: string;
+  region?: string;
+  priceMin?: number;
+  priceMax?: number;
+  listingIntent?: "sale" | "rent";
+  propertyType?: string;
+  condition?: string;
+};
+
 interface UseOfflineCategoryOpts {
   categoryId: string;
   subcategoryId?: string;
   sortMode?: SortMode;
+  filters?: CategoryListFilters;
 }
 
 export function useOfflineCategory({
   categoryId,
   subcategoryId,
   sortMode = "default",
+  filters = {},
 }: UseOfflineCategoryOpts) {
   const fallback = useMemo(
     () => demoProducts.filter((p) => p.categoryId === categoryId),
@@ -33,43 +45,70 @@ export function useOfflineCategory({
   );
   const [loading, setLoading] = useState(true);
 
+  const filterKey = useMemo(
+    () =>
+      [
+        filters.region ?? "",
+        filters.city ?? "",
+        filters.priceMin ?? "",
+        filters.priceMax ?? "",
+        filters.listingIntent ?? "",
+        filters.propertyType ?? "",
+        filters.condition ?? "",
+      ].join("|"),
+    [filters],
+  );
+
+  const listOpts = useMemo(
+    () => ({
+      categoryId,
+      subcategoryId,
+      sortMode,
+      city: filters.city,
+      region: filters.region,
+      priceMin: filters.priceMin,
+      priceMax: filters.priceMax,
+      listingIntent: filters.listingIntent,
+      propertyType: filters.propertyType,
+      condition: filters.condition,
+    }),
+    [categoryId, subcategoryId, sortMode, filters],
+  );
+
   const refetch = useCallback(async () => {
     if (!isBrowserOnline()) return;
     try {
       const [subs, list] = await Promise.all([
         listCatalogSubcategories(categoryId),
-        listCatalogProducts({
-          categoryId,
-          subcategoryId,
-          sortMode,
-        }),
+        listCatalogProducts(listOpts),
       ]);
       const subcats = subs.map((s) => ({ id: s.id, name: s.name }));
       setSubcategories(subcats);
       setProducts(list);
-      await setOfflineCategory({
-        categoryId,
-        subcategoryId,
-        sortMode,
-        products: list,
-        subcategories: subcats,
-        fetchedAt: Date.now(),
-      });
+      if (!filterKey || filterKey === "||||||") {
+        await setOfflineCategory({
+          categoryId,
+          subcategoryId,
+          sortMode,
+          products: list,
+          subcategories: subcats,
+          fetchedAt: Date.now(),
+        });
+      }
     } catch {
     } finally {
       setLoading(false);
     }
-  }, [categoryId, subcategoryId, sortMode]);
+  }, [categoryId, subcategoryId, sortMode, listOpts, filterKey]);
 
   useEffect(() => {
     let cancelled = false;
 
     void (async () => {
-      const cached = await getOfflineCategory(
-        categoryId,
-        subcategoryId,
-        sortMode,
-      );
+      const hasExtraFilters = Boolean(filterKey && filterKey !== "||||||");
+      const cached = hasExtraFilters
+        ? null
+        : await getOfflineCategory(categoryId, subcategoryId, sortMode);
       if (cancelled) return;
 
       if (cached) {
@@ -87,24 +126,22 @@ export function useOfflineCategory({
       try {
         const [subs, list] = await Promise.all([
           listCatalogSubcategories(categoryId),
-          listCatalogProducts({
-            categoryId,
-            subcategoryId,
-            sortMode,
-          }),
+          listCatalogProducts(listOpts),
         ]);
         if (cancelled) return;
         const subcats = subs.map((s) => ({ id: s.id, name: s.name }));
         setSubcategories(subcats);
         setProducts(list);
-        await setOfflineCategory({
-          categoryId,
-          subcategoryId,
-          sortMode,
-          products: list,
-          subcategories: subcats,
-          fetchedAt: Date.now(),
-        });
+        if (!hasExtraFilters) {
+          await setOfflineCategory({
+            categoryId,
+            subcategoryId,
+            sortMode,
+            products: list,
+            subcategories: subcats,
+            fetchedAt: Date.now(),
+          });
+        }
       } catch {
         if (!cached) {
           setProducts(
@@ -122,7 +159,7 @@ export function useOfflineCategory({
     return () => {
       cancelled = true;
     };
-  }, [categoryId, subcategoryId, sortMode, fallback]);
+  }, [categoryId, subcategoryId, sortMode, filterKey, listOpts, fallback]);
 
   useEffect(() => {
     return onCatalogRefresh(() => {

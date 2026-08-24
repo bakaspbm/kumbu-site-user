@@ -11,7 +11,7 @@ import { getSupportEmail } from "@/lib/config/support";
 export function SupportPageClient() {
   const t = useTranslations("support");
   const { isLoggedIn } = useAuth();
-  const email = getSupportEmail();
+  const supportEmail = getSupportEmail();
 
   return (
     <>
@@ -22,7 +22,14 @@ export function SupportPageClient() {
           <p className="mt-2 text-sm leading-relaxed text-kumbu-muted">
             {t("contactDescription")}
           </p>
-          <p className="mt-2 text-xs text-kumbu-muted">{t("noLoginRequired")}</p>
+
+          <a
+            href={`mailto:${supportEmail}`}
+            className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-kumbu-primary hover:underline"
+          >
+            <Mail className="size-4 shrink-0" aria-hidden />
+            {supportEmail}
+          </a>
 
           <Link
             href="/support/chat"
@@ -31,18 +38,6 @@ export function SupportPageClient() {
             <MessageCircle className="size-5" />
             {t("supportMessages")}
           </Link>
-
-          <ul className="mt-5 space-y-3">
-            <li>
-              <a
-                href={`mailto:${email}`}
-                className="flex items-center gap-3 rounded-xl border border-kumbu-border px-4 py-3 text-sm font-semibold hover:border-kumbu-primary"
-              >
-                <Mail className="size-5 text-kumbu-primary" aria-hidden />
-                {email}
-              </a>
-            </li>
-          </ul>
         </div>
 
         <section className="kumbu-card p-5">

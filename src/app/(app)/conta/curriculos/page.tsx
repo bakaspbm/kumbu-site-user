@@ -24,6 +24,19 @@ import {
 import { promiseWithTimeout } from "@/lib/promise-timeout";
 import { useAuth } from "@/contexts/auth-context";
 import { AngolaProvinceMunicipalityFields } from "@/components/geo/angola-province-municipality-fields";
+import {
+  PhoneNumberInput,
+  phoneInputHint,
+  readStoredPhoneCountryIso,
+  storePhoneCountryIso,
+} from "@/components/auth/phone-number-input";
+import {
+  DEFAULT_COUNTRY_ISO,
+  buildPhoneFromCountry,
+  clampNationalDigits,
+  parsePhoneParts,
+  validateNationalForCountry,
+} from "@/lib/phone";
 import type { UserCv, UserCvInsert } from "@/types/job";
 
 export default function CvsPage() {
@@ -51,6 +64,8 @@ export default function CvsPage() {
 
   const [cvs, setCvs] = useState<UserCv[]>([]);
   const [form, setForm] = useState<UserCvInsert>(emptyForm());
+  const [phoneCountryIso, setPhoneCountryIso] = useState(readStoredPhoneCountryIso);
+  const [phoneNational, setPhoneNational] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [skillsText, setSkillsText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -68,6 +83,25 @@ export default function CvsPage() {
     }
   }, [user?.id, t]);
 
+  function applyPhoneToForm(iso: string, national: string) {
+    setPhoneCountryIso(iso);
+    setPhoneNational(national);
+    storePhoneCountryIso(iso);
+    setForm((f) => ({
+      ...f,
+      phone: national ? buildPhoneFromCountry(iso, national) : "",
+    }));
+  }
+
+  function hydratePhone(raw: string | null | undefined) {
+    const parts = parsePhoneParts(raw ?? "");
+    if (parts) {
+      applyPhoneToForm(parts.iso, clampNationalDigits(parts.national, parts.iso));
+      return;
+    }
+    applyPhoneToForm(DEFAULT_COUNTRY_ISO, clampNationalDigits(raw ?? "", DEFAULT_COUNTRY_ISO));
+  }
+
   useEffect(() => {
     void load();
     if (storeUser?.displayName && !form.fullName) {
@@ -75,10 +109,11 @@ export default function CvsPage() {
         ...f,
         fullName: storeUser.displayName,
         email: user?.email ?? storeUser.email,
-        phone: storeUser.phone ?? "",
         city: storeUser.deliveryAddress?.city ?? "",
       }));
+      hydratePhone(storeUser.phone);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só pré-preenche quando o perfil chega
   }, [load, storeUser, user, form.fullName]);
 
   async function save(e: React.FormEvent) {
@@ -91,6 +126,15 @@ export default function CvsPage() {
       alert(t("selectProfession"));
       return;
     }
+    let phoneValue = "";
+    if (phoneNational.trim()) {
+      const phoneChecked = validateNationalForCountry(phoneCountryIso, phoneNational);
+      if (!phoneChecked.ok) {
+        alert(t("phoneInvalid"));
+        return;
+      }
+      phoneValue = phoneChecked.phone;
+    }
     const experiences = normalizeExperience(form.experience ?? []);
     const expError = validateExperiences(experiences);
     if (expError) {
@@ -101,6 +145,7 @@ export default function CvsPage() {
     setBusy(true);
     const payload: UserCvInsert = {
       ...form,
+      phone: phoneValue,
       profession: form.profession.trim(),
       experience: experiences,
       skills: skillsText.split(",").map((s) => s.trim()).filter(Boolean),
@@ -127,6 +172,8 @@ export default function CvsPage() {
     try {
       setEditingId(null);
       setForm(emptyForm());
+      setPhoneCountryIso(readStoredPhoneCountryIso());
+      setPhoneNational("");
       setSkillsText("");
       await load();
     } catch (err) {
@@ -151,6 +198,7 @@ export default function CvsPage() {
       skills: cv.skills,
       languages: cv.languages,
     });
+    hydratePhone(cv.phone);
     setSkillsText(cv.skills.join(", "));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -158,6 +206,8 @@ export default function CvsPage() {
   function cancelEdit() {
     setEditingId(null);
     setForm(emptyForm());
+    setPhoneCountryIso(readStoredPhoneCountryIso());
+    setPhoneNational("");
     setSkillsText("");
   }
 
@@ -225,7 +275,7 @@ export default function CvsPage() {
             onChange={(e) => setForm({ ...form, fullName: e.target.value })}
             className="kumbu-input"
           />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
               placeholder={t("emailPlaceholder")}
               type="email"
@@ -233,12 +283,18 @@ export default function CvsPage() {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="kumbu-input"
             />
-            <input
-              placeholder={t("phonePlaceholder")}
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="kumbu-input"
-            />
+            <div className="flex flex-col gap-1">
+              <PhoneNumberInput
+                id="cv-phone"
+                countryIso={phoneCountryIso}
+                onCountryIsoChange={(iso) => applyPhoneToForm(iso, phoneNational)}
+                nationalNumber={phoneNational}
+                onNationalNumberChange={(national) => applyPhoneToForm(phoneCountryIso, national)}
+              />
+              <span id="cv-phone-hint" className="text-[11px] text-kumbu-muted">
+                {phoneInputHint(phoneCountryIso)}
+              </span>
+            </div>
           </div>
           <AngolaProvinceMunicipalityFields
             province={form.province ?? ""}

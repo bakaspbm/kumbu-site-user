@@ -1,4 +1,4 @@
-import { Users } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { ContaPageHeader } from "@/components/account/conta-page-header";
 import { ContaPanel } from "@/components/account/conta-section";
@@ -12,7 +12,7 @@ export default async function VagasCandidaturasPage() {
     <RequireAuth>
       <ContaPanel>
         <ContaPageHeader
-          icon={Users}
+          icon={Inbox}
           title={t("jobApplicantsTitle")}
           description={t("jobApplicantsDescription")}
         />

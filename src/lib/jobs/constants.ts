@@ -29,13 +29,28 @@ export const JOB_SECTORS = [
 
 export type JobSectorKey = (typeof JOB_SECTORS)[number];
 
+const JOB_CATEGORY_IDS = new Set([
+  EMPREGO_CATEGORY_ID,
+  "empregos",
+  "vagas",
+  "vaga",
+  "jobs",
+  "job",
+]);
+
 export function isEmpregoCategory(
-  categoryId: string,
+  categoryId?: string | null,
   kind?: string,
   name?: string,
 ): boolean {
-  if (categoryId === EMPREGO_CATEGORY_ID) return true;
-  if (kind === "job") return true;
+  const id = (categoryId ?? "").trim().toLowerCase();
+  if (id && JOB_CATEGORY_IDS.has(id)) return true;
+  if ((kind ?? "").trim().toLowerCase() === "job") return true;
   const n = (name ?? "").toLowerCase();
-  return n.includes("emprego") || n.includes("vaga");
+  return (
+    n.includes("emprego") ||
+    n.includes("vaga") ||
+    n.includes("job") ||
+    n.includes("emploi")
+  );
 }

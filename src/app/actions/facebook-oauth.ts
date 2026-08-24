@@ -1,7 +1,10 @@
 "use server";
 
-import { oauthLoginBackend } from "@/lib/kumbu-api/auth";
+import { getServerKumbuApiBaseUrl } from "@/lib/kumbu-api/client";
+import { originAwareFetch } from "@/lib/kumbu-api/origin-fetch";
+import type { AuthResponse } from "@/lib/kumbu-api/auth-types";
 import type { KumbuSession } from "@/lib/kumbu-api/auth-types";
+import { decodeAccessTokenClaims } from "@/lib/kumbu-api/session-tokens";
 
 const GRAPH_VERSION = "v21.0";
 
@@ -19,10 +22,7 @@ function facebookCredentials(): { appId: string; appSecret: string } {
   return { appId, appSecret };
 }
 
-async function exchangeFacebookCode(
-  code: string,
-  redirectUri: string,
-): Promise<string> {
+async function exchangeFacebookCode(code: string, redirectUri: string): Promise<string> {
   const { appId, appSecret } = facebookCredentials();
   const body = new URLSearchParams({
     client_id: appId,
@@ -41,18 +41,20 @@ async function exchangeFacebookCode(
     },
   );
 
-  const json = (await response.json()) as {
-    access_token?: string;
-    error?: { message?: string };
-  };
-
-  if (!response.ok || !json.access_token?.trim()) {
-    const message =
-      json.error?.message?.trim() || "Não foi possível validar login Facebook.";
-    throw new Error(message);
+  type FbTokenResponse = { access_token?: string; error?: { message?: string } };
+  let json: FbTokenResponse | null = null;
+  try {
+    json = (await response.json()) as FbTokenResponse;
+  } catch {
+    json = null;
   }
 
-  return json.access_token.trim();
+  const accessToken = json?.access_token?.trim() ?? "";
+  if (!response.ok || !accessToken) {
+    throw new Error(json?.error?.message?.trim() || "Não foi possível validar login Facebook.");
+  }
+
+  return accessToken;
 }
 
 async function fetchFacebookProfile(accessToken: string): Promise<{
@@ -66,17 +68,23 @@ async function fetchFacebookProfile(accessToken: string): Promise<{
   url.searchParams.set("access_token", accessToken);
 
   const response = await fetch(url.toString(), { cache: "no-store" });
-  const json = (await response.json()) as {
+  type FbProfileResponse = {
     id?: string;
     name?: string;
     email?: string;
     picture?: { data?: { url?: string } };
     error?: { message?: string };
   };
+  let json: FbProfileResponse | null = null;
+  try {
+    json = (await response.json()) as FbProfileResponse;
+  } catch {
+    json = null;
+  }
 
-  if (!response.ok || json.error) {
+  if (!response.ok || !json || json.error) {
     throw new Error(
-      json.error?.message?.trim() || "Não foi possível obter perfil Facebook.",
+      json?.error?.message?.trim() || "Não foi possível obter perfil Facebook.",
     );
   }
 
@@ -96,12 +104,72 @@ async function fetchFacebookProfile(accessToken: string): Promise<{
   };
 }
 
-/** Troca o code OAuth no Vercel (alcança graph.facebook.com) e regista sessão no backend. */
+function toSession(payload: AuthResponse): KumbuSession {
+  if (!payload?.accessToken?.trim() || !payload?.refreshToken?.trim()) {
+    throw new Error("Resposta de autenticação incompleta (tokens em falta).");
+  }
+  const claims = decodeAccessTokenClaims(payload.accessToken);
+  const userId = payload.userId != null ? String(payload.userId) : (claims?.userId ?? "");
+  if (!userId) {
+    throw new Error("Resposta de login inválida (sem utilizador).");
+  }
+  return {
+    user: {
+      id: userId,
+      email: payload.email ?? claims?.email ?? null,
+      displayName: payload.displayName ?? null,
+    },
+    accessToken: payload.accessToken,
+    refreshToken: payload.refreshToken,
+  };
+}
+
+/**
+ * Troca o code OAuth no Vercel (alcança graph.facebook.com) e regista sessão no backend
+ * via originAwareFetch (contorna Cloudflare).
+ */
 export async function completeFacebookOAuthFromCode(
   code: string,
   redirectUri: string,
 ): Promise<KumbuSession> {
   const accessToken = await exchangeFacebookCode(code, redirectUri);
   const profile = await fetchFacebookProfile(accessToken);
-  return oauthLoginBackend("facebook", accessToken, profile);
+
+  const apiBase = getServerKumbuApiBaseUrl();
+  if (!apiBase) {
+    throw new Error("API backend não configurada.");
+  }
+
+  const response = await originAwareFetch(`${apiBase}/auth/oauth/facebook`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Kumbu-Client": "web",
+    },
+    body: JSON.stringify({
+      accessToken,
+      signupSource: "web",
+      profile: {
+        facebookId: profile.facebookId,
+        email: profile.email,
+        name: profile.name,
+        photoUrl: profile.photoUrl ?? undefined,
+      },
+    }),
+    cache: "no-store",
+  });
+
+  const payload = (await response.json().catch(() => null)) as AuthResponse | null;
+  if (!response.ok) {
+    const message =
+      payload && typeof payload === "object" && "message" in payload
+        ? String((payload as { message?: unknown }).message ?? "")
+        : "";
+    throw new Error(message.trim() || `Erro HTTP ${response.status}`);
+  }
+  if (!payload) {
+    throw new Error("Resposta vazia do servidor. Tente novamente.");
+  }
+  return toSession(payload);
 }

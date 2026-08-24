@@ -56,10 +56,6 @@ export function LegalDocument({
             ))}
           </nav>
         )}
-        <p className="mt-8 text-xs leading-relaxed text-kumbu-muted">
-          Este texto é informativo e não constitui aconselhamento jurídico. Para conformidade
-          plena em Angola, valide com um advogado local.
-        </p>
       </main>
     </article>
   );

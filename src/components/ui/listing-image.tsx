@@ -1,8 +1,20 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { normalizeListingImageUrl } from "@/lib/store/product-images";
+import { resolveListingImageForOptimizer } from "@/lib/store/product-images";
+
+export const LISTING_IMAGE_SIZES = {
+  gridCard: "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px",
+  listThumb: "(max-width: 768px) 88px, 112px",
+  rowCard: "72px",
+  productMain: "(max-width: 1024px) 100vw, 480px",
+  productThumb: "132px",
+  avatar: "80px",
+  chatThumb: "64px",
+  smallAvatar: "48px",
+} as const;
 
 interface ListingImageProps {
   src: string;
@@ -10,6 +22,8 @@ interface ListingImageProps {
   className?: string;
   fill?: boolean;
   priority?: boolean;
+  sizes?: string;
+  quality?: number;
 }
 
 export function ListingImage({
@@ -18,9 +32,11 @@ export function ListingImage({
   className,
   fill,
   priority,
+  sizes = LISTING_IMAGE_SIZES.gridCard,
+  quality = 75,
 }: ListingImageProps) {
   const [failed, setFailed] = useState(false);
-  const resolved = normalizeListingImageUrl(src) ?? src;
+  const resolved = resolveListingImageForOptimizer(src);
 
   if (failed || !resolved) {
     return (
@@ -38,22 +54,34 @@ export function ListingImage({
     );
   }
 
-  const img = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+  if (!fill) {
+    return (
+      <Image
+        src={resolved}
+        alt={alt}
+        width={280}
+        height={280}
+        sizes={sizes}
+        priority={priority}
+        quality={quality}
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
+        className={cn("h-full w-full object-cover", className)}
+      />
+    );
+  }
+
+  return (
+    <Image
       src={resolved}
       alt={alt}
-      loading={priority ? "eager" : "lazy"}
-      decoding="async"
+      fill
+      sizes={sizes}
+      priority={priority}
+      quality={quality}
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
-      className={cn(
-        fill ? "absolute inset-0 h-full w-full object-cover" : "h-full w-full object-cover",
-        className,
-      )}
+      className={cn("object-cover", className)}
     />
   );
-
-  if (fill) return img;
-  return img;
 }

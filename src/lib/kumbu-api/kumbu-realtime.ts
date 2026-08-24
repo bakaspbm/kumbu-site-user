@@ -188,7 +188,10 @@ function wireSubscriptions() {
 function applyConnectHeaders(stompClient: Client): boolean {
   const token = getAccessToken();
   if (!token) return false;
-  stompClient.connectHeaders = { Authorization: `Bearer ${token}` };
+  stompClient.connectHeaders = {
+    Authorization: `Bearer ${token}`,
+    "X-Kumbu-Client": "web",
+  };
   return true;
 }
 

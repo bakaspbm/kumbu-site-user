@@ -35,7 +35,7 @@ export function OrderDetailView({ order, backHref, backLabel, role }: OrderDetai
   return (
     <>
       <BackHeader
-        title={t("orderRef", { id: order.id.slice(0, 8).toUpperCase() })}
+          title={t("orderRef", { id: String(order.id ?? "").slice(0, 8).toUpperCase() || "—" })}
         href={backHref}
       />
       <main className="kumbu-container max-w-2xl pb-10 pt-6">

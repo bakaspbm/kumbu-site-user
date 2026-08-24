@@ -9,7 +9,6 @@ import { IdentityUpload } from "@/components/settings/identity-upload";
 import { EmailNotificationPrefs } from "@/components/settings/email-notification-prefs";
 import { LegalLinksRow } from "@/components/legal/legal-links-row";
 import { ProfileSignOut } from "@/components/auth/profile-sign-out";
-import { getStoreUser } from "@/lib/site-data";
 import Link from "next/link";
 import { Bell, ChevronRight, KeyRound, Settings, Shield, User } from "lucide-react";
 import { getTranslations } from "next-intl/server";
@@ -28,7 +27,6 @@ function SettingsLinkRow({ href, label }: { href: string; label: string }) {
 
 export default async function ContaDefinicoesPage() {
   const t = await getTranslations("settings");
-  const user = await getStoreUser();
 
   return (
     <RequireAuth>
@@ -57,13 +55,7 @@ export default async function ContaDefinicoesPage() {
 
         <ContaPanel>
           <ContaSection icon={Bell} title={t("emailAlerts")} description={t("emailAlertsDesc")}>
-            <EmailNotificationPrefs
-              initial={{
-                emailOnChat: user?.emailOnChat !== false,
-                emailOnNotification: user?.emailOnNotification !== false,
-                emailOnNewListings: user?.emailOnNewListings === true,
-              }}
-            />
+            <EmailNotificationPrefs />
           </ContaSection>
         </ContaPanel>
 

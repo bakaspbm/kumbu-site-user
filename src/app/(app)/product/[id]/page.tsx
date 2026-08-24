@@ -1,5 +1,5 @@
 import { ShoppingBag, Star } from "lucide-react";
-import { ListingImage } from "@/components/ui/listing-image";
+import { ListingImage, LISTING_IMAGE_SIZES } from "@/components/ui/listing-image";
 import { BackHeader } from "@/components/layout/back-header";
 import { ProductActions } from "@/components/store/product-actions";
 import { demoProducts } from "@/lib/store/demo-data";
@@ -34,7 +34,13 @@ export default async function ProductPage({ params }: PageProps) {
         <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-2 md:gap-10">
           <div className="relative aspect-square overflow-hidden rounded-3xl border border-black/8 bg-kumbu-surface shadow-md">
             {cover ? (
-              <ListingImage src={cover} alt={product.title} fill priority />
+              <ListingImage
+                src={cover}
+                alt={product.title}
+                fill
+                priority
+                sizes={LISTING_IMAGE_SIZES.productMain}
+              />
             ) : (
               <div
                 className="flex h-full w-full items-center justify-center"

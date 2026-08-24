@@ -3,10 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Star } from "lucide-react";
-import {
-  listProductReviewsAction,
-  submitSellerReviewReplyAction,
-} from "@/app/actions/reviews";
 import { ProductReviewForm } from "@/components/store/product-review-form";
 import { ReviewMediaGallery } from "@/components/store/review-media-gallery";
 import { Button } from "@/components/ui/button";
@@ -16,7 +12,13 @@ import {
   resolveListingKind,
   type ListingKindForReview,
 } from "@/lib/listing/review-copy";
-import { buyerCanReviewProductBackend } from "@/lib/kumbu-api/reviews";
+import {
+  buyerCanReviewProductBackend,
+  listProductReviewsBackend,
+  submitSellerReviewReplyBackend,
+} from "@/lib/kumbu-api/reviews";
+import { withBrowserAuthRetry } from "@/lib/kumbu-api/with-browser-auth";
+import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import { cn } from "@/lib/utils";
 import type { ProductReview } from "@/types/review";
 
@@ -55,6 +57,7 @@ function SellerReplyForm({
 }) {
   const t = useTranslations("product");
   const tCommon = useTranslations("common");
+  const formatErrorMessage = useFormatErrorMessage();
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,14 +66,15 @@ function SellerReplyForm({
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const result = await submitSellerReviewReplyAction(reviewId, reply);
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      await withBrowserAuthRetry(() => submitSellerReviewReplyBackend(reviewId, reply));
+      setReply("");
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : formatErrorMessage(err));
+    } finally {
+      setBusy(false);
     }
-    setReply("");
-    onSaved();
   }
 
   return (
@@ -152,6 +156,7 @@ export function ProductReviewsSection({
 }: ProductReviewsSectionProps) {
   const t = useTranslations("product");
   const tCommon = useTranslations("common");
+  const formatErrorMessage = useFormatErrorMessage();
   const kind = resolveListingKind(listingKind, categoryId);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [canReview, setCanReview] = useState(false);
@@ -161,22 +166,25 @@ export function ProductReviewsSection({
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [reviewsResult, canReviewResult] = await Promise.all([
-      listProductReviewsAction(productId),
-      showReviewForm
-        ? buyerCanReviewProductBackend(productId).catch(() => false)
-        : Promise.resolve(false),
-    ]);
-    setLoading(false);
-    if (!reviewsResult.ok) {
-      setError(reviewsResult.error);
+    try {
+      // Lista pública no browser (API directa) — evita cache de GET em server actions
+      // que deixava a secção vazia enquanto o badge já mostrava reviewCount > 0.
+      const [rows, canReviewResult] = await Promise.all([
+        listProductReviewsBackend(productId),
+        showReviewForm
+          ? buyerCanReviewProductBackend(productId).catch(() => false)
+          : Promise.resolve(false),
+      ]);
+      setReviews(rows);
+      setCanReview(canReviewResult);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : formatErrorMessage(err));
       setReviews([]);
       setCanReview(false);
-      return;
+    } finally {
+      setLoading(false);
     }
-    setReviews(reviewsResult.reviews);
-    setCanReview(canReviewResult);
-  }, [productId, showReviewForm]);
+  }, [formatErrorMessage, productId, showReviewForm]);
 
   useEffect(() => {
     void load();

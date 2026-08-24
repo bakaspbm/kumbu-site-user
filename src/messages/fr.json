@@ -103,7 +103,7 @@
     "emailOnNotification": "Notifications du compte",
     "emailOnNotificationDesc": "E-mail lors d'une notification dans l'app (candidatures, assistance, etc.).",
     "emailOnNewListings": "Nouvelles annonces",
-    "emailOnNewListingsDesc": "E-mail occasionnel quand d'autres publient des annonces (si l'admin l'a activé).",
+    "emailOnNewListingsDesc": "E-mail occasionnel quand d'autres publient des annonces.",
     "emailPrefsSaved": "Préférence enregistrée.",
     "emailPrefsNote": "Nous n'envoyons un e-mail que si votre adresse est vérifiée. Vous pouvez modifier ces options à tout moment."
   },
@@ -759,7 +759,7 @@
     "saving": "Publication…",
     "successTitle": "Annonce publiée !",
     "success": "Annonce publiée avec succès.",
-    "intro": "Quatre étapes — catégorie, détails, photos, relecture. Quelques minutes suffisent.",
+    "intro": "Choisissez la catégorie et renseignez l'offre. Quelques minutes suffisent.",
     "steps": {
       "category": "Catégorie",
       "details": "Détails",
@@ -814,6 +814,7 @@
     "addPhotoBtn": "Ajouter",
     "choosePhotosBtn": "Choisir des photos ({remaining} restantes)",
     "photoTip": "De bonnes photos vendent mieux. Lumière naturelle et plusieurs angles.",
+    "photoTipJob": "Photo facultative — l'offre se publie aussi sans image.",
     "optionalLabel": "Facultatif",
     "listingVideoTitle": "Vidéos de l'annonce",
     "listingVideoHint": "Facultatif · jusqu'à 3 vidéos · tout format vidéo · max 1 minute et 40 Mo chacune.",
@@ -1900,6 +1901,13 @@
       "description": "Description (facultatif)",
       "typePrefix": "Type :",
       "select": "Sélectionner…"
+    },
+    "directory": {
+      "loading": "Recherche…",
+      "empty": "Saisissez pour voir des suggestions.",
+      "notFound": "Vous ne trouvez pas ce que vous cherchez ?",
+      "addManual": "Ajouter manuellement",
+      "saving": "Enregistrement…"
     },
     "vehicles": {
       "brandHint": "Saisissez ou choisissez une marque dans la liste.",

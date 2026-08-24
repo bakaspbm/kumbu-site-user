@@ -39,18 +39,19 @@ export function OrderList({
   return (
     <ul className="flex flex-col gap-3">
       {orders.map((o) => {
+        const id = String(o.id ?? "");
         const party =
           counterparty === "seller"
             ? o.seller?.displayName
             : o.buyer?.displayName;
         return (
-          <li key={o.id}>
-            <Link href={`${hrefPrefix}/${o.id}`} className="kumbu-card-interactive block p-4 sm:p-5">
+          <li key={id}>
+            <Link href={`${hrefPrefix}/${id}`} className="kumbu-card-interactive block p-4 sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <span className="font-bold tracking-tight text-kumbu-foreground">
-                  #{o.id.slice(0, 8).toUpperCase()}
+                  #{(id.slice(0, 8) || "—").toUpperCase()}
                 </span>
-                <OrderStatusBadge status={o.status} />
+                <OrderStatusBadge status={o.status ?? "processing"} />
               </div>
               <p className="mt-2.5 text-sm text-kumbu-muted">
                 <span className="font-semibold text-kumbu-primary">{o.totalLabel}</span>

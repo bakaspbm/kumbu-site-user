@@ -10,12 +10,14 @@ import { isUserMonetizationVisible } from "@/lib/monetization/user-facing";
 export default async function ContaPagamentosPage() {
   const t = await getTranslations("accountPages.payments");
 
+  let visible = false;
   try {
     const catalog = await getMonetizationCatalogBackend();
-    if (!isUserMonetizationVisible(catalog.chargingEnabled)) {
-      redirect("/conta/perfil");
-    }
+    visible = isUserMonetizationVisible(catalog.chargingEnabled);
   } catch {
+    visible = false;
+  }
+  if (!visible) {
     redirect("/conta/perfil");
   }
 

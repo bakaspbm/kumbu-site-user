@@ -9,6 +9,7 @@ import {
   useJobSectorLabel,
 } from "@/lib/i18n/use-job-labels";
 import type { JobContractType, JobMeta } from "@/types/job";
+import { DirectorySuggestField } from "@/components/catalog/directory-suggest-field";
 
 export interface JobPublishState {
   title: string;
@@ -94,12 +95,13 @@ export function JobPublishSection({ state, onChange }: JobPublishSectionProps) {
     <div className="space-y-4">
       <label className="flex flex-col gap-1.5 text-sm font-semibold">
         {t("jobTitle")}
-        <input
-          required
+        <DirectorySuggestField
+          type="item"
+          categoryId="empregos"
           value={state.title}
-          onChange={(e) => onChange({ title: e.target.value })}
-          className="kumbu-input font-normal"
+          onChange={(title) => onChange({ title })}
           placeholder={t("jobTitlePlaceholder")}
+          required
         />
       </label>
 

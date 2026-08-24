@@ -63,7 +63,7 @@
       "paragraphs": [
         "Identificação e contacto: nome, email, telefone, morada, foto de perfil.",
         "Actividade na plataforma: anúncios, mensagens, favoritos, encomendas, candidaturas, visualizações de CV por empregadores (com notificação ao candidato).",
-        "Dados técnicos: tipo de dispositivo, sessão, logs de segurança e cookies essenciais (ver Política de Cookies)."
+        "Dados técnicos necessários ao funcionamento: tipo de dispositivo, sessão de acesso e cookies essenciais (ver Política de Cookies)."
       ]
     },
     {
@@ -79,7 +79,7 @@
       "title": "4. Partilha de dados",
       "paragraphs": [
         "Dados visíveis a outros utilizadores: perfil público, anúncios, mensagens na conversa respectiva.",
-        "Prestadores: alojamento e infraestrutura (servidor backend Spring Boot, base de dados PostgreSQL), envio de email/SMS conforme configurado.",
+        "Prestadores de serviço: alojamento, envio de email ou SMS e outras ferramentas necessárias ao funcionamento da plataforma, apenas na medida do necessário.",
         "Não vendemos listas de contactos a terceiros para marketing."
       ]
     },
@@ -87,14 +87,14 @@
       "title": "5. Conservação e direitos",
       "paragraphs": [
         "Conservamos os dados enquanto a conta estiver activa e pelo tempo necessário para obrigações legais ou defesa de reclamações.",
-        "Pode solicitar acesso, rectificação ou apagamento através das definições da conta (exportar JSON ou apagar conta). O apagamento marca deleted_at, revoga sessões e regista o evento para auditoria.",
+        "Pode solicitar acesso, rectificação ou apagamento através das definições da conta (exportar os seus dados ou apagar a conta). Ao apagar a conta, a sessão deixa de ser válida e o pedido é tratado pela equipa conforme a lei.",
         "Pode apresentar reclamação à autoridade de protecção de dados competente em Angola."
       ]
     },
     {
       "title": "6. Segurança",
       "paragraphs": [
-        "Aplicamos autenticação JWT, controlo de acesso por utilizador, HTTPS e políticas de acesso mínimo. Nenhum sistema é 100% seguro — reporte incidentes ao suporte."
+        "Aplicamos medidas técnicas e organizativas adequadas para proteger a conta e os dados (ligação segura, controlo de acesso e boas práticas de segurança). Nenhum sistema é 100% seguro — reporte incidentes ao suporte."
       ]
     }
   ],
@@ -108,7 +108,7 @@
     {
       "title": "2. Cookies essenciais",
       "paragraphs": [
-        "Necessários ao funcionamento: sessão autenticada (tokens JWT), carrinho, preferências guardadas. Não requerem consentimento separado."
+        "Necessários ao funcionamento: manter a sessão iniciada, o carrinho e preferências guardadas. Não requerem consentimento separado."
       ]
     },
     {

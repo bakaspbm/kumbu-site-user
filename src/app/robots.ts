@@ -21,6 +21,7 @@ const DISALLOW = [
   "/store-favorites",
   "/confirmar-email",
   "/recuperar-palavra-passe",
+  "/.well-known/",
 ];
 
 export default function robots(): MetadataRoute.Robots {

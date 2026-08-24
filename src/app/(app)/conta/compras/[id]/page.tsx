@@ -1,60 +1,23 @@
-import { Package } from "lucide-react";
-import { getTranslations } from "next-intl/server";
-import { OrderDetailView } from "@/components/orders/order-detail-view";
-import { EmptyState } from "@/components/ui/empty-state";
-import { UserFacingErrorAlert } from "@/components/ui/user-facing-error-alert";
-import { resolveUserFacingErrorServer } from "@/lib/i18n/format-error-server";
-import { resolveServerAuth } from "@/lib/server-page-auth";
-import { getOrder } from "@/lib/site-data";
-import { notFound } from "next/navigation";
+"use client";
+
+import { use } from "react";
+import { useTranslations } from "next-intl";
+import { OrderDetailLoader } from "@/components/orders/order-detail-loader";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function CompraDetailPage({ params }: PageProps) {
-  const { id } = await params;
-  const t = await getTranslations("accountPages.purchases");
-  const auth = await resolveServerAuth();
-
-  if (auth.status !== "logged_in") {
-    return (
-      <EmptyState
-        className="mt-8"
-        icon={Package}
-        title={t("loginPromptTitle")}
-        description={t("loginPromptDesc")}
-        actionLabel={t("loginAction")}
-        actionHref={`/login?next=/conta/compras/${id}`}
-      />
-    );
-  }
-
-  let order: Awaited<ReturnType<typeof getOrder>> | null = null;
-  let loadError = null;
-
-  try {
-    order = await getOrder(id);
-  } catch (err) {
-    loadError = await resolveUserFacingErrorServer(err);
-  }
-
-  if (loadError) {
-    return (
-      <div className="mt-8">
-        <UserFacingErrorAlert error={loadError} />
-      </div>
-    );
-  }
-
-  if (!order || order.userId !== auth.userId) notFound();
+export default function CompraDetailPage({ params }: PageProps) {
+  const { id } = use(params);
+  const t = useTranslations("accountPages.purchases");
 
   return (
-    <OrderDetailView
-      order={order}
+    <OrderDetailLoader
+      orderId={id}
+      role="buyer"
       backHref="/conta/compras"
       backLabel={t("backLabel")}
-      role="buyer"
     />
   );
 }

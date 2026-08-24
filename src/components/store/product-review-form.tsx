@@ -3,9 +3,9 @@
 import { useRef, useState } from "react";
 import { Camera, Star, Video, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { submitProductReviewAction } from "@/app/actions/reviews";
 import { uploadReviewMediaBackend } from "@/lib/kumbu-api/files";
-import { useAuth } from "@/contexts/auth-context";
+import { submitProductReviewBackend } from "@/lib/kumbu-api/reviews";
+import { withBrowserAuthRetry } from "@/lib/kumbu-api/with-browser-auth";
 import { Button } from "@/components/ui/button";
 import { useFormatErrorMessage } from "@/lib/i18n/use-format-error";
 import {
@@ -32,7 +32,6 @@ export function ProductReviewForm({
   const t = useTranslations("product");
   const tCommon = useTranslations("common");
   const formatErrorMessage = useFormatErrorMessage();
-  const { user } = useAuth();
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
   const [rating, setRating] = useState(0);
@@ -79,28 +78,20 @@ export function ProductReviewForm({
     setMessage(null);
 
     try {
-      void user;
       const media: { type: "image" | "video"; url: string }[] = [];
 
       for (const file of imageFiles) {
-        const url = await uploadReviewMediaBackend(file);
+        const url = await withBrowserAuthRetry(() => uploadReviewMediaBackend(file));
         media.push({ type: "image", url });
       }
       if (videoFile) {
-        const url = await uploadReviewMediaBackend(videoFile);
+        const url = await withBrowserAuthRetry(() => uploadReviewMediaBackend(videoFile));
         media.push({ type: "video", url });
       }
 
-      const result = await submitProductReviewAction(
-        productId,
-        rating,
-        trimmed || undefined,
-        media,
+      await withBrowserAuthRetry(() =>
+        submitProductReviewBackend(productId, rating, trimmed || undefined, media),
       );
-      if (!result.ok) {
-        setMessage(result.error);
-        return;
-      }
       setMessage(t("reviewPublished"));
       setComment("");
       setImageFiles([]);

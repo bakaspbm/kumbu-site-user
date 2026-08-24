@@ -1,4 +1,5 @@
 import { getCanonicalSiteOrigin } from "@/lib/urls/canonical-site-origin";
+import { listingFilesOrigin } from "@/lib/store/product-images";
 
 export function siteOrigin(): string {
   return getCanonicalSiteOrigin();
@@ -17,10 +18,7 @@ export function absoluteAssetUrl(url: string | null | undefined): string | undef
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
 
   if (trimmed.startsWith("/backend-files/")) {
-    const apiBase =
-      process.env.NEXT_PUBLIC_KUMBU_API_URL?.trim().replace(/\/$/, "") ??
-      "https://api.kumbu-market.com";
-    return `${apiBase}/files${trimmed.slice("/backend-files".length)}`;
+    return `${listingFilesOrigin()}/files${trimmed.slice("/backend-files".length)}`;
   }
 
   if (trimmed.startsWith("/")) return absoluteSiteUrl(trimmed);

@@ -11,6 +11,7 @@ import { PropertyDetailPanel } from "@/components/property/property-detail-panel
 import { ListingContactActions } from "@/components/store/listing-contact-actions";
 import { ProductAttributesPanel } from "@/components/catalog/product-attributes-panel";
 import { ProductImageGallery } from "@/components/store/product-image-gallery";
+import { ListingVideoPlayer } from "@/components/store/listing-video-player";
 import { JobDetailPanel } from "@/components/jobs/job-detail-panel";
 import { isJobListing } from "@/lib/jobs/category";
 import { isPropertyListing } from "@/lib/property/category";
@@ -109,6 +110,7 @@ function ProductDetailLoaded({
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-start lg:gap-10 xl:gap-14">
           <div className="relative z-0 min-w-0">
             <ProductImageGallery product={product} />
+            <ListingVideoPlayer product={product} />
           </div>
 
           <div className="flex min-w-0 flex-col">

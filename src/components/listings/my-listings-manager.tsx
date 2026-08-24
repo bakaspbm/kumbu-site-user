@@ -4,14 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ListingImage } from "@/components/ui/listing-image";
+import { ListingImage, LISTING_IMAGE_SIZES } from "@/components/ui/listing-image";
 import {
   Eye,
   ImageIcon,
   PackageCheck,
   PackageX,
   Pencil,
-  Percent,
   Sparkles,
   Tag,
   Trash2,
@@ -25,6 +24,7 @@ import { productCoverUrl } from "@/lib/store/product-images";
 import { productPlaceholderStyle } from "@/lib/utils";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageLoadingIndicator } from "@/components/ui/page-loading-indicator";
 import { requestCatalogRefresh } from "@/lib/catalog-refresh";
@@ -56,18 +56,16 @@ function isListingInactive(p: CatalogProduct): boolean {
 interface EditDraft {
   title: string;
   priceLabel: string;
-  oldPriceLabel: string;
-  discountPercent: string;
   description: string;
+  clearPromotion: boolean;
 }
 
 function emptyDraft(p: CatalogProduct): EditDraft {
   return {
     title: p.title,
     priceLabel: p.priceLabel,
-    oldPriceLabel: p.oldPriceLabel ?? "",
-    discountPercent: p.discountPercent != null ? String(p.discountPercent) : "",
     description: p.description ?? "",
+    clearPromotion: false,
   };
 }
 
@@ -87,6 +85,11 @@ function MyListingsManagerInner() {
   const [error, setError] = useState<string | null>(null);
   const [promoteId, setPromoteId] = useState<string | null>(null);
   const [promoteCategoryId, setPromoteCategoryId] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<
+    | { kind: "remove"; id: string }
+    | { kind: "closeJob"; id: string }
+    | null
+  >(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -158,14 +161,20 @@ function MyListingsManagerInner() {
   }
 
   async function closeJob(p: CatalogProduct) {
-    if (!user?.id || !confirm(t("closeJobConfirm"))) return;
+    if (!user?.id) return;
+    setConfirmAction({ kind: "closeJob", id: p.id });
+  }
+
+  async function performCloseJob(id: string) {
+    if (!user?.id) return;
     setBusy(true);
     try {
-      await markJobAsFilled(p.id, user.id);
+      await markJobAsFilled(id, user.id);
       requestCatalogRefresh();
       await load();
     } finally {
       setBusy(false);
+      setConfirmAction(null);
     }
   }
 
@@ -178,12 +187,7 @@ function MyListingsManagerInner() {
       title: draft.title.trim(),
       priceLabel: draft.priceLabel.trim(),
       description: draft.description.trim() || null,
-      oldPriceLabel: draft.oldPriceLabel.trim() || null,
-      discountPercent:
-        draft.discountPercent.trim() && !Number.isNaN(Number(draft.discountPercent))
-          ? Number(draft.discountPercent)
-          : undefined,
-      clearPromotion: !draft.oldPriceLabel.trim() && !draft.discountPercent.trim(),
+      ...(draft.clearPromotion ? { clearPromotion: true } : {}),
     };
 
     async function performSave() {
@@ -221,8 +225,11 @@ function MyListingsManagerInner() {
     }
   }
 
-  async function remove(id: string) {
-    if (!confirm(t("removeConfirm"))) return;
+  function requestRemove(id: string) {
+    setConfirmAction({ kind: "remove", id });
+  }
+
+  async function performRemove(id: string) {
     setBusy(true);
     setError(null);
     try {
@@ -239,6 +246,7 @@ function MyListingsManagerInner() {
       setError(err instanceof Error ? err.message : t("removeError"));
     } finally {
       setBusy(false);
+      setConfirmAction(null);
     }
   }
 
@@ -360,43 +368,37 @@ function MyListingsManagerInner() {
                           className="kumbu-input w-full"
                         />
                       </label>
-                      <label className="block">
+                      <label className="block md:col-span-2">
                         <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-kumbu-muted">
                           {t("fieldPrice")}
                         </span>
                         <input
                           value={draft.priceLabel}
-                          onChange={(e) => setDraft({ ...draft, priceLabel: e.target.value })}
+                          onChange={(e) => setDraft({ ...draft, priceLabel: e.target.value, clearPromotion: false })}
                           placeholder="15 000 Kz"
                           className="kumbu-input w-full"
                         />
                       </label>
-                      <label className="block">
-                        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-kumbu-muted">
-                          {t("fieldOldPrice")}
-                        </span>
-                        <input
-                          value={draft.oldPriceLabel}
-                          onChange={(e) => setDraft({ ...draft, oldPriceLabel: e.target.value })}
-                          placeholder="20 000 Kz"
-                          className="kumbu-input w-full"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-1.5 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-kumbu-muted">
-                          <Percent className="size-3" />
-                          {t("fieldDiscount")}
-                        </span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={99}
-                          value={draft.discountPercent}
-                          onChange={(e) => setDraft({ ...draft, discountPercent: e.target.value })}
-                          placeholder="10"
-                          className="kumbu-input w-full"
-                        />
-                      </label>
+                      {p.oldPriceLabel && !draft.clearPromotion && (
+                        <div className="md:col-span-2 rounded-xl bg-kumbu-surface-muted px-3 py-2.5">
+                          <ListingPriceDisplay
+                            priceLabel={p.priceLabel}
+                            oldPriceLabel={p.oldPriceLabel}
+                            discountPercent={p.discountPercent}
+                            size="sm"
+                          />
+                          <button
+                            type="button"
+                            className="mt-2 text-xs font-semibold text-kumbu-primary hover:underline"
+                            onClick={() => setDraft({ ...draft, clearPromotion: true })}
+                          >
+                            {t("removePromotion")}
+                          </button>
+                        </div>
+                      )}
+                      {draft.clearPromotion && (
+                        <p className="md:col-span-2 text-xs text-kumbu-muted">{t("promotionWillClear")}</p>
+                      )}
                       <label className="block md:col-span-2">
                         <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-kumbu-muted">
                           {t("fieldDescription")}
@@ -426,7 +428,12 @@ function MyListingsManagerInner() {
                       className="relative block aspect-[16/10] w-full shrink-0 overflow-hidden bg-kumbu-surface-muted sm:aspect-auto sm:h-36 sm:w-40"
                     >
                       {productCoverUrl(p) ? (
-                        <ListingImage src={productCoverUrl(p)!} alt="" fill />
+                        <ListingImage
+                          src={productCoverUrl(p)!}
+                          alt=""
+                          fill
+                          sizes={LISTING_IMAGE_SIZES.listThumb}
+                        />
                       ) : (
                         <div
                           className="flex size-full items-center justify-center"
@@ -505,7 +512,7 @@ function MyListingsManagerInner() {
                           variant="secondary"
                           className="h-9 gap-1.5 px-3 text-xs text-red-600 ring-red-100 hover:bg-red-50"
                           disabled={busy}
-                          onClick={() => void remove(p.id)}
+                          onClick={() => requestRemove(p.id)}
                         >
                           <Trash2 className="size-3.5" />
                           {t("remove")}
@@ -568,6 +575,35 @@ function MyListingsManagerInner() {
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmAction?.kind === "remove"}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={() => {
+          if (confirmAction?.kind === "remove") void performRemove(confirmAction.id);
+        }}
+        title={t("removeConfirmTitle")}
+        description={t("removeConfirmDescription")}
+        confirmLabel={t("removeConfirmAction")}
+        cancelLabel={tCommon("cancel")}
+        variant="destructive"
+        busy={busy}
+        icon={<Trash2 className="size-5" aria-hidden />}
+      />
+
+      <ConfirmDialog
+        open={confirmAction?.kind === "closeJob"}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={() => {
+          if (confirmAction?.kind === "closeJob") void performCloseJob(confirmAction.id);
+        }}
+        title={t("closeJobConfirmTitle")}
+        description={t("closeJobConfirmDescription")}
+        confirmLabel={t("closeJobConfirmAction")}
+        cancelLabel={tCommon("cancel")}
+        busy={busy}
+        icon={<PackageX className="size-5" aria-hidden />}
+      />
     </>
   );
 }

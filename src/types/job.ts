@@ -8,7 +8,7 @@ export type JobContractType =
 
 export type JobListingStatus = "active" | "filled_hidden" | "inactive";
 
-export type JobApplicationStatus = "pending" | "accepted" | "rejected";
+export type JobApplicationStatus = "pending" | "accepted" | "rejected" | "invited";
 
 export interface CvExperienceEntry {
   company: string;
@@ -90,6 +90,7 @@ export interface JobApplication {
   jobTitle?: string | null;
   applicantName?: string | null;
   cvViewedAt?: string | null;
+  initiatedBy?: "candidate" | "employer" | null;
 }
 
 export interface JobListFilters {
@@ -105,4 +106,27 @@ export interface ApplicationListFilters {
   province?: string;
   status?: JobApplicationStatus;
   q?: string;
+}
+
+export interface CandidateSearchFilters {
+  q?: string;
+  profession?: string;
+  province?: string;
+  jobId?: string;
+}
+
+export interface CandidateMatch {
+  cv: UserCv;
+  matchScore: number;
+  matchReasons: string[];
+  alreadyApplied?: boolean;
+  applicationStatus?: JobApplicationStatus | null;
+  canContact?: boolean;
+}
+
+export interface JobMatch {
+  job: import("@/types/store").CatalogProduct;
+  matchScore: number;
+  matchReasons: string[];
+  alreadyApplied?: boolean;
 }

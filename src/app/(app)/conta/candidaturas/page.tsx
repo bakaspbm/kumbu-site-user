@@ -23,6 +23,7 @@ export default function CandidaturasPage() {
       pending: t("applicationStatusPending"),
       accepted: t("applicationStatusAccepted"),
       rejected: t("applicationStatusRejected"),
+      invited: t("applicationStatusInvited"),
     }),
     [t],
   );
@@ -67,7 +68,16 @@ export default function CandidaturasPage() {
                 <p className="mt-1.5 text-sm text-kumbu-muted">
                   CV: {a.cvSnapshot?.title ?? "—"} · {statusLabel[a.status] ?? a.status}
                 </p>
-                {a.conversationId ? (
+                {a.status === "invited" && a.jobTitle ? (
+                  <p className="mt-1 text-sm text-kumbu-foreground">{t("applicationInviteHint")}</p>
+                ) : null}
+                <Link
+                  href={`/produto/${a.jobId}`}
+                  className="mt-2 inline-flex text-sm font-semibold text-kumbu-primary hover:underline"
+                >
+                  {t("applicationViewJob")}
+                </Link>
+                {(a.status === "accepted" || a.status === "invited") && a.conversationId ? (
                   <Link
                     href={`/mensagens/${a.conversationId}`}
                     className="mt-2 inline-flex text-sm font-semibold text-kumbu-primary hover:underline"

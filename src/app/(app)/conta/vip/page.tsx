@@ -18,12 +18,14 @@ export default async function ContaVipPage({ searchParams }: Props) {
   const categoryId = sp.category ?? undefined;
   const limitReached = sp.limit === "1";
 
+  let visible = false;
   try {
     const catalog = await getMonetizationCatalogBackend(categoryId);
-    if (!isUserMonetizationVisible(catalog.chargingEnabled)) {
-      redirect("/conta/perfil");
-    }
+    visible = isUserMonetizationVisible(catalog.chargingEnabled);
   } catch {
+    visible = false;
+  }
+  if (!visible) {
     redirect("/conta/perfil");
   }
 

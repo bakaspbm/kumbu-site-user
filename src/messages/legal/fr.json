@@ -63,7 +63,7 @@
       "paragraphs": [
         "Identification et contact : nom, e-mail, téléphone, adresse, photo de profil.",
         "Activité sur la plateforme : annonces, messages, favoris, commandes, candidatures, consultations de CV par les employeurs (avec notification au candidat).",
-        "Données techniques : type d'appareil, session, journaux de sécurité et cookies essentiels (voir Politique de cookies)."
+        "Données techniques nécessaires au service : type d'appareil, session d'accès et cookies essentiels (voir Politique de cookies)."
       ]
     },
     {
@@ -79,7 +79,7 @@
       "title": "4. Partage des données",
       "paragraphs": [
         "Données visibles par les autres utilisateurs : profil public, annonces, messages dans la conversation concernée.",
-        "Prestataires : hébergement et infrastructure (serveur backend Spring Boot, base de données PostgreSQL), envoi d'e-mails/SMS selon la configuration.",
+        "Prestataires de services : hébergement, envoi d'e-mails ou SMS et autres outils nécessaires au fonctionnement de la plateforme, uniquement dans la mesure nécessaire.",
         "Nous ne vendons pas de listes de contacts à des tiers à des fins marketing."
       ]
     },
@@ -87,14 +87,14 @@
       "title": "5. Conservation et droits",
       "paragraphs": [
         "Nous conservons les données tant que le compte est actif et le temps nécessaire aux obligations légales ou à la défense de réclamations.",
-        "Vous pouvez demander l'accès, la rectification ou la suppression via les paramètres du compte (exporter en JSON ou supprimer le compte). La suppression marque deleted_at, révoque les sessions et enregistre l'événement pour audit.",
+        "Vous pouvez demander l'accès, la rectification ou la suppression via les paramètres du compte (exporter vos données ou supprimer le compte). Lors de la suppression, la session n'est plus valide et la demande est traitée par notre équipe conformément à la loi.",
         "Vous pouvez déposer une plainte auprès de l'autorité de protection des données compétente en Angola."
       ]
     },
     {
       "title": "6. Sécurité",
       "paragraphs": [
-        "Nous appliquons l'authentification JWT, le contrôle d'accès par utilisateur, HTTPS et des politiques d'accès minimal. Aucun système n'est sécurisé à 100 % — signalez les incidents au support."
+        "Nous appliquons des mesures techniques et organisationnelles appropriées pour protéger les comptes et les données (connexion sécurisée, contrôle d'accès et bonnes pratiques de sécurité). Aucun système n'est sécurisé à 100 % — signalez les incidents au support."
       ]
     }
   ],
@@ -108,7 +108,7 @@
     {
       "title": "2. Cookies essentiels",
       "paragraphs": [
-        "Nécessaires au fonctionnement : session authentifiée (jetons JWT), panier, préférences enregistrées. Ils ne nécessitent pas de consentement séparé."
+        "Nécessaires au fonctionnement : maintenir la session connectée, le panier et les préférences enregistrées. Ils ne nécessitent pas de consentement séparé."
       ]
     },
     {

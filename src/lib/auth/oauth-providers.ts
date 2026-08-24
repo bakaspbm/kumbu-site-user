@@ -25,7 +25,10 @@ export async function prepareOAuthState(
   const response = await fetch("/api/auth/oauth-state", {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Kumbu-Client": "web",
+    },
     body: JSON.stringify({
       provider,
       next: sanitizeInternalPath(nextPath, "/"),
@@ -49,7 +52,10 @@ export async function verifyOAuthStateParam(
   const response = await fetch("/api/auth/oauth-state/verify", {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Kumbu-Client": "web",
+    },
     body: JSON.stringify({ state: stateParam.trim() }),
   });
   if (!response.ok) return null;

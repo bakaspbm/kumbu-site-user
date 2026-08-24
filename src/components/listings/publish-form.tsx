@@ -17,8 +17,8 @@ import {
   validateJobPublish,
   type JobPublishState,
 } from "@/components/jobs/job-publish-section";
-import { isJobCategory } from "@/lib/jobs/category";
-import { isPropertyCategory } from "@/lib/property/category";
+import { isJobCategory, isJobCategoryId } from "@/lib/jobs/category";
+import { isPropertyCategory, isPropertyCategoryId } from "@/lib/property/category";
 import {
   buildPropertyMetaFromState,
   defaultPropertyPublishState,
@@ -137,10 +137,13 @@ export function PublishForm({
     return () => window.clearTimeout(id);
   }, [publishSuccess, router]);
 
-  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const selectedCategory = categories.find(
+    (c) => c.id === categoryId || c.id.toLowerCase() === categoryId.toLowerCase(),
+  );
   const listingLimitReached = isListingLimitError(error);
-  const isProperty = isPropertyCategory(selectedCategory);
-  const isJob = isJobCategory(selectedCategory);
+  const isProperty =
+    isPropertyCategory(selectedCategory) || isPropertyCategoryId(categoryId);
+  const isJob = isJobCategory(selectedCategory) || isJobCategoryId(categoryId);
 
   const steps = useMemo(() => {
     if (isProperty) {
@@ -199,8 +202,14 @@ export function PublishForm({
       return;
     }
 
-    const cat = categories.find((c) => c.id === categoryId);
-    if (cat && (isPropertyCategory(cat) || isJobCategory(cat))) {
+    const cat = categories.find(
+      (c) => c.id === categoryId || c.id.toLowerCase() === categoryId.toLowerCase(),
+    );
+    if (
+      isJobCategoryId(categoryId) ||
+      isPropertyCategoryId(categoryId) ||
+      (cat && (isPropertyCategory(cat) || isJobCategory(cat)))
+    ) {
       setSubcategories([]);
       setSubcategoryId("");
       setSubcategoriesLoading(false);
@@ -248,7 +257,7 @@ export function PublishForm({
     return () => {
       cancelled = true;
     };
-  }, [categoryId]);
+  }, [categoryId, categories]);
 
   const showSubcategoryField =
     !isProperty && !isJob && Boolean(categoryId) && (subcategoriesLoading || subcategories.length > 0);
@@ -288,6 +297,8 @@ export function PublishForm({
       );
     }
     if (step === 2) {
+      // Vagas: foto opcional (API aceita imageUrls vazio).
+      if (isJob) return true;
       return imageItems.some((i) => i.file);
     }
     return true;
@@ -326,9 +337,10 @@ export function PublishForm({
     setLoading(true);
     try {
       const files = imageItems.map((i) => i.file).filter((f): f is File => Boolean(f));
-      if (files.length === 0) {
+      if (files.length === 0 && !isJob) {
         setPublishError(t("addPhoto"));
         setLoading(false);
+        publishingRef.current = false;
         return;
       }
 
@@ -424,30 +436,33 @@ export function PublishForm({
 
       publishDebug("P1_GRAVAR_ANUNCIO", "OK no cliente", { productId: created.id });
 
-      setStatus(t("statusStep2", { count: files.length }));
-      const uploaded = await uploadListingImagesFromBrowser(files);
-      if (!uploaded.ok) {
-        setStatus(null);
-        publishDebugFail("P2B_UPLOAD_DIRECTO", uploaded.error, undefined, {
-          productId: created.id,
-        });
-        setPublishError(
-          t("step2Error", {
-            error: uploaded.error,
+      let uploadedUrls: string[] = [];
+      if (files.length > 0) {
+        setStatus(t("statusStep2", { count: files.length }));
+        const uploaded = await uploadListingImagesFromBrowser(files);
+        if (!uploaded.ok) {
+          setStatus(null);
+          publishDebugFail("P2B_UPLOAD_DIRECTO", uploaded.error, undefined, {
             productId: created.id,
-          }),
-        );
-        return;
+          });
+          setPublishError(
+            t("step2Error", {
+              error: uploaded.error,
+              productId: created.id,
+            }),
+          );
+          return;
+        }
+        uploadedUrls = uploaded.urls;
+        publishDebug("P2B_UPLOAD_DIRECTO", "OK no cliente", {
+          productId: created.id,
+          urlCount: uploaded.urls.length,
+        });
       }
-
-      publishDebug("P2B_UPLOAD_DIRECTO", "OK no cliente", {
-        productId: created.id,
-        urlCount: uploaded.urls.length,
-      });
 
       const videoFiles = videoItems.map((i) => i.file).filter((f): f is File => Boolean(f));
       let videoUrls: string[] = [];
-      if (videoFiles.length > 0) {
+      if (!isJob && videoFiles.length > 0) {
         setStatus(t("statusStepVideo"));
         const uploadedVideos = await uploadListingVideosFromBrowser(videoFiles);
         if (!uploadedVideos.ok) {
@@ -462,43 +477,45 @@ export function PublishForm({
         videoUrls = uploadedVideos.urls;
       }
 
-      setStatus(t("statusStep3"));
-      const mediaPatch = {
-        imageUrls: uploaded.urls,
-        ...(videoUrls.length > 0
-          ? { videoUrls, videoUrl: videoUrls[0] }
-          : { clearVideoUrls: true as const }),
-      };
-      try {
-        await ensureBrowserAccessToken();
-        await updateCatalogProduct(created.id, mediaPatch);
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 401) {
-          if (await refreshBrowserSessionCookies()) {
-            try {
-              await updateCatalogProduct(created.id, mediaPatch);
-            } catch (retryErr) {
+      if (uploadedUrls.length > 0 || videoUrls.length > 0) {
+        setStatus(t("statusStep3"));
+        const mediaPatch = {
+          imageUrls: uploadedUrls,
+          ...(videoUrls.length > 0
+            ? { videoUrls, videoUrl: videoUrls[0] }
+            : { clearVideoUrls: true as const }),
+        };
+        try {
+          await ensureBrowserAccessToken();
+          await updateCatalogProduct(created.id, mediaPatch);
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 401) {
+            if (await refreshBrowserSessionCookies()) {
+              try {
+                await updateCatalogProduct(created.id, mediaPatch);
+              } catch (retryErr) {
+                setStatus(null);
+                publishDebugFail("P3_LIGAR_FOTOS", "retry falhou", retryErr, {
+                  productId: created.id,
+                  urls: uploadedUrls,
+                });
+                setPublishError(t("step3Error", { error: formatErrorMessage(retryErr) }));
+                return;
+              }
+            } else {
               setStatus(null);
-              publishDebugFail("P3_LIGAR_FOTOS", "retry falhou", retryErr, {
-                productId: created.id,
-                urls: uploaded.urls,
-              });
-              setPublishError(t("step3Error", { error: formatErrorMessage(retryErr) }));
+              setPublishError(t("step3Error", { error: formatErrorMessage(err) }));
               return;
             }
           } else {
             setStatus(null);
+            publishDebugFail("P3_LIGAR_FOTOS", "erro ao ligar fotos", err, {
+              productId: created.id,
+              urls: uploadedUrls,
+            });
             setPublishError(t("step3Error", { error: formatErrorMessage(err) }));
             return;
           }
-        } else {
-          setStatus(null);
-          publishDebugFail("P3_LIGAR_FOTOS", "erro ao ligar fotos", err, {
-            productId: created.id,
-            urls: uploaded.urls,
-          });
-          setPublishError(t("step3Error", { error: formatErrorMessage(err) }));
-          return;
         }
       }
 
@@ -681,8 +698,15 @@ export function PublishForm({
 
           {step === 2 && (
             <div className="space-y-6">
-              <ListingImagesUpload items={imageItems} onChange={setImageItems} />
-              <ListingVideosUpload items={videoItems} onChange={setVideoItems} />
+              <ListingImagesUpload
+                items={imageItems}
+                onChange={setImageItems}
+                optional={isJob}
+                hint={isJob ? t("photoTipJob") : undefined}
+              />
+              {!isJob && (
+                <ListingVideosUpload items={videoItems} onChange={setVideoItems} />
+              )}
             </div>
           )}
 

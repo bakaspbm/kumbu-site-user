@@ -63,7 +63,7 @@
       "paragraphs": [
         "Identification and contact: name, email, phone, address, profile photo.",
         "Platform activity: listings, messages, favorites, orders, applications, CV views by employers (with notification to the candidate).",
-        "Technical data: device type, session, security logs, and essential cookies (see Cookie Policy)."
+        "Technical data needed to run the service: device type, access session, and essential cookies (see Cookie Policy)."
       ]
     },
     {
@@ -79,7 +79,7 @@
       "title": "4. Data sharing",
       "paragraphs": [
         "Data visible to other users: public profile, listings, messages in the respective conversation.",
-        "Providers: hosting and infrastructure (Spring Boot backend server, PostgreSQL database), email/SMS delivery as configured.",
+        "Service providers: hosting, email or SMS delivery, and other tools required to operate the platform, only as needed.",
         "We do not sell contact lists to third parties for marketing."
       ]
     },
@@ -87,14 +87,14 @@
       "title": "5. Retention and rights",
       "paragraphs": [
         "We retain data while the account is active and for as long as necessary for legal obligations or defense of claims.",
-        "You may request access, rectification, or deletion through account settings (export JSON or delete account). Deletion marks deleted_at, revokes sessions, and records the event for audit.",
+        "You may request access, rectification, or deletion through account settings (export your data or delete your account). When you delete your account, your session ends and the request is handled by our team in line with the law.",
         "You may file a complaint with the competent data protection authority in Angola."
       ]
     },
     {
       "title": "6. Security",
       "paragraphs": [
-        "We apply JWT authentication, per-user access control, HTTPS, and minimum access policies. No system is 100% secure — report incidents to support."
+        "We apply appropriate technical and organisational measures to protect accounts and data (secure connection, access control, and security best practices). No system is 100% secure — report incidents to support."
       ]
     }
   ],
@@ -108,7 +108,7 @@
     {
       "title": "2. Essential cookies",
       "paragraphs": [
-        "Required for operation: authenticated session (JWT tokens), cart, saved preferences. They do not require separate consent."
+        "Required for operation: keeping you signed in, the cart, and saved preferences. They do not require separate consent."
       ]
     },
     {

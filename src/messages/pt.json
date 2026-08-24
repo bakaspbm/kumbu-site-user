@@ -103,7 +103,7 @@
     "emailOnNotification": "Notificações da conta",
     "emailOnNotificationDesc": "Email quando recebe uma notificação na app (candidaturas, suporte, etc.).",
     "emailOnNewListings": "Novos anúncios",
-    "emailOnNewListingsDesc": "Email ocasional quando outros utilizadores publicam anúncios (só se o admin tiver activado).",
+    "emailOnNewListingsDesc": "Email ocasional quando outros utilizadores publicam anúncios.",
     "emailPrefsSaved": "Preferência guardada.",
     "emailPrefsNote": "Só enviamos email se a sua conta tiver o email verificado. Pode alterar estas opções a qualquer momento."
   },
@@ -163,7 +163,7 @@
     "displayNameHint": "Este é o nome que aparece nos anúncios, no chat e no seu perfil público.",
     "phone": "Telefone",
     "phonePlaceholder": "923 456 789",
-    "gender": "Sexo",
+    "gender": "Género",
     "genderSelect": "Seleccionar…",
     "genderFeminine": "Feminino",
     "genderMasculine": "Masculino",
@@ -191,7 +191,7 @@
     "phoneInvalid": "Indique um telemóvel angolano válido (9 dígitos, ex.: 923 456 789).",
     "addressRequired": "Indique a morada (rua / bairro).",
     "cityProvinceCountryRequired": "Preencha cidade, província e país.",
-    "genderRequired": "Seleccione o sexo.",
+    "genderRequired": "Seleccione o género.",
     "photoUploadTimeout": "O envio da foto demorou demasiado.",
     "photoSaveTimeout": "A foto foi enviada mas guardar o perfil demorou demasiado.",
     "photoSaveFailed": "Não foi possível guardar a foto no perfil.",
@@ -216,7 +216,7 @@
     "fieldLegalName": "Nome completo (documento)",
     "fieldDisplayName": "Nome público / da loja",
     "fieldPhone": "Telefone",
-    "fieldGender": "Sexo",
+    "fieldGender": "Género",
     "fieldBirthDate": "Data de nascimento",
     "fieldAddress": "Morada",
     "fieldCity": "Cidade",
@@ -759,7 +759,7 @@
     "saving": "A publicar…",
     "successTitle": "Anúncio publicado!",
     "success": "Anúncio publicado com sucesso.",
-    "intro": "Quatro passos — categoria, detalhes, fotos e revisão. Leva poucos minutos.",
+    "intro": "Escolha a categoria e preencha os dados da oferta. Leva poucos minutos.",
     "steps": {
       "category": "Categoria",
       "details": "Detalhes",
@@ -814,6 +814,7 @@
     "addPhotoBtn": "Adicionar",
     "choosePhotosBtn": "Escolher fotos ({remaining} restantes)",
     "photoTip": "Boas fotos vendem mais. Use luz natural e mostre o produto de frente e de lado.",
+    "photoTipJob": "Foto opcional — a vaga publica-se na mesma sem imagem.",
     "optionalLabel": "Opcional",
     "listingVideoTitle": "Vídeos do anúncio",
     "listingVideoHint": "Opcional · até 3 vídeos · qualquer formato de vídeo · máx. 1 minuto e 40 MB cada.",
@@ -1900,6 +1901,13 @@
       "description": "Descrição (opcional)",
       "typePrefix": "Tipo:",
       "select": "Seleccionar…"
+    },
+    "directory": {
+      "loading": "A procurar…",
+      "empty": "Escreva para ver sugestões.",
+      "notFound": "Não encontraste o que procuras?",
+      "addManual": "Adicionar manualmente",
+      "saving": "A guardar…"
     },
     "vehicles": {
       "brandHint": "Escreva ou escolha uma marca da lista.",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Expand, ShoppingBag } from "lucide-react";
-import { ListingImage } from "@/components/ui/listing-image";
+import { ListingImage, LISTING_IMAGE_SIZES } from "@/components/ui/listing-image";
 import { ProductImageLightbox } from "@/components/store/product-image-lightbox";
 import { productImageUrls } from "@/lib/store/product-images";
 import { cn, productPlaceholderStyle } from "@/lib/utils";
@@ -81,7 +81,7 @@ export function ProductImageGallery({ product }: ProductImageGalleryProps) {
                     : "border-kumbu-border opacity-80 hover:border-kumbu-primary/35 hover:opacity-100",
                 )}
               >
-                <ListingImage src={src} alt="" fill />
+                <ListingImage src={src} alt="" fill sizes={LISTING_IMAGE_SIZES.productThumb} />
               </button>
             ))}
           </div>
@@ -102,6 +102,7 @@ export function ProductImageGallery({ product }: ProductImageGalleryProps) {
             alt={product.title}
             fill
             priority
+            sizes={LISTING_IMAGE_SIZES.productMain}
             className="object-contain"
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
