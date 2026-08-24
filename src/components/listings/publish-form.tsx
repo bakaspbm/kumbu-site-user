@@ -7,6 +7,7 @@ import { ProfileIncompleteBlock } from "@/components/account/profile-incomplete-
 import { Button } from "@/components/ui/button";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { useAuth } from "@/contexts/auth-context";
+import { useRegisterBackHandler } from "@/components/providers/navigation-history-tracker";
 import { formatAngolaLocation } from "@/lib/geo/angola-locations";
 import { newProductId } from "@/lib/ids";
 import {
@@ -97,6 +98,11 @@ export function PublishForm({
   const monetizationVisible = useUserMonetizationVisible();
   const { isProfileComplete, profileFields, isLoading: authLoading } = useAuth();
   const [step, setStep] = useState(0);
+  useRegisterBackHandler(() => {
+    if (step <= 0) return false;
+    setStep((s) => s - 1);
+    return true;
+  });
   const [categories, setCategories] = useState<CatalogCategory[]>(
     initialCategories.length > 0 ? initialCategories : [],
   );

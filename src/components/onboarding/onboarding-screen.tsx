@@ -12,6 +12,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { KumbuLogo } from "@/components/brand/kumbu-logo";
+import { useRegisterBackHandler } from "@/components/providers/navigation-history-tracker";
 import { cn } from "@/lib/utils";
 
 const ONBOARDING_KEY = "kumbu_onboarding_done";
@@ -74,6 +75,12 @@ export function OnboardingScreen() {
   function goBack() {
     if (index > 0) goTo(index - 1);
   }
+
+  useRegisterBackHandler(() => {
+    if (index <= 0) return false;
+    goTo(index - 1);
+    return true;
+  });
 
   return (
     <div className="relative flex h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#f8f9fb] lg:bg-white">

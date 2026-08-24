@@ -2,20 +2,26 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { markInAppNavigation } from "@/lib/navigation/smart-back";
+import { recordInAppPath, registerBackHandler } from "@/lib/navigation/smart-back";
 
-/** Conta navegações internas na sessão para o botão Voltar usar o histórico. */
+/** Guarda a pilha de rotas internas para o botão Voltar não sair da app. */
 export function NavigationHistoryTracker() {
   const pathname = usePathname();
-  const isFirst = useRef(true);
 
   useEffect(() => {
-    if (isFirst.current) {
-      isFirst.current = false;
-      return;
-    }
-    markInAppNavigation();
+    recordInAppPath(pathname);
   }, [pathname]);
 
   return null;
+}
+
+/** Intercepta o voltar do header enquanto houver um passo local (wizard). */
+export function useRegisterBackHandler(handler: () => boolean, enabled = true): void {
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
+
+  useEffect(() => {
+    if (!enabled) return;
+    return registerBackHandler(() => handlerRef.current());
+  }, [enabled]);
 }
